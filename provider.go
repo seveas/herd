@@ -6,7 +6,7 @@ type HostProvider interface {
 
 type Providers []HostProvider
 
-func LoadProviders() Providers {
+func LoadProviders(c AppConfig) Providers {
 	ret := make(Providers, 0)
 
 	// Always load the known hosts provider
