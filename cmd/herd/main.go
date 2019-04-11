@@ -12,8 +12,10 @@ import (
 
 func main() {
 	c := herd.NewAppConfig()
+	herd.UI = herd.NewSimpleUI()
 
 	pflag.BoolVarP(&c.List, "list", "l", c.List, "List matching hosts instead of executing commands")
+	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.Parse()
 
 	args := pflag.Args()
@@ -48,6 +50,6 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: herd [args] [hostspec...] -- command\n\n")
+	fmt.Fprintf(os.Stderr, "Usage: herd [args] hostlgob [attr=value...] [+ hostglob [attr=value]...] -- command\n\n")
 	pflag.CommandLine.PrintDefaults()
 }
