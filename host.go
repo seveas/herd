@@ -69,6 +69,11 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 	if err == nil {
 		h.SshConfig.User = u.Username
 	}
+	parts := strings.SplitN(name, ".", 2)
+	h.Attributes["hostname"] = parts[0]
+	if len(parts) == 2 {
+		h.Attributes["domainname"] = parts[1]
+	}
 	return h
 }
 
