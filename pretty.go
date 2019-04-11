@@ -28,7 +28,9 @@ func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
 	} else {
 		fmt.Fprintln(w, ansi.Color(r.Host, "green"))
 	}
-	f.WriteIndented(w, r.Stdout)
+	if len(r.Stdout) > 0 {
+		f.WriteIndented(w, r.Stdout)
+	}
 	if len(r.Stderr) != 0 {
 		fmt.Fprintln(w, ansi.Color("----", "black+h"))
 		f.WriteIndented(w, r.Stderr)
