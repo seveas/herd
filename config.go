@@ -2,6 +2,7 @@ package katyusha
 
 type AppConfig struct {
 	List        bool
+	ListOneline bool
 	Interactive bool
 	Formatter   Formatter
 }
@@ -14,6 +15,7 @@ func NewAppConfig() AppConfig {
 
 func (c *AppConfig) SetDefaults() {
 	c.List = false
+	c.ListOneline = false
 	c.Interactive = false
 	c.Formatter = NewPrettyFormatter()
 }
