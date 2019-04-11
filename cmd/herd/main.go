@@ -33,8 +33,31 @@ func main() {
 
 	providers := herd.LoadProviders(c)
 
-	// FIXME proper parsing of hostspecs
-	hosts := providers.GetHosts(hostSpecs[0], herd.HostAttributes{})
+	hosts := make(herd.Hosts, 0)
+
+hostspecLoop:
+	for true {
+		glob := hostSpecs[0]
+		attrs := make(herd.HostAttributes)
+		for i, arg := range hostSpecs[1:] {
+			if arg == "+" {
+				hostSpecs = hostSpecs[i+2:]
+				hosts = append(hosts, providers.GetHosts(glob, attrs)...)
+				continue hostspecLoop
+			}
+			parts := strings.SplitN(arg, "=", 2)
+			if len(parts) != 2 {
+				usage()
+				os.Exit(1)
+			}
+			attrs[parts[0]] = parts[1]
+		}
+		// We've fallen through, so no more hostspecs
+		hosts = append(hosts, providers.GetHosts(glob, attrs)...)
+		break
+	}
+
+	hosts = hosts.SortAndUniq()
 
 	if c.List {
 		for _, host := range hosts {
