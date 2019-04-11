@@ -6,6 +6,7 @@ import (
 	"net"
 	"os/user"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
@@ -32,6 +33,24 @@ func (hosts Hosts) String() string {
 		ret.WriteString(h.Name)
 	}
 	return ret.String()
+}
+
+func (h Hosts) SortAndUniq() Hosts {
+	if len(h) < 2 {
+		return h
+	}
+	sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
+	src, dst := 1, 0
+	for src < len(h) {
+		if h[src].Name != h[dst].Name {
+			dst += 1
+			if dst != src {
+				h[dst] = h[src]
+			}
+		}
+		src += 1
+	}
+	return h[:dst+1]
 }
 
 func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *Host {
