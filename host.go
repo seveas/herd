@@ -91,8 +91,8 @@ func (h *Host) Amend(h2 *Host) {
 
 func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	if len(h.PublicKeys) == 0 {
-		// FIXME logging
-		fmt.Printf("Warning: no known host key for %s, accepting any key\n", h.Name)
+		UI.Warnf("Warning: no known host key for %s, accepting any key\n", h.Name)
+		return nil
 	}
 	bkey := key.Marshal()
 	for _, pkey := range h.PublicKeys {
