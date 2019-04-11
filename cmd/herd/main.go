@@ -14,9 +14,13 @@ func main() {
 	c := herd.NewAppConfig()
 	herd.UI = herd.NewSimpleUI()
 
-	pflag.BoolVarP(&c.List, "list", "l", c.List, "List matching hosts instead of executing commands")
+	pflag.BoolVarP(&c.List, "list", "l", c.List, "List matching hosts (one per line) instead of executing commands")
+	pflag.BoolVarP(&c.ListOneline, "list-oneline", "L", c.List, "List matching hosts (all on one line) instead of executing commands")
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.Parse()
+	if c.ListOneline {
+		c.List = true
+	}
 
 	args := pflag.Args()
 	commandStart := pflag.CommandLine.ArgsLenAtDash()
@@ -60,8 +64,19 @@ hostspecLoop:
 	hosts = hosts.SortAndUniq()
 
 	if c.List {
-		for _, host := range hosts {
-			fmt.Println(host.Name)
+		if c.ListOneline {
+			for i, host := range hosts {
+				if i == 0 {
+					os.Stdout.WriteString(host.Name)
+				} else {
+					fmt.Printf(",%s", host.Name)
+				}
+			}
+			os.Stdout.WriteString("\n")
+		} else {
+			for _, host := range hosts {
+				fmt.Println(host.Name)
+			}
 		}
 		return
 	}
