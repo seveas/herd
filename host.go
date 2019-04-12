@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -16,10 +17,10 @@ type HostAttributes map[string]interface{}
 
 type Host struct {
 	Name       string
-	PublicKeys []ssh.PublicKey
-	Attributes HostAttributes
-	SshBanner  string
-	SshConfig  *ssh.ClientConfig
+	PublicKeys []ssh.PublicKey   `json:"-"`
+	Attributes HostAttributes    `json:"-"`
+	SshBanner  string            `json:"-"`
+	SshConfig  *ssh.ClientConfig `json:"-"`
 }
 
 type Hosts []*Host
@@ -139,7 +140,7 @@ func (e TimeoutError) Error() string {
 }
 
 func (host *Host) Run(command string, c chan Result) {
-	r := Result{Host: host.Name}
+	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
 	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
 	if err != nil {
 		r.Err = err
@@ -158,6 +159,14 @@ func (host *Host) Run(command string, c chan Result) {
 	sess.Stdout = stdout
 	sess.Stderr = stderr
 	r.Err = sess.Run(command)
+	r.EndTime = time.Now()
+	if r.Err != nil {
+		if err, ok := r.Err.(*ssh.ExitError); ok {
+			r.ExitStatus = err.ExitStatus()
+		}
+	} else {
+		r.ExitStatus = 0
+	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
 	c <- r

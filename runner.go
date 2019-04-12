@@ -1,15 +1,37 @@
 package katyusha
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"time"
 )
 
 type Result struct {
-	Host   string
-	Stdout []byte
-	Stderr []byte
-	Err    error
+	Host       string
+	ExitStatus int
+	Stdout     []byte
+	Stderr     []byte
+	Err        error
+	StartTime  time.Time
+	EndTime    time.Time
+}
+
+func (r Result) MarshalJSON() ([]byte, error) {
+	r_ := map[string]interface{}{
+		"Host":       r.Host,
+		"ExitStatus": r.ExitStatus,
+		"Stdout":     string(r.Stdout),
+		"Stderr":     string(r.Stderr),
+		"Err":        r.Err,
+		"ErrString":  "",
+		"StartTime":  r.StartTime,
+		"EndTime":    r.EndTime,
+	}
+	if r.Err != nil {
+		r_["ErrString"] = r.Err.Error()
+	}
+	return json.Marshal(r_)
 }
 
 func (r Result) String() string {
@@ -17,12 +39,26 @@ func (r Result) String() string {
 }
 
 type HistoryItem struct {
-	Hosts   []*Host
-	Command string
-	Results map[string]Result
+	Hosts     []*Host
+	Command   string
+	Results   map[string]Result
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 type History []HistoryItem
+
+func (h History) Save(path string) {
+	data, err := json.Marshal(h)
+	if err != nil {
+		UI.Warnf("Unable to export history: %s", err)
+		return
+	}
+	err = ioutil.WriteFile(path, data, 0600)
+	if err != nil {
+		UI.Warnf("Unable to save history to %s: %s", path, err)
+	}
+}
 
 type RunnerConfig struct {
 	Timeout time.Duration
@@ -61,15 +97,17 @@ func (r *Runner) Run(command string) HistoryItem {
 			todo -= 1
 		}
 	}
+	hi.EndTime = time.Now()
 	r.History = append(r.History, hi)
 	return hi
 }
 
 func (r *Runner) NewHistoryItem(command string) HistoryItem {
 	return HistoryItem{
-		Hosts:   r.Hosts,
-		Command: command,
-		Results: make(map[string]Result),
+		Hosts:     r.Hosts,
+		Command:   command,
+		Results:   make(map[string]Result),
+		StartTime: time.Now(),
 	}
 }
 
