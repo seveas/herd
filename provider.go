@@ -7,11 +7,12 @@ type HostProvider interface {
 type Providers []HostProvider
 
 func LoadProviders(c AppConfig) Providers {
-	ret := make(Providers, 0)
-
-	// Always load the known hosts provider
-	khp := NewKnownHostsProvider()
-	ret = append(ret, khp)
+	ret := Providers{
+		// Always load the known hosts provider
+		NewKnownHostsProvider(),
+		// Always load the command-line provider
+		NewCliProvider(),
+	}
 
 	// Load the consul provider if ...?
 
