@@ -116,7 +116,7 @@ func (h *Host) Amend(h2 *Host) {
 
 func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	if len(h.PublicKeys) == 0 {
-		UI.Warnf("Warning: no known host key for %s, accepting any key\n", h.Name)
+		UI.Warnf("Warning: no known host key for %s, accepting any key", h.Name)
 		return nil
 	}
 	bkey := key.Marshal()
@@ -141,6 +141,7 @@ func (e TimeoutError) Error() string {
 
 func (host *Host) Run(command string, c chan Result) {
 	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
+	UI.Debugf("Connecting to %s", host.Address())
 	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
 	if err != nil {
 		r.Err = err

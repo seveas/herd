@@ -3,10 +3,14 @@ package herd
 import (
 	"log"
 	"os"
+
+	"github.com/mgutz/ansi"
 )
 
 type HerdUI interface {
 	Warnf(format string, v ...interface{})
+	Debugf(format string, v ...interface{})
+	Errorf(format string, v ...interface{})
 }
 
 type SimpleUI struct {
@@ -19,8 +23,19 @@ func NewSimpleUI() SimpleUI {
 	}
 }
 
-func (ui SimpleUI) Warnf(fmt string, v ...interface{}) {
-	ui.Logger.Printf(fmt, v...)
+func (ui SimpleUI) Errorf(format string, v ...interface{}) {
+	format = ansi.Color(format, "red+b")
+	ui.Logger.Printf(format, v...)
+}
+
+func (ui SimpleUI) Warnf(format string, v ...interface{}) {
+	format = ansi.Color(format, "yellow")
+	ui.Logger.Printf(format, v...)
+}
+
+func (ui SimpleUI) Debugf(format string, v ...interface{}) {
+	format = ansi.Color(format, "black+h")
+	ui.Logger.Printf(format, v...)
 }
 
 var UI HerdUI
