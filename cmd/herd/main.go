@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -85,6 +86,12 @@ hostspecLoop:
 	hi := runner.Run(strings.Join(command, " "))
 
 	c.Formatter.Format(hi, os.Stdout)
+	if err := os.MkdirAll(c.HistoryDir, 0700); err != nil {
+		herd.UI.Warnf("Unable to create history path %s: %s", c.HistoryDir, err)
+	} else {
+		fn := path.Join(c.HistoryDir, runner.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
+		runner.History.Save(fn)
+	}
 }
 
 func usage() {
