@@ -88,10 +88,12 @@ func (r *Runner) Run(command string) HistoryItem {
 	}
 	timeout := time.After(r.Config.Timeout)
 	todo := len(hi.Hosts)
+todo:
 	for todo > 0 {
 		select {
 		case <-timeout:
-			r.Cancel(&hi)
+			r.Cancel(&hi, todo)
+			break todo
 		case r := <-c:
 			hi.Results[r.Host] = r
 			todo -= 1
@@ -111,7 +113,21 @@ func (r *Runner) NewHistoryItem(command string) HistoryItem {
 	}
 }
 
-func (r *Runner) Cancel(hi *HistoryItem) {
-	// Cancel nonfinished SSH runs
-	// Add artificial timeout results for unfinished hosts
+func (r *Runner) Cancel(hi *HistoryItem, todo int) {
+	UI.Errorf("Run canceled with %d unfinished tasks!", todo)
+	// Cancel nonfinished SSH runs FIXME
+	// For now, add artificial timeout results for unfinished hosts. Once we
+	// can cancel runs, we can process actual results
+	now := time.Now()
+	for _, host := range hi.Hosts {
+		if _, ok := hi.Results[host.Name]; !ok {
+			hi.Results[host.Name] = Result{
+				Host:       host.Name,
+				Err:        &TimeoutError{},
+				ExitStatus: -1,
+				StartTime:  hi.StartTime,
+				EndTime:    now,
+			}
+		}
+	}
 }
