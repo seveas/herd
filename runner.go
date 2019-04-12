@@ -1,6 +1,7 @@
 package herd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -75,7 +76,7 @@ func NewRunner(hosts []*Host) *Runner {
 		Hosts:   hosts,
 		History: make([]HistoryItem, 0),
 		Config: RunnerConfig{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 	}
 }
@@ -83,19 +84,21 @@ func NewRunner(hosts []*Host) *Runner {
 func (r *Runner) Run(command string) HistoryItem {
 	hi := r.NewHistoryItem(command)
 	c := make(chan Result)
+	ctx, cancel := context.WithCancel(context.Background())
 	for _, host := range hi.Hosts {
-		go host.Run(command, c)
+		go host.Run(ctx, command, c)
 	}
+	ticker := time.NewTicker(time.Second / 2)
 	timeout := time.After(r.Config.Timeout)
 	todo := len(hi.Hosts)
 	total, doneOk, doneFail, doneError := todo, 0, 0, 0
 	for todo > 0 {
 		select {
+		case <-ticker.C:
+			UI.Progress(total, doneOk, doneFail, doneError, todo)
 		case <-timeout:
-			r.Cancel(&hi, todo)
-			// FIXME this should probably go away when we cancel pending commmands
-			doneError += todo
-			todo = 0
+			UI.Errorf("\nRun canceled with %d unfinished tasks!", todo)
+			cancel()
 		case r := <-c:
 			if r.ExitStatus == -1 {
 				doneError++
@@ -110,6 +113,7 @@ func (r *Runner) Run(command string) HistoryItem {
 		UI.Progress(total, doneOk, doneFail, doneError, todo)
 	}
 	hi.EndTime = time.Now()
+	ticker.Stop()
 	r.History = append(r.History, hi)
 	return hi
 }
@@ -120,24 +124,5 @@ func (r *Runner) NewHistoryItem(command string) HistoryItem {
 		Command:   command,
 		Results:   make(map[string]Result),
 		StartTime: time.Now(),
-	}
-}
-
-func (r *Runner) Cancel(hi *HistoryItem, todo int) {
-	UI.Errorf("Run canceled with %d unfinished tasks!", todo)
-	// Cancel nonfinished SSH runs FIXME
-	// For now, add artificial timeout results for unfinished hosts. Once we
-	// can cancel runs, we can process actual results
-	now := time.Now()
-	for _, host := range hi.Hosts {
-		if _, ok := hi.Results[host.Name]; !ok {
-			hi.Results[host.Name] = Result{
-				Host:       host.Name,
-				Err:        &TimeoutError{},
-				ExitStatus: -1,
-				StartTime:  hi.StartTime,
-				EndTime:    now,
-			}
-		}
 	}
 }

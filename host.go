@@ -2,6 +2,7 @@ package herd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"os/user"
@@ -62,6 +63,7 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 		SshConfig: &ssh.ClientConfig{
 			ClientVersion: "SSH-2.0-Herd-0.1",
 			Auth:          []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
+			Timeout:       3 * time.Second,
 		},
 	}
 	h.SshConfig.HostKeyCallback = h.HostKeyCallback
@@ -139,8 +141,9 @@ func (e TimeoutError) Error() string {
 	return "Timed out"
 }
 
-func (host *Host) Run(command string, c chan Result) {
+func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
+
 	UI.Debugf("Connecting to %s", host.Address())
 	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
 	if err != nil {
@@ -155,11 +158,27 @@ func (host *Host) Run(command string, c chan Result) {
 		c <- r
 		return
 	}
+	defer sess.Close()
+
 	stdout := bytes.NewBuffer([]byte{})
 	stderr := bytes.NewBuffer([]byte{})
 	sess.Stdout = stdout
 	sess.Stderr = stderr
-	r.Err = sess.Run(command)
+	ec := make(chan error)
+
+	go func() {
+		ec <- sess.Run(command)
+	}()
+
+	select {
+	case <-ctx.Done():
+		// FIXME: no error is ever returned, but the signal is not sent to the process either.
+		sess.Signal(ssh.SIGKILL)
+		r.Err = TimeoutError{}
+	case err := <-ec:
+		r.Err = err
+	}
+
 	r.EndTime = time.Now()
 	if r.Err != nil {
 		if err, ok := r.Err.(*ssh.ExitError); ok {
