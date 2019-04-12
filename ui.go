@@ -1,6 +1,7 @@
 package herd
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -11,6 +12,7 @@ type HerdUI interface {
 	Warnf(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
+	Progress(total, doneOk, doneFaile, doneError, todo int)
 }
 
 type SimpleUI struct {
@@ -36,6 +38,13 @@ func (ui SimpleUI) Warnf(format string, v ...interface{}) {
 func (ui SimpleUI) Debugf(format string, v ...interface{}) {
 	format = ansi.Color(format, "black+h")
 	ui.Logger.Printf(format, v...)
+}
+func (ui SimpleUI) Progress(total, doneOk, doneFail, doneError, todo int) {
+	fmt.Fprintf(os.Stderr, "\033[2k\rWaiting... %d/%d done, %d ok, %d fail, %d error", total-todo, total, doneOk, doneFail, doneError)
+	if todo == 0 {
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+	os.Stderr.Sync()
 }
 
 var UI HerdUI

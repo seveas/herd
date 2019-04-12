@@ -88,16 +88,26 @@ func (r *Runner) Run(command string) HistoryItem {
 	}
 	timeout := time.After(r.Config.Timeout)
 	todo := len(hi.Hosts)
-todo:
+	total, doneOk, doneFail, doneError := todo, 0, 0, 0
 	for todo > 0 {
 		select {
 		case <-timeout:
 			r.Cancel(&hi, todo)
-			break todo
+			// FIXME this should probably go away when we cancel pending commmands
+			doneError += todo
+			todo = 0
 		case r := <-c:
+			if r.ExitStatus == -1 {
+				doneError++
+			} else if r.ExitStatus == 0 {
+				doneOk++
+			} else {
+				doneFail++
+			}
 			hi.Results[r.Host] = r
-			todo -= 1
+			todo--
 		}
+		UI.Progress(total, doneOk, doneFail, doneError, todo)
 	}
 	hi.EndTime = time.Now()
 	r.History = append(r.History, hi)
