@@ -4,7 +4,14 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"time"
 )
+
+type RunnerConfig struct {
+	ConnectTimeout time.Duration
+	HostTimeout    time.Duration
+	Timeout        time.Duration
+}
 
 type AppConfig struct {
 	List        bool
@@ -12,10 +19,11 @@ type AppConfig struct {
 	Interactive bool
 	Formatter   Formatter
 	HistoryDir  string
+	Runner      RunnerConfig
 }
 
 func NewAppConfig() AppConfig {
-	c := AppConfig{}
+	c := AppConfig{Runner: RunnerConfig{}}
 	c.SetDefaults()
 	return c
 }
@@ -31,4 +39,7 @@ func (c *AppConfig) SetDefaults() {
 	} else {
 		c.HistoryDir, _ = os.Getwd()
 	}
+	c.Runner.ConnectTimeout = 3 * time.Second
+	c.Runner.HostTimeout = 10 * time.Second
+	c.Runner.Timeout = 60 * time.Second
 }
