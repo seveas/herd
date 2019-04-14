@@ -61,23 +61,17 @@ func (h History) Save(path string) {
 	}
 }
 
-type RunnerConfig struct {
-	Timeout time.Duration
-}
-
 type Runner struct {
 	Hosts   []*Host
 	History History
 	Config  RunnerConfig
 }
 
-func NewRunner(hosts []*Host) *Runner {
+func NewRunner(hosts []*Host, config RunnerConfig) *Runner {
 	return &Runner{
 		Hosts:   hosts,
 		History: make([]HistoryItem, 0),
-		Config: RunnerConfig{
-			Timeout: 30 * time.Second,
-		},
+		Config:  config,
 	}
 }
 
@@ -85,8 +79,11 @@ func (r *Runner) Run(command string) HistoryItem {
 	hi := r.NewHistoryItem(command)
 	c := make(chan Result)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	for _, host := range hi.Hosts {
-		go host.Run(ctx, command, c)
+		hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
+		host.SshConfig.Timeout = r.Config.ConnectTimeout
+		go func(ctx context.Context, h *Host) { defer hcancel(); h.Run(ctx, command, c) }(hctx, host)
 	}
 	ticker := time.NewTicker(time.Second / 2)
 	timeout := time.After(r.Config.Timeout)

@@ -17,6 +17,9 @@ func main() {
 
 	pflag.BoolVarP(&c.List, "list", "l", c.List, "List matching hosts (one per line) instead of executing commands")
 	pflag.BoolVarP(&c.ListOneline, "list-oneline", "L", c.List, "List matching hosts (all on one line) instead of executing commands")
+	pflag.DurationVar(&c.Runner.Timeout, "timeout", c.Runner.Timeout, "Global timeout for commands")
+	pflag.DurationVar(&c.Runner.HostTimeout, "host-timeout", c.Runner.HostTimeout, "Per-host timeout for commands")
+	pflag.DurationVar(&c.Runner.ConnectTimeout, "connect-timeout", c.Runner.ConnectTimeout, "SSH connection timeout for commands")
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.Parse()
 	if c.ListOneline {
@@ -82,7 +85,7 @@ hostspecLoop:
 		return
 	}
 
-	runner := katyusha.NewRunner(hosts)
+	runner := katyusha.NewRunner(hosts, c.Runner)
 	hi := runner.Run(strings.Join(command, " "))
 
 	c.Formatter.Format(hi, os.Stdout)
