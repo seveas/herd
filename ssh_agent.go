@@ -20,7 +20,7 @@ var initLock sync.Mutex
 type AgentSigner struct {
 	agent ssh_agent.Agent
 	key   ssh.PublicKey
-	lock  sync.Mutex
+	lock  *sync.Mutex
 }
 
 func (a AgentSigner) PublicKey() ssh.PublicKey {
@@ -64,7 +64,7 @@ func SshAgentKeys() ([]ssh.Signer, error) {
 		agentKeys = make([]ssh.Signer, len(keys))
 		var lock sync.Mutex
 		for i, key := range keys {
-			agentKeys[i] = AgentSigner{key: key, agent: globalAgent, lock: lock}
+			agentKeys[i] = AgentSigner{key: key, agent: globalAgent, lock: &lock}
 		}
 		agentTried = true
 	}
