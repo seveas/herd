@@ -11,6 +11,7 @@ type RunnerConfig struct {
 	ConnectTimeout time.Duration
 	HostTimeout    time.Duration
 	Timeout        time.Duration
+	Parallel       int
 }
 
 type AppConfig struct {
@@ -42,4 +43,5 @@ func (c *AppConfig) SetDefaults() {
 	c.Runner.ConnectTimeout = 3 * time.Second
 	c.Runner.HostTimeout = 10 * time.Second
 	c.Runner.Timeout = 60 * time.Second
+	c.Runner.Parallel = 0
 }

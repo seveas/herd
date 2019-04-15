@@ -80,19 +80,48 @@ func (r *Runner) Run(command string) HistoryItem {
 	c := make(chan Result)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	for _, host := range hi.Hosts {
-		hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
-		host.SshConfig.Timeout = r.Config.ConnectTimeout
-		go func(ctx context.Context, h *Host) { defer hcancel(); h.Run(ctx, command, c) }(hctx, host)
+	queued := -1
+	todo := len(hi.Hosts)
+	total, doneOk, doneFail, doneError := todo, 0, 0, 0
+	if r.Config.Parallel > 0 {
+		queued = len(hi.Hosts)
+		hqueue := make(chan *Host)
+		go func() {
+			for _, host := range hi.Hosts {
+				hqueue <- host
+				queued--
+				UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
+			}
+			close(hqueue)
+		}()
+		for i := 0; i < r.Config.Parallel; i++ {
+			UI.Debugf("Starting worker %d/%d", i+1, r.Config.Parallel)
+			go func() {
+				for {
+					host, ok := <-hqueue
+					if !ok {
+						break
+					}
+					host.SshConfig.Timeout = r.Config.ConnectTimeout
+					hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
+					host.Run(hctx, command, c)
+					hcancel()
+				}
+			}()
+		}
+	} else {
+		for _, host := range hi.Hosts {
+			hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
+			host.SshConfig.Timeout = r.Config.ConnectTimeout
+			go func(ctx context.Context, h *Host) { defer hcancel(); h.Run(ctx, command, c) }(hctx, host)
+		}
 	}
 	ticker := time.NewTicker(time.Second / 2)
 	timeout := time.After(r.Config.Timeout)
-	todo := len(hi.Hosts)
-	total, doneOk, doneFail, doneError := todo, 0, 0, 0
 	for todo > 0 {
 		select {
 		case <-ticker.C:
-			UI.Progress(total, doneOk, doneFail, doneError, todo)
+			UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
 		case <-timeout:
 			UI.Errorf("\nRun canceled with %d unfinished tasks!", todo)
 			cancel()
@@ -107,7 +136,7 @@ func (r *Runner) Run(command string) HistoryItem {
 			hi.Results[r.Host] = r
 			todo--
 		}
-		UI.Progress(total, doneOk, doneFail, doneError, todo)
+		UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
 	}
 	hi.EndTime = time.Now()
 	ticker.Stop()
