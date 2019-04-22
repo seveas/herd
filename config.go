@@ -17,6 +17,7 @@ type RunnerConfig struct {
 type AppConfig struct {
 	List        bool
 	ListOneline bool
+	ScriptFile  string
 	Interactive bool
 	Formatter   Formatter
 	HistoryDir  string

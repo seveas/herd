@@ -21,6 +21,7 @@ func main() {
 	pflag.DurationVar(&c.Runner.HostTimeout, "host-timeout", c.Runner.HostTimeout, "Per-host timeout for commands")
 	pflag.DurationVar(&c.Runner.ConnectTimeout, "connect-timeout", c.Runner.ConnectTimeout, "SSH connection timeout for commands")
 	pflag.IntVarP(&c.Runner.Parallel, "parallel", "p", c.Runner.Parallel, "Maximum number of hosts to run on in parallel")
+	pflag.StringVarP(&c.ScriptFile, "script", "s", c.ScriptFile, "Script file to execute")
 	pflag.CommandLine.SetOutput(os.Stderr)
 	pflag.Parse()
 	if c.ListOneline {
@@ -29,7 +30,11 @@ func main() {
 
 	args := pflag.Args()
 	commandStart := pflag.CommandLine.ArgsLenAtDash()
-	if !c.List && (commandStart == -1 || commandStart == len(args) || commandStart == 0) {
+	if !c.List && c.ScriptFile == "" && (commandStart == -1 || commandStart == len(args) || commandStart == 0) {
+		usage()
+		os.Exit(1)
+	}
+	if c.ScriptFile != "" && (c.List || len(args) != 0) {
 		usage()
 		os.Exit(1)
 	}
@@ -39,33 +44,42 @@ func main() {
 
 	commands := make([]herd.Command, 0)
 
-	hostSpecs := args[:commandStart]
-	command := args[commandStart:]
+	if c.ScriptFile != "" {
+		var err error
+		commands, err = herd.ParseScript(c.ScriptFile, &c)
+		if err != nil {
+			herd.UI.Errorf("Unable to parse script %s: %s", c.ScriptFile, err)
+			os.Exit(1)
+		}
+	} else {
+		hostSpecs := args[:commandStart]
+		command := args[commandStart:]
 
-hostspecLoop:
-	for true {
-		glob := hostSpecs[0]
-		attrs := make(herd.HostAttributes)
-		for i, arg := range hostSpecs[1:] {
-			if arg == "+" {
-				hostSpecs = hostSpecs[i+2:]
-				commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
-				continue hostspecLoop
+	hostspecLoop:
+		for true {
+			glob := hostSpecs[0]
+			attrs := make(herd.HostAttributes)
+			for i, arg := range hostSpecs[1:] {
+				if arg == "+" {
+					hostSpecs = hostSpecs[i+2:]
+					commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
+					continue hostspecLoop
+				}
+				parts := strings.SplitN(arg, "=", 2)
+				if len(parts) != 2 {
+					usage()
+					os.Exit(1)
+				}
+				attrs[parts[0]] = parts[1]
 			}
-			parts := strings.SplitN(arg, "=", 2)
-			if len(parts) != 2 {
-				usage()
-				os.Exit(1)
-			}
-			attrs[parts[0]] = parts[1]
 			// We've fallen through, so no more hostspecs
 			commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
 			break
 		}
 		if len(command) > 0 {
 			commands = append(commands, herd.RunCommand{Command: strings.Join(command, " "), Formatter: c.Formatter})
-       }
-   }
+		}
+	}
 
 	providers := herd.LoadProviders(c)
 	runner := herd.NewRunner(providers, &c.Runner)
@@ -103,6 +117,8 @@ hostspecLoop:
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "Usage: herd [args] hostlgob [attr=value...] [+ hostglob [attr=value]...] -- command\n\n")
+	fmt.Fprintf(os.Stderr, "Usage: herd [opts] hostglob [attr=value...] [+ hostglob [attr=value]...] -- command\n")
+	fmt.Fprintf(os.Stderr, "       herd [opts] --list[-oneline] hostglob [attr=value...] [+ hostglob [attr=value]...]\n")
+	fmt.Fprintf(os.Stderr, "       herd [opts] --script scriptfile\n\n")
 	pflag.CommandLine.PrintDefaults()
 }
