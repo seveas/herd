@@ -62,17 +62,24 @@ func (h History) Save(path string) {
 }
 
 type Runner struct {
-	Hosts   []*Host
-	History History
-	Config  RunnerConfig
+	Hosts     Hosts
+	Providers Providers
+	History   History
+	Config    *RunnerConfig
 }
 
-func NewRunner(hosts []*Host, config RunnerConfig) *Runner {
+func NewRunner(providers Providers, config *RunnerConfig) *Runner {
 	return &Runner{
-		Hosts:   hosts,
-		History: make([]HistoryItem, 0),
-		Config:  config,
+		Hosts:     make([]*Host, 0),
+		Providers: providers,
+		History:   make([]HistoryItem, 0),
+		Config:    config,
 	}
+}
+
+func (r *Runner) AddHosts(glob string, attrs HostAttributes) {
+	hosts := append(r.Hosts, r.Providers.GetHosts(glob, attrs)...)
+	r.Hosts = hosts.SortAndUniq()
 }
 
 func (r *Runner) Run(command string) HistoryItem {

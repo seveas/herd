@@ -37,12 +37,10 @@ func main() {
 		commandStart = len(args)
 	}
 
+	commands := make([]herd.Command, 0)
+
 	hostSpecs := args[:commandStart]
 	command := args[commandStart:]
-
-	providers := herd.LoadProviders(c)
-
-	hosts := make(herd.Hosts, 0)
 
 hostspecLoop:
 	for true {
@@ -51,7 +49,7 @@ hostspecLoop:
 		for i, arg := range hostSpecs[1:] {
 			if arg == "+" {
 				hostSpecs = hostSpecs[i+2:]
-				hosts = append(hosts, providers.GetHosts(glob, attrs)...)
+				commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
 				continue hostspecLoop
 			}
 			parts := strings.SplitN(arg, "=", 2)
@@ -60,17 +58,27 @@ hostspecLoop:
 				os.Exit(1)
 			}
 			attrs[parts[0]] = parts[1]
+			// We've fallen through, so no more hostspecs
+			commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
+			break
 		}
-		// We've fallen through, so no more hostspecs
-		hosts = append(hosts, providers.GetHosts(glob, attrs)...)
-		break
-	}
+		if len(command) > 0 {
+			commands = append(commands, herd.RunCommand{Command: strings.Join(command, " "), Formatter: c.Formatter})
+       }
+   }
 
-	hosts = hosts.SortAndUniq()
+	providers := herd.LoadProviders(c)
+	runner := herd.NewRunner(providers, &c.Runner)
+
+	for _, command := range commands {
+		herd.UI.Debugf("%s", command)
+		command.Execute(runner)
+	}
+	runner.End()
 
 	if c.List {
 		if c.ListOneline {
-			for i, host := range hosts {
+			for i, host := range runner.Hosts {
 				if i == 0 {
 					os.Stdout.WriteString(host.Name)
 				} else {
@@ -79,17 +87,13 @@ hostspecLoop:
 			}
 			os.Stdout.WriteString("\n")
 		} else {
-			for _, host := range hosts {
+			for _, host := range runner.Hosts {
 				fmt.Println(host.Name)
 			}
 		}
 		return
 	}
 
-	runner := herd.NewRunner(hosts, c.Runner)
-	hi := runner.Run(strings.Join(command, " "))
-
-	c.Formatter.Format(hi, os.Stdout)
 	if err := os.MkdirAll(c.HistoryDir, 0700); err != nil {
 		herd.UI.Warnf("Unable to create history path %s: %s", c.HistoryDir, err)
 	} else {
