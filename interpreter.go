@@ -11,35 +11,63 @@ import (
 	"github.com/seveas/herd/parser"
 )
 
+type ConfigSetter struct {
+	tokenType int
+	variable  interface{}
+}
+
+var tokenNames = map[int]string{
+	parser.HerdParserNUMBER:   "number",
+	parser.HerdParserSTRING:   "string",
+	parser.HerdParserDURATION: "duration",
+}
+
+var tokenConverters = map[int]func(string) (interface{}, error){
+	parser.HerdParserNUMBER:   func(s string) (interface{}, error) { return strconv.Atoi(s) },
+	parser.HerdParserSTRING:   func(s string) (interface{}, error) { return strconv.Unquote(s) },
+	parser.HerdParserDURATION: func(s string) (interface{}, error) { return time.ParseDuration(s) },
+}
+
 type herdListener struct {
 	*parser.BaseHerdListener
 
 	Commands []Command
 	Config   *AppConfig
+
+	ConfigSetters map[string]ConfigSetter
 }
 
 func (l *herdListener) ExitSet(c *parser.SetContext) {
 	varName := c.GetVarname().GetText()
+	setter, ok := l.ConfigSetters[varName]
+	if !ok {
+		err := fmt.Sprintf("unknown setting: %s", varName)
+		c.GetParser().NotifyErrorListeners(err, c.GetVarname(), nil)
+		return
+	}
+
 	valueCtx := c.GetVarvalue()
 	valueToken := valueCtx.GetStart()
+	tokenType := valueToken.GetTokenType()
 
-	command := SetCommand{VariableName: varName}
-
-	// FIXME: proper dispatch?
-	if varName == "timeout" {
-		command.Variable = &l.Config.Runner.Timeout
-		if valueToken.GetTokenType() != parser.HerdParserNUMBER {
-			p := valueCtx.GetParser()
-			err := fmt.Errorf("timeout value should be a number")
-			p.NotifyErrorListeners(err.Error(), valueToken, nil)
-			return
-		}
-		seconds, _ := strconv.Atoi(valueToken.GetText())
-		command.Value = time.Duration(seconds) * time.Second
-	} else {
-		err := fmt.Errorf("unknown variable")
-		c.GetParser().NotifyErrorListeners(err.Error(), c.GetVarname(), nil)
+	if tokenType != setter.tokenType {
+		p := valueCtx.GetParser()
+		err := fmt.Sprintf("%s value should be a %s, not a %s", varName, tokenNames[setter.tokenType], tokenNames[tokenType])
+		p.NotifyErrorListeners(err, valueToken, nil)
 		return
+	}
+
+	val, err := tokenConverters[tokenType](valueToken.GetText())
+	if err != nil {
+		p := valueCtx.GetParser()
+		p.NotifyErrorListeners(err.Error(), valueToken, nil)
+		return
+	}
+
+	command := SetCommand{
+		VariableName: varName,
+		Variable:     setter.variable,
+		Value:        val,
 	}
 
 	l.Commands = append(l.Commands, command)
@@ -53,16 +81,12 @@ func (l *herdListener) ExitAdd(c *parser.AddContext) {
 		key := filter.GetChild(0).(antlr.ParseTree)
 		valueCtx := filter.GetChild(2).(*parser.ValueContext)
 		valueToken := valueCtx.GetStart()
-		if valueToken.GetTokenType() == parser.HerdParserNUMBER {
-			attrs[key.GetText()], _ = strconv.Atoi(valueToken.GetText())
-		} else {
-			val, err := strconv.Unquote(valueToken.GetText())
-			if err != nil {
-				valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
-				continue
-			}
-			attrs[key.GetText()] = val
+		value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
+		if err != nil {
+			valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
+			continue
 		}
+		attrs[key.GetText()] = value
 	}
 	command := AddHostsCommand{Glob: glob, Attributes: attrs}
 	l.Commands = append(l.Commands, command)
@@ -91,6 +115,24 @@ func ParseScript(fn string, c *AppConfig) ([]Command, error) {
 	l := herdListener{
 		Commands: make([]Command, 0),
 		Config:   c,
+		ConfigSetters: map[string]ConfigSetter{
+			"timeout": ConfigSetter{
+				tokenType: parser.HerdParserDURATION,
+				variable:  &c.Runner.Timeout,
+			},
+			"hosttimeout": ConfigSetter{
+				tokenType: parser.HerdParserDURATION,
+				variable:  &c.Runner.HostTimeout,
+			},
+			"connecttimeout": ConfigSetter{
+				tokenType: parser.HerdParserDURATION,
+				variable:  &c.Runner.ConnectTimeout,
+			},
+			"parallel": ConfigSetter{
+				tokenType: parser.HerdParserNUMBER,
+				variable:  &c.Runner.Parallel,
+			},
+		},
 	}
 	el := HerdErrorListener{HasErrors: false}
 	p.RemoveErrorListeners()
