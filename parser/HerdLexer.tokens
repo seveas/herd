@@ -1,0 +1,16 @@
+T__0=1
+RUN=2
+SET=3
+ADD=4
+HOSTS=5
+NUMBER=6
+IDENTIFIER=7
+GLOB=8
+EQUALS=9
+STRING=10
+SKIP_=11
+'\n'=1
+'set'=3
+'add'=4
+'hosts'=5
+'='=9
