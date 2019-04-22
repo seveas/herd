@@ -107,7 +107,11 @@ func ParseScript(fn string, c *AppConfig) ([]Command, error) {
 	if err != nil {
 		return nil, err
 	}
-	is := antlr.NewInputStream(string(code))
+	return ParseCode(string(code), c)
+}
+
+func ParseCode(code string, c *AppConfig) ([]Command, error) {
+	is := antlr.NewInputStream(code)
 	lexer := parser.NewKatyushaLexer(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
