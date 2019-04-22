@@ -151,6 +151,12 @@ func (r *Runner) Run(command string) HistoryItem {
 	return hi
 }
 
+func (r *Runner) End() {
+	for _, host := range r.Hosts {
+		host.Disconnect()
+	}
+}
+
 func (r *Runner) NewHistoryItem(command string) HistoryItem {
 	return HistoryItem{
 		Hosts:     r.Hosts,

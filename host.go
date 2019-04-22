@@ -22,6 +22,7 @@ type Host struct {
 	Attributes HostAttributes    `json:"-"`
 	SshBanner  string            `json:"-"`
 	SshConfig  *ssh.ClientConfig `json:"-"`
+	Connection *ssh.Client       `json:"-"`
 }
 
 type Hosts []*Host
@@ -65,6 +66,7 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 			Auth:          []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
 			Timeout:       3 * time.Second,
 		},
+		Connection: nil,
 	}
 	h.SshConfig.HostKeyCallback = h.HostKeyCallback
 	h.SshConfig.BannerCallback = h.BannerCallback
@@ -141,17 +143,35 @@ func (e TimeoutError) Error() string {
 	return "Timed out"
 }
 
+func (host *Host) Connect() (*ssh.Client, error) {
+	if host.Connection != nil {
+		return host.Connection, nil
+	}
+	UI.Debugf("Connecting to %s", host.Address())
+	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
+	if err == nil {
+		host.Connection = client
+	}
+	return client, err
+}
+
+func (host *Host) Disconnect() {
+	if host.Connection != nil {
+		UI.Debugf("Disconnecting from %s", host.Address())
+		host.Connection.Close()
+		host.Connection = nil
+	}
+}
+
 func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
 
-	UI.Debugf("Connecting to %s", host.Address())
-	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
+	client, err := host.Connect()
 	if err != nil {
 		r.Err = err
 		c <- r
 		return
 	}
-	defer client.Close()
 	sess, err := client.NewSession()
 	if err != nil {
 		r.Err = err
