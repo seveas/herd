@@ -3,7 +3,6 @@ package herd
 import (
 	"io"
 	"io/ioutil"
-	"log"
 	"os/user"
 	"path"
 
@@ -40,13 +39,12 @@ func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes HostAttrib
 				break
 			}
 			if err != nil {
-				log.Fatalf("Error parsing known hosts file %s: %s", f, err)
-				// FIXME: Can we still parse the rest?
-				break
+				UI.Warnf("Error parsing known hosts file %s: %s", f, err)
+				data = rest
+				continue
 			}
 			data = rest
 			name := matches[0]
-			// FIXME: Save the rest as aliases?
 			if idx, ok := seen[name]; ok {
 				hosts[idx].PublicKeys = append(hosts[idx].PublicKeys, key)
 				continue
