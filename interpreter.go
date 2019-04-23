@@ -99,7 +99,7 @@ func (l *herdListener) ExitRun(c *parser.RunContext) {
 		c.GetParser().NotifyErrorListeners(err.Error(), c.GetStart(), nil)
 		return
 	}
-	l.Commands = append(l.Commands, RunCommand{Command: command, Formatter: l.Config.Formatter})
+	l.Commands = append(l.Commands, RunCommand{Command: command})
 }
 
 func ParseScript(fn string, c *AppConfig) ([]Command, error) {

@@ -13,7 +13,7 @@ import (
 
 func main() {
 	c := herd.NewAppConfig()
-	herd.UI = herd.NewSimpleUI()
+	herd.UI = herd.NewSimpleUI(&c.UI)
 
 	pflag.BoolVarP(&c.List, "list", "l", c.List, "List matching hosts (one per line) instead of executing commands")
 	pflag.BoolVarP(&c.ListOneline, "list-oneline", "L", c.List, "List matching hosts (all on one line) instead of executing commands")
@@ -90,7 +90,7 @@ hostspecLoop:
 
 	// Add a command specified on the command line, if we have one
 	if haveCommand {
-		commands = append(commands, herd.RunCommand{Command: strings.Join(command, " "), Formatter: c.Formatter})
+		commands = append(commands, herd.RunCommand{Command: strings.Join(command, " ")})
 	}
 
 	// When we have a script, parse it

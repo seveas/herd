@@ -7,6 +7,15 @@ import (
 	"time"
 )
 
+type LogLevel uint
+
+const (
+	ERROR LogLevel = iota
+	WARNING
+	INFO
+	DEBUG
+)
+
 type RunnerConfig struct {
 	ConnectTimeout time.Duration
 	HostTimeout    time.Duration
@@ -14,14 +23,19 @@ type RunnerConfig struct {
 	Parallel       int
 }
 
+type UIConfig struct {
+	Formatter Formatter
+	LogLevel  LogLevel
+}
+
 type AppConfig struct {
 	List        bool
 	ListOneline bool
 	ScriptFile  string
 	Interactive bool
-	Formatter   Formatter
 	HistoryDir  string
 	Runner      RunnerConfig
+	UI          UIConfig
 }
 
 func NewAppConfig() AppConfig {
@@ -34,7 +48,6 @@ func (c *AppConfig) SetDefaults() {
 	c.List = false
 	c.ListOneline = false
 	c.Interactive = false
-	c.Formatter = NewPrettyFormatter()
 	usr, err := user.Current()
 	if err == nil && usr.HomeDir != "" {
 		c.HistoryDir = path.Join(usr.HomeDir, ".herd", "history")
@@ -45,4 +58,6 @@ func (c *AppConfig) SetDefaults() {
 	c.Runner.HostTimeout = 10 * time.Second
 	c.Runner.Timeout = 60 * time.Second
 	c.Runner.Parallel = 0
+	c.UI.Formatter = NewPrettyFormatter()
+	c.UI.LogLevel = DEBUG
 }
