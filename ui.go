@@ -3,6 +3,7 @@ package katyusha
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/mgutz/ansi"
 )
@@ -12,20 +13,23 @@ type KatyushaUI interface {
 	Debugf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
 	Progress(total, todo, queued, doneOk, doneFaile, doneError int)
+	PrintHistoryItem(hi HistoryItem)
 }
 
 type SimpleUI struct {
 	AtStart      bool
 	LastProgress string
 	Pchan        chan string
+	Config       *UIConfig
 }
 
-func NewSimpleUI() *SimpleUI {
+func NewSimpleUI(config *UIConfig) *SimpleUI {
 	c := make(chan string)
 	ui := &SimpleUI{
 		AtStart:      true,
 		LastProgress: "",
 		Pchan:        c,
+		Config:       config,
 	}
 	go ui.Printer()
 	return ui
@@ -52,26 +56,47 @@ func (ui *SimpleUI) Printer() {
 	}
 }
 
+func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
+	buf := strings.Builder{}
+	ui.Config.Formatter.FormatHistoryItem(hi, &buf)
+	ui.Pchan <- buf.String()
+}
+
 func (ui *SimpleUI) Printf(format string, v ...interface{}) {
+	if ui.Config.LogLevel < INFO {
+		return
+	}
 	ui.Pchan <- fmt.Sprintf(format, v...)
 }
 
 func (ui *SimpleUI) Errorf(format string, v ...interface{}) {
+	if ui.Config.LogLevel < ERROR {
+		return
+	}
 	format = ansi.Color(format, "red+b")
 	ui.Printf(format+"\n", v...)
 }
 
 func (ui *SimpleUI) Warnf(format string, v ...interface{}) {
+	if ui.Config.LogLevel < WARNING {
+		return
+	}
 	format = ansi.Color(format, "yellow")
 	ui.Printf(format+"\n", v...)
 }
 
 func (ui *SimpleUI) Debugf(format string, v ...interface{}) {
+	if ui.Config.LogLevel < DEBUG {
+		return
+	}
 	format = ansi.Color(format, "black+h")
 	ui.Printf(format+"\n", v...)
 }
 
 func (ui *SimpleUI) Progress(total, todo, queued, doneOk, doneFail, doneError int) {
+	if ui.Config.LogLevel < INFO {
+		return
+	}
 	if queued >= 0 {
 		ui.Printf("\r\033[2kWaiting... %d/%d done, %d queued, %d ok, %d fail, %d error", total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {

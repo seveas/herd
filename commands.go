@@ -2,7 +2,6 @@ package katyusha
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 )
 
@@ -42,14 +41,12 @@ func (c AddHostsCommand) String() string {
 }
 
 type RunCommand struct {
-	Command   string
-	Formatter Formatter
+	Command string
 }
 
 func (c RunCommand) Execute(r *Runner) error {
 	hi := r.Run(c.Command)
-	// FIXME should go through the UI layer
-	c.Formatter.Format(hi, os.Stdout)
+	UI.PrintHistoryItem(hi)
 	return nil
 }
 
