@@ -40,6 +40,37 @@ func (c AddHostsCommand) String() string {
 	return fmt.Sprintf("add hosts %s %v", c.Glob, c.Attributes)
 }
 
+type RemoveHostsCommand struct {
+	Glob       string
+	Attributes HostAttributes
+}
+
+func (c RemoveHostsCommand) Execute(r *Runner) error {
+	r.RemoveHosts(c.Glob, c.Attributes)
+	return nil
+}
+
+func (c RemoveHostsCommand) String() string {
+	return fmt.Sprintf("remove hosts %s %v", c.Glob, c.Attributes)
+}
+
+type ListHostsCommand struct {
+	OneLine bool
+}
+
+func (c ListHostsCommand) Execute(r *Runner) error {
+	r.ListHosts(c.OneLine)
+	return nil
+}
+
+func (c ListHostsCommand) String() string {
+	if c.OneLine {
+		return "list hosts --oneline"
+	} else {
+		return "list hosts"
+	}
+}
+
 type RunCommand struct {
 	Command string
 }

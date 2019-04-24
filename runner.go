@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"time"
 )
 
@@ -80,6 +81,34 @@ func NewRunner(providers Providers, config *RunnerConfig) *Runner {
 func (r *Runner) AddHosts(glob string, attrs HostAttributes) {
 	hosts := append(r.Hosts, r.Providers.GetHosts(glob, attrs)...)
 	r.Hosts = hosts.SortAndUniq()
+}
+
+func (r *Runner) RemoveHosts(glob string, attrs HostAttributes) {
+	newHosts := make([]*Host, 0)
+	for _, host := range r.Hosts {
+		if !host.Match(glob, attrs) {
+			newHosts = append(newHosts, host)
+		}
+	}
+	r.Hosts = newHosts
+}
+
+func (r *Runner) ListHosts(oneline bool) {
+	if oneline {
+		hosts := strings.Builder{}
+		for i, host := range r.Hosts {
+			if i == 0 {
+				fmt.Fprint(&hosts, host.Name)
+			} else {
+				fmt.Fprintf(&hosts, ",%s", host.Name)
+			}
+		}
+		UI.Println(hosts.String())
+	} else {
+		for _, host := range r.Hosts {
+			UI.Println(host.Name)
+		}
+	}
 }
 
 func (r *Runner) Run(command string) HistoryItem {

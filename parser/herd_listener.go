@@ -23,6 +23,12 @@ type HerdListener interface {
 	// EnterAdd is called when entering the add production.
 	EnterAdd(c *AddContext)
 
+	// EnterRemove is called when entering the remove production.
+	EnterRemove(c *RemoveContext)
+
+	// EnterList is called when entering the list production.
+	EnterList(c *ListContext)
+
 	// EnterFilter is called when entering the filter production.
 	EnterFilter(c *FilterContext)
 
@@ -43,6 +49,12 @@ type HerdListener interface {
 
 	// ExitAdd is called when exiting the add production.
 	ExitAdd(c *AddContext)
+
+	// ExitRemove is called when exiting the remove production.
+	ExitRemove(c *RemoveContext)
+
+	// ExitList is called when exiting the list production.
+	ExitList(c *ListContext)
 
 	// ExitFilter is called when exiting the filter production.
 	ExitFilter(c *FilterContext)

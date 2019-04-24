@@ -9,6 +9,8 @@ import (
 )
 
 type HerdUI interface {
+	Println(str string)
+	Printf(format string, v ...interface{})
 	Warnf(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
@@ -60,6 +62,13 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 	buf := strings.Builder{}
 	ui.Config.Formatter.FormatHistoryItem(hi, &buf)
 	ui.Pchan <- buf.String()
+}
+
+func (ui *SimpleUI) Println(str string) {
+	if ui.Config.LogLevel < INFO {
+		return
+	}
+	ui.Pchan <- str + "\n"
 }
 
 func (ui *SimpleUI) Printf(format string, v ...interface{}) {

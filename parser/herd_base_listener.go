@@ -51,6 +51,18 @@ func (s *BaseHerdListener) EnterAdd(ctx *AddContext) {}
 // ExitAdd is called when production add is exited.
 func (s *BaseHerdListener) ExitAdd(ctx *AddContext) {}
 
+// EnterRemove is called when production remove is entered.
+func (s *BaseHerdListener) EnterRemove(ctx *RemoveContext) {}
+
+// ExitRemove is called when production remove is exited.
+func (s *BaseHerdListener) ExitRemove(ctx *RemoveContext) {}
+
+// EnterList is called when production list is entered.
+func (s *BaseHerdListener) EnterList(ctx *ListContext) {}
+
+// ExitList is called when production list is exited.
+func (s *BaseHerdListener) ExitList(ctx *ListContext) {}
+
 // EnterFilter is called when production filter is entered.
 func (s *BaseHerdListener) EnterFilter(ctx *FilterContext) {}
 
