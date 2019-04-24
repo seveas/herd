@@ -75,8 +75,20 @@ func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 
 func (l *katyushaListener) ExitAdd(c *parser.AddContext) {
 	glob := c.GetGlob().GetText()
+	attrs := l.ParseFilters(c.AllFilter())
+	command := AddHostsCommand{Glob: glob, Attributes: attrs}
+	l.Commands = append(l.Commands, command)
+}
+
+func (l *katyushaListener) ExitRemove(c *parser.RemoveContext) {
+	glob := c.GetGlob().GetText()
+	attrs := l.ParseFilters(c.AllFilter())
+	command := RemoveHostsCommand{Glob: glob, Attributes: attrs}
+	l.Commands = append(l.Commands, command)
+}
+
+func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) map[string]interface{} {
 	attrs := HostAttributes{}
-	filters := c.AllFilter()
 	for _, filter := range filters {
 		key := filter.GetChild(0).(antlr.ParseTree)
 		valueCtx := filter.GetChild(2).(*parser.ValueContext)
@@ -88,7 +100,15 @@ func (l *katyushaListener) ExitAdd(c *parser.AddContext) {
 		}
 		attrs[key.GetText()] = value
 	}
-	command := AddHostsCommand{Glob: glob, Attributes: attrs}
+	return attrs
+}
+
+func (l *katyushaListener) ExitList(c *parser.ListContext) {
+	oneline := c.GetOneline()
+	command := ListHostsCommand{OneLine: false}
+	if oneline != nil {
+		command.OneLine = true
+	}
 	l.Commands = append(l.Commands, command)
 }
 

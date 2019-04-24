@@ -67,6 +67,10 @@ func (l *InteractiveLoop) AutoComplete() readline.AutoCompleter {
 			p("parallel"),
 		),
 		p("add hosts"),
+		p("remove hosts"),
+		p("list hosts",
+			p("oneline"),
+		),
 		p("run"),
 	)
 }

@@ -66,14 +66,24 @@ func main() {
 
 	// First we add hosts from the command line, in all modes
 	commands := make([]katyusha.Command, 0)
+	add := true
 hostspecLoop:
 	for len(hostSpecs) > 0 {
 		glob := hostSpecs[0]
 		attrs := make(katyusha.HostAttributes)
 		for i, arg := range hostSpecs[1:] {
-			if arg == "+" {
+			if arg == "+" || arg == "-" {
 				hostSpecs = hostSpecs[i+2:]
-				commands = append(commands, katyusha.AddHostsCommand{Glob: glob, Attributes: attrs})
+				if add {
+					commands = append(commands, katyusha.AddHostsCommand{Glob: glob, Attributes: attrs})
+				} else {
+					commands = append(commands, katyusha.RemoveHostsCommand{Glob: glob, Attributes: attrs})
+				}
+				if arg == "+" {
+					add = true
+				} else {
+					add = false
+				}
 				continue hostspecLoop
 			}
 			parts := strings.SplitN(arg, "=", 2)
@@ -84,7 +94,11 @@ hostspecLoop:
 			attrs[parts[0]] = parts[1]
 		}
 		// We've fallen through, so no more hostspecs
-		commands = append(commands, katyusha.AddHostsCommand{Glob: glob, Attributes: attrs})
+		if add {
+			commands = append(commands, katyusha.AddHostsCommand{Glob: glob, Attributes: attrs})
+		} else {
+			commands = append(commands, katyusha.RemoveHostsCommand{Glob: glob, Attributes: attrs})
+		}
 		break
 	}
 
@@ -106,6 +120,14 @@ hostspecLoop:
 		}
 	}
 
+	// Display list of hosts if requested
+	if c.List {
+		commands = append(commands, katyusha.ListHostsCommand{OneLine: false})
+	}
+	if c.ListOneline {
+		commands = append(commands, katyusha.ListHostsCommand{OneLine: true})
+	}
+
 	// Execute commands
 	providers := katyusha.LoadProviders(c)
 	runner := katyusha.NewRunner(providers, &c.Runner)
@@ -122,23 +144,6 @@ hostspecLoop:
 	}
 
 	runner.End()
-
-	// Display list of hosts if requested
-	if c.List {
-		for _, host := range runner.Hosts {
-			fmt.Println(host.Name)
-		}
-	}
-	if c.ListOneline {
-		for i, host := range runner.Hosts {
-			if i == 0 {
-				os.Stdout.WriteString(host.Name)
-			} else {
-				fmt.Printf(",%s", host.Name)
-			}
-		}
-		os.Stdout.WriteString("\n")
-	}
 
 	// Save history, if there is any
 	if len(runner.History) > 0 {
