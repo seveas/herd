@@ -3,6 +3,7 @@ package katyusha
 import (
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,6 +27,9 @@ var tokenConverters = map[int]func(string) (interface{}, error){
 	parser.KatyushaParserNUMBER:   func(s string) (interface{}, error) { return strconv.Atoi(s) },
 	parser.KatyushaParserSTRING:   func(s string) (interface{}, error) { return strconv.Unquote(s) },
 	parser.KatyushaParserDURATION: func(s string) (interface{}, error) { return time.ParseDuration(s) },
+	parser.KatyushaParserREGEXP: func(s string) (interface{}, error) {
+		return regexp.Compile(strings.Replace(s[1:len(s)-1], "\\/", "/", -1))
+	},
 }
 
 type katyushaListener struct {
@@ -91,14 +95,24 @@ func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) map[str
 	attrs := HostAttributes{}
 	for _, filter := range filters {
 		key := filter.GetChild(0).(antlr.ParseTree)
-		valueCtx := filter.GetChild(2).(*parser.ValueContext)
-		valueToken := valueCtx.GetStart()
-		value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
-		if err != nil {
-			valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
-			continue
+		if filter.GetChild(1).(antlr.ParseTree).GetText() == "=" {
+			valueCtx := filter.GetChild(2).(*parser.ValueContext)
+			valueToken := valueCtx.GetStart()
+			value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
+			if err != nil {
+				valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
+				continue
+			}
+			attrs[key.GetText()] = value
+		} else {
+			valueToken := filter.GetChild(2).(*antlr.TerminalNodeImpl).GetSymbol()
+			value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
+			if err != nil {
+				filter.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
+				continue
+			}
+			attrs[key.GetText()] = value
 		}
-		attrs[key.GetText()] = value
 	}
 	return attrs
 }
