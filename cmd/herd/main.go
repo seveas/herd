@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -87,11 +88,21 @@ hostspecLoop:
 				continue hostspecLoop
 			}
 			parts := strings.SplitN(arg, "=", 2)
-			if len(parts) != 2 {
+			if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
 				usage()
 				os.Exit(1)
 			}
-			attrs[parts[0]] = parts[1]
+			if parts[1][0] == '~' {
+				re, err := regexp.Compile(parts[1][1:])
+				if err != nil {
+					herd.UI.Errorf("Invalid regexp /%s/: %s", parts[1][1:], err)
+					os.Exit(1)
+				} else {
+					attrs[parts[0]] = re
+				}
+			} else {
+				attrs[parts[0]] = parts[1]
+			}
 		}
 		// We've fallen through, so no more hostspecs
 		if add {

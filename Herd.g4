@@ -13,9 +13,13 @@ NUMBER: [0-9]+ ;
 IDENTIFIER: [a-zA-Z_.][a-zA-Z_.0-9]+ ;
 GLOB: [-a-zA-Z.0-9*]+ ;
 EQUALS: '=' ;
+MATCHES: '=~' ;
 STRING
  : '\'' ( '\\' . | ~[\\\r\n\f'] )* '\''
  | '"' ( '\\' . | ~[\\\r\n\f"] )* '"'
+ ;
+REGEXP
+ : '/' ( '\\' . | ~[\\\r\n\f/] )* '/'
  ;
 
 fragment COMMENT: '#' ~('\n')+;
@@ -30,5 +34,5 @@ set: SET varname=IDENTIFIER EQUALS? varvalue=value ;
 add: ADD HOSTS glob=GLOB filters=filter* ;
 remove: REMOVE HOSTS glob=GLOB filters=filter* ;
 list: LIST HOSTS oneline=ONELINE? ;
-filter: IDENTIFIER EQUALS value ;
+filter: IDENTIFIER ( EQUALS value | MATCHES REGEXP );
 value: NUMBER | STRING | DURATION ;

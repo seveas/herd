@@ -7,6 +7,8 @@ import (
 	"net"
 	"os/user"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -90,6 +92,9 @@ func (h *Host) Address() string {
 	return fmt.Sprintf("%s:22", h.Name)
 }
 
+var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
+var _stringType = reflect.TypeOf("")
+
 func (h *Host) Match(hostnameGlob string, attributes HostAttributes) bool {
 	hostMatched := false
 
@@ -103,8 +108,21 @@ func (h *Host) Match(hostnameGlob string, attributes HostAttributes) bool {
 
 	for attr, value := range attributes {
 		val, ok := h.Attributes[attr]
-		if !ok || val != value {
+		if !ok {
 			return false
+		}
+		t1, t2 := reflect.TypeOf(value), reflect.TypeOf(val)
+		if t1 != t2 && !(t1 == _regexpType && t2 == _stringType) {
+			return false
+		}
+		if t1 == _regexpType {
+			if !value.(*regexp.Regexp).MatchString(val.(string)) {
+				return false
+			}
+		} else {
+			if val != value {
+				return false
+			}
 		}
 	}
 

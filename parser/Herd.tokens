@@ -11,8 +11,10 @@ NUMBER=10
 IDENTIFIER=11
 GLOB=12
 EQUALS=13
-STRING=14
-SKIP_=15
+MATCHES=14
+STRING=15
+REGEXP=16
+SKIP_=17
 '\n'=1
 'set'=3
 'add'=4
@@ -21,3 +23,4 @@ SKIP_=15
 'hosts'=7
 '--oneline'=8
 '='=13
+'=~'=14
