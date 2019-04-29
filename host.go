@@ -25,6 +25,7 @@ type Host struct {
 	SshBanner  string            `json:"-"`
 	SshConfig  *ssh.ClientConfig `json:"-"`
 	Connection *ssh.Client       `json:"-"`
+	LastResult *Result           `json:"-"`
 }
 
 type Hosts []*Host
@@ -69,6 +70,7 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 			Timeout:       3 * time.Second,
 		},
 		Connection: nil,
+		LastResult: nil,
 	}
 	h.SshConfig.HostKeyCallback = h.HostKeyCallback
 	h.SshConfig.BannerCallback = h.BannerCallback
@@ -109,7 +111,19 @@ func (h *Host) Match(hostnameGlob string, attributes HostAttributes) bool {
 	for attr, value := range attributes {
 		val, ok := h.Attributes[attr]
 		if !ok {
-			return false
+			if h.LastResult != nil {
+				if attr == "stdout" {
+					val = string(h.LastResult.Stdout)
+				} else if attr == "stderr" {
+					val = string(h.LastResult.Stderr)
+				} else if attr == "exitstatus" {
+					val = h.LastResult.ExitStatus
+				} else {
+					return false
+				}
+			} else {
+				return false
+			}
 		}
 		t1, t2 := reflect.TypeOf(value), reflect.TypeOf(val)
 		if t1 != t2 && !(t1 == _regexpType && t2 == _stringType) {
@@ -227,5 +241,6 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
+	host.LastResult = &r
 	c <- r
 }
