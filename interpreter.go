@@ -94,6 +94,12 @@ func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
 func (l *herdListener) ParseFilters(filters []parser.IFilterContext) map[string]interface{} {
 	attrs := HostAttributes{}
 	for _, filter := range filters {
+		// If there already are lexer/parser errors, don't bother anymore
+		for _, child := range filter.GetChildren() {
+			if _, ok := child.(*antlr.ErrorNodeImpl); ok {
+				return attrs
+			}
+		}
 		key := filter.GetChild(0).(antlr.ParseTree)
 		if filter.GetChild(1).(antlr.ParseTree).GetText() == "=" {
 			valueCtx := filter.GetChild(2).(*parser.ValueContext)
