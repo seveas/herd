@@ -14,10 +14,9 @@ import (
 
 type ConfigSetter struct {
 	tokenType int
-	variable  interface{}
 }
 
-var tokenNames = map[int]string{
+var typeNames = map[int]string{
 	parser.KatyushaParserNUMBER:   "number",
 	parser.KatyushaParserSTRING:   "string",
 	parser.KatyushaParserDURATION: "duration",
@@ -32,18 +31,24 @@ var tokenConverters = map[int]func(string) (interface{}, error){
 	},
 }
 
+var tokenTypes = map[string]int{
+	"Timeout":        parser.KatyushaParserDURATION,
+	"HostTimeout":    parser.KatyushaParserDURATION,
+	"ConnectTimeout": parser.KatyushaParserDURATION,
+	"Parallel":       parser.KatyushaParserNUMBER,
+}
+
 type katyushaListener struct {
 	*parser.BaseKatyushaListener
 
 	Commands []Command
-	Config   *AppConfig
 
 	ConfigSetters map[string]ConfigSetter
 }
 
 func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 	varName := c.GetVarname().GetText()
-	setter, ok := l.ConfigSetters[varName]
+	tokenType, ok := tokenTypes[varName]
 	if !ok {
 		err := fmt.Sprintf("unknown setting: %s", varName)
 		c.GetParser().NotifyErrorListeners(err, c.GetVarname(), nil)
@@ -52,16 +57,16 @@ func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 
 	valueCtx := c.GetVarvalue()
 	valueToken := valueCtx.GetStart()
-	tokenType := valueToken.GetTokenType()
+	valueType := valueToken.GetTokenType()
 
-	if tokenType != setter.tokenType {
+	if valueType != tokenType {
 		p := valueCtx.GetParser()
-		err := fmt.Sprintf("%s value should be a %s, not a %s", varName, tokenNames[setter.tokenType], tokenNames[tokenType])
+		err := fmt.Sprintf("%s value should be a %s, not a %s", varName, typeNames[tokenType], typeNames[valueType])
 		p.NotifyErrorListeners(err, valueToken, nil)
 		return
 	}
 
-	val, err := tokenConverters[tokenType](valueToken.GetText())
+	val, err := tokenConverters[valueType](valueToken.GetText())
 	if err != nil {
 		p := valueCtx.GetParser()
 		p.NotifyErrorListeners(err.Error(), valueToken, nil)
@@ -69,9 +74,8 @@ func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 	}
 
 	command := SetCommand{
-		VariableName: varName,
-		Variable:     setter.variable,
-		Value:        val,
+		Variable: varName,
+		Value:    val,
 	}
 
 	l.Commands = append(l.Commands, command)
@@ -104,6 +108,10 @@ func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) map[str
 		if filter.GetChild(1).(antlr.ParseTree).GetText() == "=" {
 			valueCtx := filter.GetChild(2).(*parser.ValueContext)
 			valueToken := valueCtx.GetStart()
+			if _, ok := tokenConverters[valueToken.GetTokenType()]; !ok {
+				// Unknown value, implying a syntax error
+				return attrs
+			}
 			value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
 			if err != nil {
 				valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
@@ -142,15 +150,15 @@ func (l *katyushaListener) ExitRun(c *parser.RunContext) {
 	l.Commands = append(l.Commands, RunCommand{Command: command})
 }
 
-func ParseScript(fn string, c *AppConfig) ([]Command, error) {
+func ParseScript(fn string) ([]Command, error) {
 	code, err := ioutil.ReadFile(fn)
 	if err != nil {
 		return nil, err
 	}
-	return ParseCode(string(code), c)
+	return ParseCode(string(code))
 }
 
-func ParseCode(code string, c *AppConfig) ([]Command, error) {
+func ParseCode(code string) ([]Command, error) {
 	is := antlr.NewInputStream(code)
 	lexer := parser.NewKatyushaLexer(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -158,25 +166,6 @@ func ParseCode(code string, c *AppConfig) ([]Command, error) {
 	p := parser.NewKatyushaParser(stream)
 	l := katyushaListener{
 		Commands: make([]Command, 0),
-		Config:   c,
-		ConfigSetters: map[string]ConfigSetter{
-			"timeout": ConfigSetter{
-				tokenType: parser.KatyushaParserDURATION,
-				variable:  &c.Runner.Timeout,
-			},
-			"hosttimeout": ConfigSetter{
-				tokenType: parser.KatyushaParserDURATION,
-				variable:  &c.Runner.HostTimeout,
-			},
-			"connecttimeout": ConfigSetter{
-				tokenType: parser.KatyushaParserDURATION,
-				variable:  &c.Runner.ConnectTimeout,
-			},
-			"parallel": ConfigSetter{
-				tokenType: parser.KatyushaParserNUMBER,
-				variable:  &c.Runner.Parallel,
-			},
-		},
 	}
 	el := KatyushaErrorListener{HasErrors: false}
 	p.RemoveErrorListeners()

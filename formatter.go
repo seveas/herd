@@ -8,7 +8,8 @@ import (
 	"github.com/mgutz/ansi"
 )
 
-type PrettyFormatter struct {
+var Formatters = map[string]Formatter{
+	"pretty": PrettyFormatter{},
 }
 
 type Formatter interface {
@@ -17,8 +18,7 @@ type Formatter interface {
 	FormatResult(r Result, w io.Writer)
 }
 
-func NewPrettyFormatter() PrettyFormatter {
-	return PrettyFormatter{}
+type PrettyFormatter struct {
 }
 
 func (f PrettyFormatter) FormatHistoryItem(hi HistoryItem, w io.Writer) {

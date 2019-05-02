@@ -2,7 +2,8 @@ package katyusha
 
 import (
 	"fmt"
-	"reflect"
+
+	"github.com/spf13/viper"
 )
 
 type Command interface {
@@ -10,20 +11,17 @@ type Command interface {
 }
 
 type SetCommand struct {
-	VariableName string
-	// Pointer to the actual variable
-	Variable interface{}
-	// New value. The setter code *must* make sure that it's set to something of the correct type
-	Value interface{}
+	Variable string
+	Value    interface{}
 }
 
 func (c SetCommand) Execute(r *Runner) error {
-	reflect.ValueOf(c.Variable).Elem().Set(reflect.ValueOf(c.Value))
+	viper.Set(c.Variable, c.Value)
 	return nil
 }
 
 func (c SetCommand) String() string {
-	return fmt.Sprintf("set %s %v", c.VariableName, c.Value)
+	return fmt.Sprintf("set %s %v", c.Variable, c.Value)
 }
 
 type AddHostsCommand struct {

@@ -3,22 +3,21 @@ package katyusha
 import (
 	"io"
 	"io/ioutil"
-	"os/user"
 	"path"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
 
 type KnownHostsProvider struct {
 	Files []string
-	User  user.User
 }
 
 func NewKnownHostsProvider() *KnownHostsProvider {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
-	usr, err := user.Current()
-	if err == nil && usr.HomeDir != "" {
-		files = append(files, path.Join(usr.HomeDir, ".ssh", "known_hosts"))
+	home, err := homedir.Dir()
+	if err == nil {
+		files = append(files, path.Join(home, ".ssh", "known_hosts"))
 	}
 	return &KnownHostsProvider{
 		Files: files,
