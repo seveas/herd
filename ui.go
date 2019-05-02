@@ -1,6 +1,7 @@
 package katyusha
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -25,6 +26,7 @@ type KatyushaUI interface {
 	Errorf(format string, v ...interface{})
 	Progress(total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
+	PrintResult(r Result)
 	Wait()
 }
 
@@ -80,6 +82,15 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 	}
 	buf := strings.Builder{}
 	ui.Formatter.FormatHistoryItem(hi, &buf)
+	ui.Pchan <- buf.String()
+}
+
+func (ui *SimpleUI) PrintResult(r Result) {
+	if viper.GetInt("LogLevel") < NORMAL {
+		return
+	}
+	buf := strings.Builder{}
+	ui.Formatter.FormatResult(r, &buf)
 	ui.Pchan <- buf.String()
 }
 
@@ -140,6 +151,43 @@ func (ui *SimpleUI) Progress(total, todo, queued, doneOk, doneFail, doneError in
 	if todo == 0 {
 		ui.Pchan <- "\n"
 	}
+}
+
+type ByteWriter interface {
+	Write([]byte) (int, error)
+	Bytes() []byte
+}
+
+type LineWriterBuffer struct {
+	buf     *bytes.Buffer
+	lineBuf []byte
+	prefix  string
+	pos     int
+}
+
+func NewLineWriterBuffer(prefix string, isError bool) *LineWriterBuffer {
+	if isError {
+		prefix = ansi.Color(prefix, "red")
+	}
+	return &LineWriterBuffer{buf: bytes.NewBuffer([]byte{}), prefix: prefix, pos: 0, lineBuf: []byte{}}
+}
+
+func (buf *LineWriterBuffer) Write(p []byte) (int, error) {
+	n, err := buf.buf.Write(p)
+	buf.lineBuf = bytes.Join([][]byte{buf.lineBuf, p}, []byte{})
+	for {
+		idx := bytes.Index(buf.lineBuf, []byte("\n"))
+		if idx == -1 {
+			break
+		}
+		UI.Printf("%s %s", buf.prefix, buf.lineBuf[:idx+1])
+		buf.lineBuf = buf.lineBuf[idx+1:]
+	}
+	return n, err
+}
+
+func (buf *LineWriterBuffer) Bytes() []byte {
+	return buf.buf.Bytes()
 }
 
 var UI KatyushaUI
