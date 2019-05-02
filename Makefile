@@ -18,3 +18,4 @@ vet:
 	go vet github.com/seveas/katyusha github.com/seveas/katyusha/katyusha github.com/seveas/katyusha/katyusha/cmd
 
 test: fmt vet
+	go test github.com/seveas/katyusha github.com/seveas/katyusha/katyusha github.com/seveas/katyusha/katyusha/cmd
