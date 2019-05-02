@@ -74,8 +74,7 @@ type RunCommand struct {
 }
 
 func (c RunCommand) Execute(r *Runner) error {
-	hi := r.Run(c.Command)
-	UI.PrintHistoryItem(hi)
+	r.Run(c.Command)
 	return nil
 }
 

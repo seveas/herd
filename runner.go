@@ -117,6 +117,9 @@ func (r *Runner) Run(command string) HistoryItem {
 	hi := r.NewHistoryItem(command)
 	c := make(chan Result)
 	ctx, cancel := context.WithCancel(context.Background())
+	if viper.GetString("Output") == "line" {
+		ctx = context.WithValue(ctx, "hostnamelen", maxHostNameLen(hi.Hosts))
+	}
 	defer cancel()
 	queued := -1
 	todo := len(hi.Hosts)
@@ -168,6 +171,9 @@ func (r *Runner) Run(command string) HistoryItem {
 				doneFail++
 			}
 			hi.Results[r.Host] = r
+			if viper.GetString("Output") == "host" {
+				UI.PrintResult(r)
+			}
 			todo--
 		}
 		UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
@@ -175,6 +181,9 @@ func (r *Runner) Run(command string) HistoryItem {
 	hi.EndTime = time.Now()
 	ticker.Stop()
 	r.History = append(r.History, hi)
+	if viper.GetString("Output") == "all" {
+		UI.PrintHistoryItem(hi)
+	}
 	return hi
 }
 
@@ -201,4 +210,14 @@ func (r *Runner) NewHistoryItem(command string) HistoryItem {
 		Results:   make(map[string]Result),
 		StartTime: time.Now(),
 	}
+}
+
+func maxHostNameLen(hosts []*Host) int {
+	max := 0
+	for _, host := range hosts {
+		if len(host.Name) > max {
+			max = len(host.Name)
+		}
+	}
+	return max
 }

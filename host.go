@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -212,8 +213,15 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	}
 	defer sess.Close()
 
-	stdout := bytes.NewBuffer([]byte{})
-	stderr := bytes.NewBuffer([]byte{})
+	var stdout, stderr ByteWriter
+	if viper.GetString("Output") == "line" {
+		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
+		stdout = NewLineWriterBuffer(prefix, false)
+		stderr = NewLineWriterBuffer(prefix, true)
+	} else {
+		stdout = bytes.NewBuffer([]byte{})
+		stderr = bytes.NewBuffer([]byte{})
+	}
 	sess.Stdout = stdout
 	sess.Stderr = stderr
 	ec := make(chan error)

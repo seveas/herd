@@ -32,10 +32,12 @@ func init() {
 	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
+	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
 	viper.BindPFlag("Parallel", rootCmd.PersistentFlags().Lookup("parallel"))
+	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
 }
 
 func initConfig() {
