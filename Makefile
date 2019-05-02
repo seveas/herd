@@ -18,3 +18,4 @@ vet:
 	go vet github.com/seveas/herd github.com/seveas/herd/herd github.com/seveas/herd/herd/cmd
 
 test: fmt vet
+	go test github.com/seveas/herd github.com/seveas/herd/herd github.com/seveas/herd/herd/cmd
