@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -7,10 +7,41 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/seveas/herd"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
+var interactiveCmd = &cobra.Command{
+	Use:                   "interactive [filters]",
+	Short:                 "Interactive shell",
+	RunE:                  runInteractive,
+	DisableFlagsInUseLine: true,
+}
+
+func init() {
+	rootCmd.AddCommand(interactiveCmd)
+}
+
+func runInteractive(cmd *cobra.Command, args []string) error {
+	filters, rest := splitArgs(cmd, args)
+	if len(rest) > 0 {
+		return fmt.Errorf("Command provided, but interactive mode doesn't support that")
+	}
+	commands, err := filterCommands(filters)
+	if err != nil {
+		return err
+	}
+	runner := runCommands(commands, false)
+
+	// Enter interactive mode
+	il := &InteractiveLoop{Runner: runner}
+	il.Run()
+	runner.End()
+
+	return nil
+}
+
 type InteractiveLoop struct {
-	Config *herd.AppConfig
 	Runner *herd.Runner
 }
 
@@ -18,7 +49,7 @@ func (l *InteractiveLoop) Run() {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          l.Prompt(),
 		AutoComplete:    l.AutoComplete(),
-		HistoryFile:     path.Join(l.Config.HistoryDir, "interactive"),
+		HistoryFile:     path.Join(viper.GetString("HistoryDir"), "interactive"),
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 	})
@@ -40,7 +71,7 @@ func (l *InteractiveLoop) Run() {
 		if line == "exit" {
 			break
 		}
-		commands, err := herd.ParseCode(line+"\n", l.Config)
+		commands, err := herd.ParseCode(line + "\n")
 		if err != nil {
 			herd.UI.Errorf(err.Error())
 			continue
@@ -61,10 +92,10 @@ func (l *InteractiveLoop) AutoComplete() readline.AutoCompleter {
 	p := readline.PcItem
 	return readline.NewPrefixCompleter(
 		p("set",
-			p("timeout"),
-			p("hosttimeout"),
-			p("connecttimeout"),
-			p("parallel"),
+			p("Timeout"),
+			p("HostTimeout"),
+			p("ConnectTimeout"),
+			p("Parallel"),
 		),
 		p("add hosts"),
 		p("remove hosts"),

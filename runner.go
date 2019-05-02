@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Result struct {
@@ -66,15 +70,13 @@ type Runner struct {
 	Hosts     Hosts
 	Providers Providers
 	History   History
-	Config    *RunnerConfig
 }
 
-func NewRunner(providers Providers, config *RunnerConfig) *Runner {
+func NewRunner(providers Providers) *Runner {
 	return &Runner{
 		Hosts:     make([]*Host, 0),
 		Providers: providers,
 		History:   make([]HistoryItem, 0),
-		Config:    config,
 	}
 }
 
@@ -119,7 +121,7 @@ func (r *Runner) Run(command string) HistoryItem {
 	queued := -1
 	todo := len(hi.Hosts)
 	total, doneOk, doneFail, doneError := todo, 0, 0, 0
-	if r.Config.Parallel > 0 {
+	if viper.GetInt("Parallel") > 0 {
 		queued = len(hi.Hosts)
 		hqueue := make(chan *Host)
 		go func() {
@@ -130,16 +132,12 @@ func (r *Runner) Run(command string) HistoryItem {
 			}
 			close(hqueue)
 		}()
-		for i := 0; i < r.Config.Parallel; i++ {
-			UI.Debugf("Starting worker %d/%d", i+1, r.Config.Parallel)
+		for i := 0; i < viper.GetInt("Parallel"); i++ {
+			UI.Debugf("Starting worker %d/%d", i+1, viper.GetInt("Parallel"))
 			go func() {
-				for {
-					host, ok := <-hqueue
-					if !ok {
-						break
-					}
-					host.SshConfig.Timeout = r.Config.ConnectTimeout
-					hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
+				for host := range hqueue {
+					host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
+					hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
 					host.Run(hctx, command, c)
 					hcancel()
 				}
@@ -147,13 +145,13 @@ func (r *Runner) Run(command string) HistoryItem {
 		}
 	} else {
 		for _, host := range hi.Hosts {
-			hctx, hcancel := context.WithTimeout(ctx, r.Config.HostTimeout)
-			host.SshConfig.Timeout = r.Config.ConnectTimeout
+			hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
+			host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
 			go func(ctx context.Context, h *Host) { defer hcancel(); h.Run(ctx, command, c) }(hctx, host)
 		}
 	}
 	ticker := time.NewTicker(time.Second / 2)
-	timeout := time.After(r.Config.Timeout)
+	timeout := time.After(viper.GetDuration("Timeout"))
 	for todo > 0 {
 		select {
 		case <-ticker.C:
@@ -183,6 +181,16 @@ func (r *Runner) Run(command string) HistoryItem {
 func (r *Runner) End() {
 	for _, host := range r.Hosts {
 		host.Disconnect()
+	}
+
+	// Save history, if there is any
+	if len(r.History) > 0 {
+		if err := os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
+			UI.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
+		} else {
+			fn := path.Join(viper.GetString("HistoryDir"), r.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
+			r.History.Save(fn)
+		}
 	}
 }
 
