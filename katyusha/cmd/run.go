@@ -9,8 +9,9 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:                   "run glob [filters] -- command [args...]",
-	Short:                 "Run a single command",
+	Use:                   "run glob [filters] [<+|-> glob [filters]...] -- command [args...]",
+	Short:                 "Run a single command on a set of hosts",
+	Example:               "  katyusha run *.site1.example.com os=Debian + *.site2.example.com os=Debian - '*' status=live -- sudo apt-get install bash",
 	RunE:                  runCommand,
 	DisableFlagsInUseLine: true,
 }
