@@ -12,8 +12,11 @@ import (
 )
 
 var interactiveCmd = &cobra.Command{
-	Use:                   "interactive [filters]",
-	Short:                 "Interactive shell",
+	Use:   "interactive [glob [filters] [<+|-> glob [filters]...]]",
+	Short: "Interactive shell for running commands on a set of hosts",
+	Long: `With Herd's interactive shell, you can easily run multiple commands, and
+manipulate the host list between commands. You can even use the result of
+previous commands as filters.`,
 	RunE:                  runInteractive,
 	DisableFlagsInUseLine: true,
 }

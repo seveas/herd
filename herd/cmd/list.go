@@ -9,8 +9,9 @@ import (
 )
 
 var listCmd = &cobra.Command{
-	Use:                   "list [--oneline] glob [filters]",
-	Short:                 "List matching hosts",
+	Use:                   "list [--oneline] glob [filters] [<+|-> glob [filters]...]",
+	Short:                 "Query your datasources and hosts matching globs and filters",
+	Example:               "  herd list *.site2.example.com os=Debian",
 	DisableFlagsInUseLine: true,
 	RunE:                  runList,
 }

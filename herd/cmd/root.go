@@ -13,10 +13,18 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "herd",
-	Short: "ssh for loops, but better",
-	Long:  "Joah.",
-	Args:  cobra.NoArgs,
+	Use: "herd",
+	Long: `Replace your ssh for loops with a tool that
+- can find hosts for you
+- can handle thousands of hosts in parallel
+- does not fork a command for every host
+- stores all its history, including output, for you to reuse
+- can run interactively!
+`,
+	Example: `  herd run '*' os=Debian -- dpkg -l bash
+  herd interactive *vpn-gateway*`,
+	Args:    cobra.NoArgs,
+	Version: "1.0",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		herd.UI = herd.NewSimpleUI()
 	},

@@ -8,8 +8,17 @@ import (
 )
 
 var runScriptCmd = &cobra.Command{
-	Use:                   "run-script script [glob [filters]]",
-	Short:                 "Run a script",
+	Use:   "run-script script [glob [filters] [<+|-> glob [filters]...]]",
+	Short: "Run a script on a set of hosts",
+	Long: `Herd's scripted mode lets you run multiple commands, also allowing you to manipulate
+the host list between commands.`,
+	Example: `  herd run-script myscript
+
+  #!/usr/local/bin/herd
+  add hosts *.site1.example.com
+  run id seveas
+  remove hosts exitstatus=1
+  run userdel seveas`,
 	RunE:                  runScript,
 	DisableFlagsInUseLine: true,
 }
