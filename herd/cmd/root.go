@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 	Example: `  herd run '*' os=Debian -- dpkg -l bash
   herd interactive *vpn-gateway*`,
 	Args:    cobra.NoArgs,
-	Version: "1.0",
+	Version: herd.Version(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		herd.UI = herd.NewSimpleUI()
 	},
