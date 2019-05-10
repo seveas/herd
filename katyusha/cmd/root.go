@@ -24,7 +24,7 @@ var rootCmd = &cobra.Command{
 	Example: `  katyusha run '*' os=Debian -- dpkg -l bash
   katyusha interactive *vpn-gateway*`,
 	Args:    cobra.NoArgs,
-	Version: "1.0",
+	Version: katyusha.Version(),
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		katyusha.UI = katyusha.NewSimpleUI()
 	},
