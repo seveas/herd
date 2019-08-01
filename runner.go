@@ -155,6 +155,7 @@ func (r *Runner) Run(command string) HistoryItem {
 	}
 	ticker := time.NewTicker(time.Second / 2)
 	timeout := time.After(viper.GetDuration("Timeout"))
+	timeout2 := time.After(viper.GetDuration("Timeout") + 5*time.Second)
 	for todo > 0 {
 		select {
 		case <-ticker.C:
@@ -162,6 +163,14 @@ func (r *Runner) Run(command string) HistoryItem {
 		case <-timeout:
 			UI.Errorf("\nRun canceled with %d unfinished tasks!", todo)
 			cancel()
+		case <-timeout2:
+			UI.Errorf("\n%d jobs did not cancel properly in 5 seconds", todo)
+			for _, host := range hi.Hosts {
+				if _, ok := hi.Results[host.Name]; !ok {
+					UI.Errorf("%s missing from results", host.Name)
+				}
+			}
+			todo = 0
 		case r := <-c:
 			if r.ExitStatus == -1 {
 				doneError++
