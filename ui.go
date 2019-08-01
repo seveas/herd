@@ -26,7 +26,7 @@ type KatyushaUI interface {
 	Errorf(format string, v ...interface{})
 	Progress(total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
-	PrintResult(r Result)
+	PrintResult(r Result, withOutput bool)
 	Wait()
 }
 
@@ -85,12 +85,12 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 	ui.Pchan <- buf.String()
 }
 
-func (ui *SimpleUI) PrintResult(r Result) {
+func (ui *SimpleUI) PrintResult(r Result, withOutput bool) {
 	if viper.GetInt("LogLevel") < NORMAL {
 		return
 	}
 	buf := strings.Builder{}
-	ui.Formatter.FormatResult(r, &buf)
+	ui.Formatter.FormatResult(r, &buf, withOutput)
 	ui.Pchan <- buf.String()
 }
 
