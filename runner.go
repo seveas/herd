@@ -181,7 +181,9 @@ func (r *Runner) Run(command string) HistoryItem {
 			}
 			hi.Results[r.Host] = r
 			if viper.GetString("Output") == "host" {
-				UI.PrintResult(r)
+				UI.PrintResult(r, true)
+			} else if viper.GetString("Output") == "line" {
+				UI.PrintResult(r, false)
 			}
 			todo--
 		}
