@@ -52,21 +52,21 @@ func NewSimpleUI() *SimpleUI {
 
 func (ui *SimpleUI) Printer() {
 	for msg := range ui.Pchan {
-		// If we're getting a normal message in the middle of printing progress, wipe the progress message
+		// If we're getting a normal message in the middle of printing
+		// progress, wipe the progress message and reprint it after this
+		// message
 		if !ui.AtStart && msg[0] != '\r' && msg[0] != '\n' {
-			os.Stderr.WriteString("\r\033[2K")
-			os.Stderr.WriteString(msg)
-			// After printing the real message, re-write the progress message
-			msg = ui.LastProgress
-		}
-		os.Stderr.WriteString(msg)
-		if msg[len(msg)-1] == '\n' {
-			ui.AtStart = true
+			os.Stderr.WriteString("\r\033[2K" + msg + ui.LastProgress)
 		} else {
-			ui.AtStart = false
-			ui.LastProgress = msg
-			os.Stderr.Sync()
+			os.Stderr.WriteString(msg)
+			if msg[len(msg)-1] == '\n' {
+				ui.AtStart = true
+			} else {
+				ui.AtStart = false
+				ui.LastProgress = msg
+			}
 		}
+		os.Stderr.Sync()
 	}
 	close(ui.Dchan)
 }
@@ -143,13 +143,12 @@ func (ui *SimpleUI) Progress(total, todo, queued, doneOk, doneFail, doneError in
 	if viper.GetInt("LogLevel") < INFO {
 		return
 	}
-	if queued >= 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2kWaiting... %d/%d done, %d queued, %d ok, %d fail, %d error", total-todo, total, queued, doneOk, doneFail, doneError)
+	if todo == 0 {
+		ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error\n", total, doneOk, doneFail, doneError)
+	} else if queued >= 0 {
+		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting... %d/%d done, %d queued, %d ok, %d fail, %d error", total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {
 		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting... %d/%d done, %d ok, %d fail, %d error", total-todo, total, doneOk, doneFail, doneError)
-	}
-	if todo == 0 {
-		ui.Pchan <- "\n"
 	}
 }
 

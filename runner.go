@@ -161,10 +161,10 @@ func (r *Runner) Run(command string) HistoryItem {
 		case <-ticker.C:
 			UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
 		case <-timeout:
-			UI.Errorf("\nRun canceled with %d unfinished tasks!", todo)
+			UI.Errorf("Run canceled with %d unfinished tasks!", todo)
 			cancel()
 		case <-timeout2:
-			UI.Errorf("\n%d jobs did not cancel properly in 5 seconds", todo)
+			UI.Errorf("%d jobs did not cancel properly in 5 seconds", todo)
 			for _, host := range hi.Hosts {
 				if _, ok := hi.Results[host.Name]; !ok {
 					UI.Errorf("%s missing from results", host.Name)
