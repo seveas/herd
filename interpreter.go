@@ -40,13 +40,15 @@ var tokenTypes = map[string]int{
 
 type herdListener struct {
 	*parser.BaseHerdListener
-
-	Commands []Command
-
+	Commands      []Command
 	ConfigSetters map[string]ConfigSetter
+	ErrorListener *HerdErrorListener
 }
 
 func (l *herdListener) ExitSet(c *parser.SetContext) {
+	if l.ErrorListener.HasErrors {
+		return
+	}
 	varName := c.GetVarname().GetText()
 	tokenType, ok := tokenTypes[varName]
 	if !ok {
@@ -82,6 +84,9 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 }
 
 func (l *herdListener) ExitAdd(c *parser.AddContext) {
+	if l.ErrorListener.HasErrors {
+		return
+	}
 	glob := c.GetGlob().GetText()
 	attrs := l.ParseFilters(c.AllFilter())
 	command := AddHostsCommand{Glob: glob, Attributes: attrs}
@@ -89,6 +94,9 @@ func (l *herdListener) ExitAdd(c *parser.AddContext) {
 }
 
 func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
+	if l.ErrorListener.HasErrors {
+		return
+	}
 	glob := c.GetGlob().GetText()
 	attrs := l.ParseFilters(c.AllFilter())
 	command := RemoveHostsCommand{Glob: glob, Attributes: attrs}
@@ -132,6 +140,9 @@ func (l *herdListener) ParseFilters(filters []parser.IFilterContext) map[string]
 }
 
 func (l *herdListener) ExitList(c *parser.ListContext) {
+	if l.ErrorListener.HasErrors {
+		return
+	}
 	oneline := c.GetOneline()
 	command := ListHostsCommand{OneLine: false}
 	if oneline != nil {
@@ -141,6 +152,9 @@ func (l *herdListener) ExitList(c *parser.ListContext) {
 }
 
 func (l *herdListener) ExitRun(c *parser.RunContext) {
+	if l.ErrorListener.HasErrors {
+		return
+	}
 	command := strings.TrimLeft(c.GetText()[3:], " \t")
 	if len(command) == 0 {
 		err := fmt.Errorf("no command specified")
@@ -164,10 +178,11 @@ func ParseCode(code string) ([]Command, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := parser.NewHerdParser(stream)
-	l := herdListener{
-		Commands: make([]Command, 0),
-	}
 	el := HerdErrorListener{HasErrors: false}
+	l := herdListener{
+		Commands:      make([]Command, 0),
+		ErrorListener: &el,
+	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(&el)
 	antlr.ParseTreeWalkerDefault.Walk(&l, p.Prog())
