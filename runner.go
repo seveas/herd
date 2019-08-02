@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"path"
 	"strings"
 	"time"
@@ -116,6 +117,7 @@ func (r *Runner) ListHosts(oneline bool) {
 func (r *Runner) Run(command string) HistoryItem {
 	hi := r.NewHistoryItem(command)
 	c := make(chan Result)
+	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
 	if viper.GetString("Output") == "line" {
 		ctx = context.WithValue(ctx, "hostnamelen", maxHostNameLen(hi.Hosts))
@@ -154,8 +156,12 @@ func (r *Runner) Run(command string) HistoryItem {
 		}
 	}
 	ticker := time.NewTicker(time.Second / 2)
+	defer ticker.Stop()
 	timeout := time.After(viper.GetDuration("Timeout"))
 	timeout2 := time.After(viper.GetDuration("Timeout") + 5*time.Second)
+	signals := make(chan os.Signal)
+	signal.Notify(signals, os.Interrupt)
+	defer signal.Reset(os.Interrupt)
 	for todo > 0 {
 		select {
 		case <-ticker.C:
@@ -171,6 +177,9 @@ func (r *Runner) Run(command string) HistoryItem {
 				}
 			}
 			todo = 0
+		case <-signals:
+			UI.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
+			cancel()
 		case r := <-c:
 			if r.ExitStatus == -1 {
 				doneError++
@@ -190,7 +199,6 @@ func (r *Runner) Run(command string) HistoryItem {
 		UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
 	}
 	hi.EndTime = time.Now()
-	ticker.Stop()
 	r.History = append(r.History, hi)
 	if viper.GetString("Output") == "all" {
 		UI.PrintHistoryItem(hi)

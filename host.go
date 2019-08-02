@@ -199,6 +199,11 @@ func (host *Host) Disconnect() {
 func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
 
+	if err := ctx.Err(); err != nil {
+		r.Err = err
+		c <- r
+		return
+	}
 	client, err := host.Connect()
 	if err != nil {
 		r.Err = err
