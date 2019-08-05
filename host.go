@@ -238,6 +238,8 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	select {
 	case <-ctx.Done():
 		// FIXME: no error is ever returned, but the signal is not sent to the process either.
+		// https://github.com/openssh/openssh-portable/commit/cd98925c6405e972dc9f211afc7e75e838abe81c
+		// - OpenSSH 7.9 or newer required
 		sess.Signal(ssh.SIGKILL)
 		r.Err = TimeoutError{}
 	case err := <-ec:
