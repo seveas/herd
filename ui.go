@@ -31,6 +31,7 @@ type HerdUI interface {
 }
 
 type SimpleUI struct {
+	Output       *os.File
 	AtStart      bool
 	LastProgress string
 	Pchan        chan string
@@ -40,6 +41,7 @@ type SimpleUI struct {
 
 func NewSimpleUI() *SimpleUI {
 	ui := &SimpleUI{
+		Output:       os.Stdout,
 		AtStart:      true,
 		LastProgress: "",
 		Pchan:        make(chan string),
@@ -56,9 +58,9 @@ func (ui *SimpleUI) Printer() {
 		// progress, wipe the progress message and reprint it after this
 		// message
 		if !ui.AtStart && msg[0] != '\r' && msg[0] != '\n' {
-			os.Stderr.WriteString("\r\033[2K" + msg + ui.LastProgress)
+			ui.Output.WriteString("\r\033[2K" + msg + ui.LastProgress)
 		} else {
-			os.Stderr.WriteString(msg)
+			ui.Output.WriteString(msg)
 			if msg[len(msg)-1] == '\n' {
 				ui.AtStart = true
 			} else {
@@ -66,7 +68,7 @@ func (ui *SimpleUI) Printer() {
 				ui.LastProgress = msg
 			}
 		}
-		os.Stderr.Sync()
+		ui.Output.Sync()
 	}
 	close(ui.Dchan)
 }

@@ -51,8 +51,7 @@ func init() {
 func initConfig() {
 	home, err := homedir.Dir()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		bail("%s", err)
 	}
 
 	viper.SetDefault("HistoryDir", path.Join(home, ".herd", "history"))
