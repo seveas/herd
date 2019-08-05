@@ -170,22 +170,36 @@ func (h *Host) BannerCallback(message string) error {
 	return nil
 }
 
-type TimeoutError struct{}
-
-func (e TimeoutError) Error() string {
-	return "Timed out"
+type TimeoutError struct {
+	message string
 }
 
-func (host *Host) Connect() (*ssh.Client, error) {
+func (e TimeoutError) Error() string {
+	return e.message
+}
+
+func (host *Host) Connect(ctx context.Context) (*ssh.Client, error) {
 	if host.Connection != nil {
 		return host.Connection, nil
 	}
 	UI.Debugf("Connecting to %s", host.Address())
-	client, err := ssh.Dial("tcp", host.Address(), host.SshConfig)
-	if err == nil {
+	ctx, cancel := context.WithTimeout(ctx, host.SshConfig.Timeout)
+	defer cancel()
+	var client *ssh.Client
+	ec := make(chan error)
+	go func() {
+		var err error
+		client, err = ssh.Dial("tcp", host.Address(), host.SshConfig)
+		ec <- err
+	}()
+	select {
+	case <-ctx.Done():
+		host.Connection = nil
+		return nil, TimeoutError{"Timed out while connecting to server"}
+	case err := <-ec:
 		host.Connection = client
+		return client, err
 	}
-	return client, err
 }
 
 func (host *Host) Disconnect() {
@@ -204,7 +218,7 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 		c <- r
 		return
 	}
-	client, err := host.Connect()
+	client, err := host.Connect(ctx)
 	if err != nil {
 		r.Err = err
 		c <- r
@@ -241,7 +255,7 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 		// https://github.com/openssh/openssh-portable/commit/cd98925c6405e972dc9f211afc7e75e838abe81c
 		// - OpenSSH 7.9 or newer required
 		sess.Signal(ssh.SIGKILL)
-		r.Err = TimeoutError{}
+		r.Err = TimeoutError{"Timed out while executing command"}
 	case err := <-ec:
 		r.Err = err
 	}
