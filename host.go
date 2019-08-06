@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"hash/crc32"
 	"net"
 	"os/user"
 	"path/filepath"
@@ -27,6 +28,7 @@ type Host struct {
 	SshConfig  *ssh.ClientConfig `json:"-"`
 	Connection *ssh.Client       `json:"-"`
 	LastResult *Result           `json:"-"`
+	Csum       uint32            `json:"-"`
 }
 
 type Hosts []*Host
@@ -46,7 +48,44 @@ func (h Hosts) SortAndUniq() Hosts {
 	if len(h) < 2 {
 		return h
 	}
-	sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
+	field := viper.GetString("Sort")
+	if field == "name" {
+		sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
+	} else if field == "domainname" {
+		// Special-case domainname, as it's common and known to exist and be a string
+		sort.Slice(h, func(i, j int) bool {
+			v1, v2 := h[i].Attributes["domainname"].(string), h[j].Attributes["domainname"].(string)
+			if v1 == v2 {
+				return h[i].Name < h[j].Name
+			}
+			return v1 < v2
+		})
+	} else if field == "random" {
+		sort.Slice(h, func(i, j int) bool { return h[i].Csum < h[j].Csum })
+	} else {
+		sort.Slice(h, func(i, j int) bool {
+			v1, ok1 := h[i].Attributes[field]
+			v2, ok2 := h[j].Attributes[field]
+			// Sort nodes that are missing the attribute last
+			if ok1 && !ok2 {
+				return true
+			}
+			if !ok1 && ok2 {
+				return false
+			}
+			if !ok1 && !ok2 {
+				return h[i].Name < h[j].Name
+			}
+			// FIXME need to support more types
+			if _, ok := v1.(string); !ok {
+				return h[i].Name < h[j].Name
+			}
+			if v1.(string) == v2.(string) {
+				return h[i].Name < h[j].Name
+			}
+			return v1.(string) < v2.(string)
+		})
+	}
 	src, dst := 1, 0
 	for src < len(h) {
 		if h[src].Name != h[dst].Name {
@@ -72,6 +111,7 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 		},
 		Connection: nil,
 		LastResult: nil,
+		Csum:       crc32.ChecksumIEEE([]byte(name)),
 	}
 	h.SshConfig.HostKeyCallback = h.HostKeyCallback
 	h.SshConfig.BannerCallback = h.BannerCallback
@@ -83,6 +123,8 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 	h.Attributes["hostname"] = parts[0]
 	if len(parts) == 2 {
 		h.Attributes["domainname"] = parts[1]
+	} else {
+		h.Attributes["domainname"] = ""
 	}
 	return h
 }
