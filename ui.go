@@ -26,8 +26,9 @@ type HerdUI interface {
 	Errorf(format string, v ...interface{})
 	Progress(total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
-	PrintResult(r Result, withOutput bool)
+	PrintResult(r Result)
 	Wait()
+	GetFormatter() Formatter
 }
 
 type SimpleUI struct {
@@ -50,6 +51,10 @@ func NewSimpleUI() *SimpleUI {
 	}
 	go ui.Printer()
 	return ui
+}
+
+func (ui *SimpleUI) GetFormatter() Formatter {
+	return ui.Formatter
 }
 
 func (ui *SimpleUI) Printer() {
@@ -87,12 +92,12 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 	ui.Pchan <- buf.String()
 }
 
-func (ui *SimpleUI) PrintResult(r Result, withOutput bool) {
+func (ui *SimpleUI) PrintResult(r Result) {
 	if viper.GetInt("LogLevel") < NORMAL {
 		return
 	}
 	buf := strings.Builder{}
-	ui.Formatter.FormatResult(r, &buf, withOutput)
+	ui.Formatter.FormatResult(r, &buf)
 	ui.Pchan <- buf.String()
 }
 

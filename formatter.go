@@ -15,7 +15,8 @@ var Formatters = map[string]Formatter{
 type Formatter interface {
 	FormatHistoryItem(hi HistoryItem, w io.Writer)
 	FormatCommand(c string, w io.Writer)
-	FormatResult(r Result, w io.Writer, withOutput bool)
+	FormatResult(r Result, w io.Writer)
+	FormatStatus(r Result, w io.Writer)
 }
 
 type PrettyFormatter struct {
@@ -24,7 +25,7 @@ type PrettyFormatter struct {
 func (f PrettyFormatter) FormatHistoryItem(hi HistoryItem, w io.Writer) {
 	f.FormatCommand(hi.Command, w)
 	for _, h := range hi.Hosts {
-		f.FormatResult(hi.Results[h.Name], w, true)
+		f.FormatResult(hi.Results[h.Name], w)
 	}
 }
 
@@ -32,14 +33,12 @@ func (f PrettyFormatter) FormatCommand(command string, w io.Writer) {
 	fmt.Fprintln(w, ansi.Color(command, "cyan"))
 }
 
-func (f PrettyFormatter) FormatResult(r Result, w io.Writer, withOutput bool) {
+func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
 	if r.Err != nil {
-		fmt.Fprintf(w, "%s%s %s%s\n", ansi.ColorCode("red"), r.Host, r.Err, ansi.ColorCode("reset"))
+		fmt.Fprintf(w, ansi.Color(r.Host, "red")+" ")
+		f.FormatStatus(r, w)
 	} else {
 		fmt.Fprintln(w, ansi.Color(r.Host, "green"))
-	}
-	if !withOutput {
-		return
 	}
 	if len(r.Stdout) > 0 {
 		f.WriteIndented(w, r.Stdout)
@@ -47,6 +46,14 @@ func (f PrettyFormatter) FormatResult(r Result, w io.Writer, withOutput bool) {
 	if len(r.Stderr) != 0 {
 		fmt.Fprintln(w, ansi.Color("----", "black+h"))
 		f.WriteIndented(w, r.Stderr)
+	}
+}
+
+func (f PrettyFormatter) FormatStatus(r Result, w io.Writer) {
+	if r.Err != nil {
+		fmt.Fprintln(w, ansi.Color(r.Err.Error(), "red"))
+	} else {
+		fmt.Fprintln(w, ansi.Color("finished successfully", "green"))
 	}
 }
 
