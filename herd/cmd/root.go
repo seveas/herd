@@ -41,11 +41,13 @@ func init() {
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
 	viper.BindPFlag("Parallel", rootCmd.PersistentFlags().Lookup("parallel"))
 	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
+	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 }
 
 func initConfig() {
@@ -55,7 +57,7 @@ func initConfig() {
 	}
 
 	viper.SetDefault("HistoryDir", path.Join(home, ".herd", "history"))
-	viper.SetDefault("LogLevel", herd.INFO)
+	viper.SetDefault("LogLevel", "INFO")
 	viper.SetDefault("Formatter", "pretty")
 
 	viper.AddConfigPath(path.Join(home, ".herd"))
@@ -73,11 +75,17 @@ func initConfig() {
 
 	// Check configuration variables
 	if _, ok := herd.Formatters[viper.GetString("Formatter")]; !ok {
-		fmt.Fprintln(os.Stderr, "Unknown formatter:", viper.GetString("Formatter"))
-		os.Exit(1)
+		bail("Unknown formatter: %s. Known formatters: pretty", viper.GetString("Formatter"))
 	}
 	logLevels := map[string]int{"DEBUG": herd.DEBUG, "INFO": herd.INFO, "NORMAL": herd.NORMAL, "WARNING": herd.WARNING, "ERROR": herd.ERROR}
 	if level, ok := logLevels[viper.GetString("LogLevel")]; ok {
 		viper.Set("LogLevel", level)
+	} else {
+		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
 	}
+}
+
+func bail(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
 }
