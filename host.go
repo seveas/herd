@@ -212,6 +212,22 @@ func (host *Host) Disconnect() {
 
 func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	r := Result{Host: host.Name, StartTime: time.Now(), ExitStatus: -1}
+	var stdout, stderr ByteWriter
+	if viper.GetString("Output") == "line" {
+		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
+		stdout = NewLineWriterBuffer(prefix, false)
+		stderr = NewLineWriterBuffer(prefix, true)
+		defer func() {
+			if r.Err != nil {
+				UI.GetFormatter().FormatStatus(r, stderr)
+			} else {
+				UI.GetFormatter().FormatStatus(r, stdout)
+			}
+		}()
+	} else {
+		stdout = bytes.NewBuffer([]byte{})
+		stderr = bytes.NewBuffer([]byte{})
+	}
 
 	if err := ctx.Err(); err != nil {
 		r.Err = err
@@ -232,15 +248,6 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	}
 	defer sess.Close()
 
-	var stdout, stderr ByteWriter
-	if viper.GetString("Output") == "line" {
-		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
-		stdout = NewLineWriterBuffer(prefix, false)
-		stderr = NewLineWriterBuffer(prefix, true)
-	} else {
-		stdout = bytes.NewBuffer([]byte{})
-		stderr = bytes.NewBuffer([]byte{})
-	}
 	sess.Stdout = stdout
 	sess.Stderr = stderr
 	ec := make(chan error)
