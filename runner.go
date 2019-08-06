@@ -133,7 +133,7 @@ func (r *Runner) Run(command string) HistoryItem {
 			for _, host := range hi.Hosts {
 				hqueue <- host
 				queued--
-				UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
+				UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 			}
 			close(hqueue)
 		}()
@@ -164,7 +164,7 @@ func (r *Runner) Run(command string) HistoryItem {
 	for todo > 0 {
 		select {
 		case <-ticker.C:
-			UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
+			UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 		case <-timeout:
 			UI.Errorf("Run canceled with %d unfinished tasks!", todo)
 			cancel()
@@ -185,7 +185,7 @@ func (r *Runner) Run(command string) HistoryItem {
 			}
 			todo--
 		}
-		UI.Progress(total, todo, queued, doneOk, doneFail, doneError)
+		UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 	}
 	hi.EndTime = time.Now()
 	r.History = append(r.History, hi)

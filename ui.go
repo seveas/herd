@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mgutz/ansi"
 	"github.com/spf13/viper"
@@ -24,7 +25,7 @@ type KatyushaUI interface {
 	Warnf(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
-	Progress(total, todo, queued, doneOk, doneFaile, doneError int)
+	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
 	PrintResult(r Result)
 	Wait()
@@ -146,16 +147,17 @@ func (ui *SimpleUI) Debugf(format string, v ...interface{}) {
 	ui.Pchan <- fmt.Sprintf(format+"\n", v...)
 }
 
-func (ui *SimpleUI) Progress(total, todo, queued, doneOk, doneFail, doneError int) {
+func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneFail, doneError int) {
 	if viper.GetInt("LogLevel") < INFO {
 		return
 	}
+	since := time.Since(start).Truncate(time.Second)
 	if todo == 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error\n", total, doneOk, doneFail, doneError)
+		ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, doneOk, doneFail, doneError, since)
 	} else if queued >= 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting... %d/%d done, %d queued, %d ok, %d fail, %d error", total-todo, total, queued, doneOk, doneFail, doneError)
+		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting... %d/%d done, %d ok, %d fail, %d error", total-todo, total, doneOk, doneFail, doneError)
+		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s)... %d/%d done, %d ok, %d fail, %d error", since, total-todo, total, doneOk, doneFail, doneError)
 	}
 }
 

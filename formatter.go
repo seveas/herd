@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/mgutz/ansi"
 )
@@ -38,7 +39,8 @@ func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
 		fmt.Fprintf(w, ansi.Color(r.Host, "red")+" ")
 		f.FormatStatus(r, w)
 	} else {
-		fmt.Fprintln(w, ansi.Color(r.Host, "green"))
+		fmt.Fprintf(w, ansi.Color(r.Host, "green")+" ")
+		f.FormatStatus(r, w)
 	}
 	if len(r.Stdout) > 0 {
 		f.WriteIndented(w, r.Stdout)
@@ -51,9 +53,9 @@ func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
 
 func (f PrettyFormatter) FormatStatus(r Result, w io.Writer) {
 	if r.Err != nil {
-		fmt.Fprintln(w, ansi.Color(r.Err.Error(), "red"))
+		fmt.Fprintln(w, ansi.Color(fmt.Sprintf("%s after %s", r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red"))
 	} else {
-		fmt.Fprintln(w, ansi.Color("finished successfully", "green"))
+		fmt.Fprintln(w, ansi.Color(fmt.Sprintf("completed successfully after %s", r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "green"))
 	}
 }
 
