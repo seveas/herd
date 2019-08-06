@@ -212,7 +212,7 @@ func (host *Host) Disconnect() {
 
 func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	now := time.Now()
-	r := Result{Host: host.Name, StartTime: now, EndTime: now, ExitStatus: -1}
+	r := Result{Host: host.Name, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
 	var stdout, stderr ByteWriter
 	if viper.GetString("Output") == "line" {
 		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
@@ -269,6 +269,7 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	}
 
 	r.EndTime = time.Now()
+	r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
 	if r.Err != nil {
 		if err, ok := r.Err.(*ssh.ExitError); ok {
 			r.ExitStatus = err.ExitStatus()
