@@ -207,6 +207,7 @@ func (r *Runner) End() {
 		} else {
 			fn := path.Join(viper.GetString("HistoryDir"), r.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
 			r.History.Save(fn)
+			UI.Infof("History saved to %s", fn)
 		}
 	}
 }
