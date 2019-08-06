@@ -15,25 +15,27 @@ import (
 )
 
 type Result struct {
-	Host       string
-	ExitStatus int
-	Stdout     []byte
-	Stderr     []byte
-	Err        error
-	StartTime  time.Time
-	EndTime    time.Time
+	Host        string
+	ExitStatus  int
+	Stdout      []byte
+	Stderr      []byte
+	Err         error
+	StartTime   time.Time
+	EndTime     time.Time
+	ElapsedTime float64
 }
 
 func (r Result) MarshalJSON() ([]byte, error) {
 	r_ := map[string]interface{}{
-		"Host":       r.Host,
-		"ExitStatus": r.ExitStatus,
-		"Stdout":     string(r.Stdout),
-		"Stderr":     string(r.Stderr),
-		"Err":        r.Err,
-		"ErrString":  "",
-		"StartTime":  r.StartTime,
-		"EndTime":    r.EndTime,
+		"Host":        r.Host,
+		"ExitStatus":  r.ExitStatus,
+		"Stdout":      string(r.Stdout),
+		"Stderr":      string(r.Stderr),
+		"Err":         r.Err,
+		"ErrString":   "",
+		"StartTime":   r.StartTime,
+		"EndTime":     r.EndTime,
+		"ElapsedTime": r.ElapsedTime,
 	}
 	if r.Err != nil {
 		r_["ErrString"] = r.Err.Error()
@@ -46,11 +48,12 @@ func (r Result) String() string {
 }
 
 type HistoryItem struct {
-	Hosts     []*Host
-	Command   string
-	Results   map[string]Result
-	StartTime time.Time
-	EndTime   time.Time
+	Hosts       []*Host
+	Command     string
+	Results     map[string]Result
+	StartTime   time.Time
+	EndTime     time.Time
+	ElapsedTime float64
 }
 
 type History []HistoryItem
@@ -188,6 +191,7 @@ func (r *Runner) Run(command string) HistoryItem {
 		UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 	}
 	hi.EndTime = time.Now()
+	hi.ElapsedTime = hi.EndTime.Sub(hi.StartTime).Seconds()
 	r.History = append(r.History, hi)
 	if viper.GetString("Output") == "all" {
 		UI.PrintHistoryItem(hi)
