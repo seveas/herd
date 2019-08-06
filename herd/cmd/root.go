@@ -42,12 +42,14 @@ func init() {
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
+	rootCmd.PersistentFlags().String("sort", "name", "Sort hosts before running commands")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
 	viper.BindPFlag("Parallel", rootCmd.PersistentFlags().Lookup("parallel"))
 	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
 	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
+	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
 }
 
 func initConfig() {
@@ -59,6 +61,7 @@ func initConfig() {
 	viper.SetDefault("HistoryDir", path.Join(home, ".herd", "history"))
 	viper.SetDefault("LogLevel", "INFO")
 	viper.SetDefault("Formatter", "pretty")
+	viper.SetDefault("Sort", "name")
 
 	viper.AddConfigPath(path.Join(home, ".herd"))
 	viper.AddConfigPath("/etc/herd")
