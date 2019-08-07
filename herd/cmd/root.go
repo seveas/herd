@@ -58,10 +58,9 @@ func initConfig() {
 		bail("%s", err)
 	}
 
+	// We only need to set defaults for things that don't have a flag bound to them
 	viper.SetDefault("HistoryDir", path.Join(home, ".herd", "history"))
-	viper.SetDefault("LogLevel", "INFO")
 	viper.SetDefault("Formatter", "pretty")
-	viper.SetDefault("Sort", "name")
 
 	viper.AddConfigPath(path.Join(home, ".herd"))
 	viper.AddConfigPath("/etc/herd")
@@ -85,6 +84,11 @@ func initConfig() {
 		viper.Set("LogLevel", level)
 	} else {
 		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
+	}
+
+	outputModes := map[string]bool{"all": true, "host": true, "line": true, "pager": true}
+	if _, ok := outputModes[viper.GetString("Output")]; !ok {
+		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
 	}
 }
 
