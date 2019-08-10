@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -41,32 +42,44 @@ func TestFilterCommands(t *testing.T) {
 		{"*", "foo=bar", "-", "*", "baz=quux"},
 		{"*", "foo=bar", "-", "*", "baz=quux", "+", "*", "zoinks=floop"},
 		{"*", "foo"},
+		{"*", "foo!=bar"},
+		{"*", "foo=~bar"},
+		{"*", "foo!~bar"},
 	}
 	expected := [][]herd.Command{
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{}},
 		},
 		nil,
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"foo": "bar"}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
 		},
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"foo": "bar", "baz": "quux"}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"foo": "bar"}},
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"baz": "quux"}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"foo": "bar"}},
-			herd.RemoveHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"baz": "quux"}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			herd.RemoveHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"foo": "bar"}},
-			herd.RemoveHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"baz": "quux"}},
-			herd.AddHostsCommand{Glob: "*", Attributes: herd.HostAttributes{"zoinks": "floop"}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			herd.RemoveHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}},
 		},
 		nil,
+		{
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}},
+		},
+		{
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
+		},
+		{
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}},
+		},
 	}
 	errors := []string{
 		"",
@@ -77,6 +90,9 @@ func TestFilterCommands(t *testing.T) {
 		"",
 		"",
 		"incorrect filter: foo",
+		"",
+		"",
+		"",
 	}
 
 	for i, test := range tests {

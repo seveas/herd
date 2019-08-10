@@ -1,7 +1,7 @@
 package herd
 
 type HostProvider interface {
-	GetHosts(hostnameGlob string, attributes HostAttributes) Hosts
+	GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts
 }
 
 type Providers []HostProvider
@@ -21,7 +21,7 @@ func LoadProviders() Providers {
 	return ret
 }
 
-func (p *Providers) GetHosts(hostnameGlob string, attributes HostAttributes) Hosts {
+func (p *Providers) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
 	ret := make(Hosts, 0)
 	seen := make(map[string]int)
 	for _, provider := range *p {

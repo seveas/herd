@@ -23,11 +23,23 @@ var typeNames = map[int]string{
 }
 
 var tokenConverters = map[int]func(string) (interface{}, error){
-	parser.HerdParserNUMBER:   func(s string) (interface{}, error) { return strconv.Atoi(s) },
+	parser.HerdParserNUMBER:   func(s string) (interface{}, error) { return strconv.ParseInt(s, 0, 64) },
 	parser.HerdParserSTRING:   func(s string) (interface{}, error) { return strconv.Unquote(s) },
 	parser.HerdParserDURATION: func(s string) (interface{}, error) { return time.ParseDuration(s) },
 	parser.HerdParserREGEXP: func(s string) (interface{}, error) {
 		return regexp.Compile(strings.Replace(s[1:len(s)-1], "\\/", "/", -1))
+	},
+	parser.HerdParserIDENTIFIER: func(s string) (interface{}, error) {
+		if s == "nil" {
+			return nil, nil
+		}
+		if s == "true" {
+			return true, nil
+		}
+		if s == "false" {
+			return false, nil
+		}
+		return nil, fmt.Errorf("Unknown variable: %s", s)
 	},
 }
 
@@ -103,8 +115,8 @@ func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
 	l.Commands = append(l.Commands, command)
 }
 
-func (l *herdListener) ParseFilters(filters []parser.IFilterContext) map[string]interface{} {
-	attrs := HostAttributes{}
+func (l *herdListener) ParseFilters(filters []parser.IFilterContext) MatchAttributes {
+	attrs := make(MatchAttributes, 0)
 	for _, filter := range filters {
 		// If there already are lexer/parser errors, don't bother anymore
 		for _, child := range filter.GetChildren() {
@@ -113,7 +125,22 @@ func (l *herdListener) ParseFilters(filters []parser.IFilterContext) map[string]
 			}
 		}
 		key := filter.GetChild(0).(antlr.ParseTree)
-		if filter.GetChild(1).(antlr.ParseTree).GetText() == "=" {
+		attr := MatchAttribute{Name: key.GetText()}
+		comp := filter.GetChild(1).(antlr.ParseTree).GetText()
+		if strings.HasPrefix(comp, "!") {
+			attr.Negate = true
+		}
+		if strings.HasSuffix(comp, "~") {
+			valueToken := filter.GetChild(2).(*antlr.TerminalNodeImpl).GetSymbol()
+			value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
+			if err != nil {
+				filter.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
+				continue
+			}
+			attr.Regex = true
+			attr.FuzzyTyping = false
+			attr.Value = value
+		} else {
 			valueCtx := filter.GetChild(2).(*parser.ValueContext)
 			valueToken := valueCtx.GetStart()
 			if _, ok := tokenConverters[valueToken.GetTokenType()]; !ok {
@@ -125,16 +152,9 @@ func (l *herdListener) ParseFilters(filters []parser.IFilterContext) map[string]
 				valueCtx.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
 				continue
 			}
-			attrs[key.GetText()] = value
-		} else {
-			valueToken := filter.GetChild(2).(*antlr.TerminalNodeImpl).GetSymbol()
-			value, err := tokenConverters[valueToken.GetTokenType()](valueToken.GetText())
-			if err != nil {
-				filter.GetParser().NotifyErrorListeners(err.Error(), valueToken, nil)
-				continue
-			}
-			attrs[key.GetText()] = value
+			attr.Value = value
 		}
+		attrs = append(attrs, attr)
 	}
 	return attrs
 }

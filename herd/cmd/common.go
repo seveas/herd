@@ -18,13 +18,14 @@ func splitArgs(cmd *cobra.Command, args []string) ([]string, []string) {
 }
 
 func filterCommands(filters []string) ([]herd.Command, error) {
+	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~)(.*)$")
 	// First we add hosts from the command line, in all modes
 	commands := make([]herd.Command, 0)
 	add := true
 hostspecLoop:
 	for len(filters) > 0 {
 		glob := filters[0]
-		attrs := make(herd.HostAttributes)
+		attrs := make(herd.MatchAttributes, 0)
 		for i, arg := range filters[1:] {
 			if arg == "+" || arg == "-" {
 				filters = filters[i+2:]
@@ -40,20 +41,26 @@ hostspecLoop:
 				}
 				continue hostspecLoop
 			}
-			parts := strings.SplitN(arg, "=", 2)
-			if len(parts) != 2 || len(parts[0]) == 0 || len(parts[1]) == 0 {
+			parts := comparison.FindStringSubmatch(arg)
+			if len(parts) == 0 {
 				return nil, fmt.Errorf("incorrect filter: %s", arg)
 			}
-			if parts[1][0] == '~' {
-				re, err := regexp.Compile(parts[1][1:])
-				if err != nil {
-					return nil, fmt.Errorf("Invalid regexp /%s/: %s", parts[1][1:], err)
-				} else {
-					attrs[parts[0]] = re
-				}
-			} else {
-				attrs[parts[0]] = parts[1]
+			key, comp, val := parts[1], parts[2], parts[3]
+			attr := herd.MatchAttribute{Name: key, Value: val, FuzzyTyping: true}
+			if strings.HasPrefix(comp, "!") {
+				attr.Negate = true
 			}
+			if strings.HasSuffix(comp, "~") {
+				re, err := regexp.Compile(val)
+				if err != nil {
+					return nil, fmt.Errorf("Invalid regexp /%s/: %s", val, err)
+				} else {
+					attr.Value = re
+					attr.Regex = true
+					attr.FuzzyTyping = false
+				}
+			}
+			attrs = append(attrs, attr)
 		}
 		// We've fallen through, so no more hostspecs
 		if add {

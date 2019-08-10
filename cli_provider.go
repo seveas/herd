@@ -12,7 +12,7 @@ func NewCliProvider() *CliProvider {
 	return &CliProvider{}
 }
 
-func (p *CliProvider) GetHosts(name string, attributes HostAttributes) Hosts {
+func (p *CliProvider) GetHosts(name string, attributes MatchAttributes) Hosts {
 	if _, err := net.LookupHost(name); err != nil {
 		return Hosts{}
 	}

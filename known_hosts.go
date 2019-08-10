@@ -24,7 +24,7 @@ func NewKnownHostsProvider() *KnownHostsProvider {
 	}
 }
 
-func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes HostAttributes) Hosts {
+func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
 	hosts := make(Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.Files {
