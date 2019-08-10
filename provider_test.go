@@ -24,13 +24,13 @@ func TestLoadProviders(t *testing.T) {
 type FakeProvider struct {
 }
 
-func (p *FakeProvider) GetHosts(glob string, host HostAttributes) Hosts {
+func (p *FakeProvider) GetHosts(glob string, attrs MatchAttributes) Hosts {
 	return Hosts{NewHost(glob, []ssh.PublicKey{}, HostAttributes{})}
 }
 
 func TestGetHosts(t *testing.T) {
 	p := Providers{&FakeProvider{}, &FakeProvider{}}
-	hosts := p.GetHosts("hostname.domainname", HostAttributes{})
+	hosts := p.GetHosts("hostname.domainname", MatchAttributes{})
 	if len(hosts) != 1 {
 		t.Error("Hosts returned by multiple providers are not merged")
 	}

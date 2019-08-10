@@ -9,11 +9,13 @@ LIST: 'list' ;
 HOSTS: 'hosts' ;
 ONELINE: '--oneline' ;
 DURATION: ( '-'? [0-9]+ ( '.' [0-9]+ )? [smh] )+ ;
-NUMBER: [0-9]+ ;
+NUMBER: '0x'?[0-9]+ ;
 IDENTIFIER: [a-zA-Z_.][a-zA-Z_.0-9]+ ;
-GLOB: [-a-zA-Z.0-9*]+ ;
-EQUALS: '=' ;
+GLOB: [-a-zA-Z.0-9*?]+ ;
+EQUALS: '==' ;
 MATCHES: '=~' ;
+NOT_EQUALS: '!=';
+NOT_MATCHES: '!~';
 STRING
  : '\'' ( '\\' . | ~[\\\r\n\f'] )* '\''
  | '"' ( '\\' . | ~[\\\r\n\f"] )* '"'
@@ -34,5 +36,5 @@ set: SET varname=IDENTIFIER EQUALS? varvalue=value ;
 add: ADD HOSTS glob=GLOB filters=filter* ;
 remove: REMOVE HOSTS glob=GLOB filters=filter* ;
 list: LIST HOSTS oneline=ONELINE? ;
-filter: IDENTIFIER ( EQUALS value | MATCHES REGEXP );
-value: NUMBER | STRING | DURATION ;
+filter: IDENTIFIER ( ( EQUALS | NOT_EQUALS ) value | ( MATCHES | NOT_MATCHES ) REGEXP );
+value: NUMBER | STRING | DURATION | IDENTIFIER ;

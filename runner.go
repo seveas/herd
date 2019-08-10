@@ -84,12 +84,12 @@ func NewRunner(providers Providers) *Runner {
 	}
 }
 
-func (r *Runner) AddHosts(glob string, attrs HostAttributes) {
+func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
 	hosts := append(r.Hosts, r.Providers.GetHosts(glob, attrs)...)
 	r.Hosts = hosts.SortAndUniq()
 }
 
-func (r *Runner) RemoveHosts(glob string, attrs HostAttributes) {
+func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 	newHosts := make([]*Host, 0)
 	for _, host := range r.Hosts {
 		if !host.Match(glob, attrs) {

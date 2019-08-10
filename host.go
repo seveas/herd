@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,6 +20,69 @@ import (
 )
 
 type HostAttributes map[string]interface{}
+
+type MatchAttribute struct {
+	Name        string
+	FuzzyTyping bool
+	Negate      bool
+	Regex       bool
+	Value       interface{}
+}
+
+func (m MatchAttribute) String() string {
+	c1, c2 := '=', '='
+	if m.Negate {
+		c1 = '!'
+	}
+	if m.Regex {
+		c2 = '~'
+	}
+	return fmt.Sprintf("%s %c%c %s", m.Name, c1, c2, m.Value)
+}
+
+func (m MatchAttribute) Match(value interface{}) (matches bool) {
+	defer func() {
+		if m.Negate {
+			matches = !matches
+		}
+	}()
+	if m.Value == value {
+		return true
+	}
+	if m.Regex {
+		svalue, ok := value.(string)
+		return ok && m.Value.(*regexp.Regexp).MatchString(svalue)
+	}
+	if m.FuzzyTyping {
+		if bvalue, ok := value.(bool); ok && (m.Value == "true" || m.Value == "false") {
+			return bvalue == (m.Value == "true")
+		}
+		myival, err := strconv.ParseInt(m.Value.(string), 0, 64)
+		if err != nil {
+			return false
+		}
+		v := reflect.ValueOf(value)
+		switch v.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return v.Int() == myival
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return int64(v.Uint()) == myival
+		}
+	}
+	// Let's be gentle on all the int types in attributes
+	if myival, ok := m.Value.(int64); ok {
+		v := reflect.ValueOf(value)
+		switch v.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return v.Int() == myival
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return int64(v.Uint()) == myival
+		}
+	}
+	return false
+}
+
+type MatchAttributes []MatchAttribute
 
 type Host struct {
 	Name       string
@@ -140,50 +204,43 @@ func (h *Host) Address() string {
 var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
 var _stringType = reflect.TypeOf("")
 
-func (h *Host) Match(hostnameGlob string, attributes HostAttributes) bool {
-	hostMatched := false
+func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 
 	if hostnameGlob != "" {
 		ok, err := filepath.Match(hostnameGlob, h.Name)
 		if !ok || err != nil {
 			return false
 		}
-		hostMatched = true
 	}
 
-	for attr, value := range attributes {
-		val, ok := h.Attributes[attr]
+	for _, attribute := range attributes {
+		name := attribute.Name
+		value, ok := h.Attributes[name]
 		if !ok {
 			if h.LastResult != nil {
-				if attr == "stdout" {
-					val = string(h.LastResult.Stdout)
-				} else if attr == "stderr" {
-					val = string(h.LastResult.Stderr)
-				} else if attr == "exitstatus" {
-					val = h.LastResult.ExitStatus
-				} else {
-					return false
+				if name == "stdout" {
+					ok = true
+					value = string(h.LastResult.Stdout)
+				} else if name == "stderr" {
+					ok = true
+					value = string(h.LastResult.Stderr)
+				} else if name == "exitstatus" {
+					ok = true
+					value = h.LastResult.ExitStatus
+				} else if name == "err" {
+					ok = true
+					value = h.LastResult.Err
 				}
-			} else {
-				return false
 			}
 		}
-		t1, t2 := reflect.TypeOf(value), reflect.TypeOf(val)
-		if t1 != t2 && !(t1 == _regexpType && t2 == _stringType) {
+		if !ok && !attribute.Negate {
 			return false
 		}
-		if t1 == _regexpType {
-			if !value.(*regexp.Regexp).MatchString(val.(string)) {
-				return false
-			}
-		} else {
-			if val != value {
-				return false
-			}
+		if ok && !attribute.Match(value) {
+			return false
 		}
 	}
-
-	return hostMatched
+	return true
 }
 
 func (h *Host) Amend(h2 *Host) {

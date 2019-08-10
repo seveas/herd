@@ -26,7 +26,7 @@ func (c SetCommand) String() string {
 
 type AddHostsCommand struct {
 	Glob       string
-	Attributes HostAttributes
+	Attributes MatchAttributes
 }
 
 func (c AddHostsCommand) Execute(r *Runner) error {
@@ -40,7 +40,7 @@ func (c AddHostsCommand) String() string {
 
 type RemoveHostsCommand struct {
 	Glob       string
-	Attributes HostAttributes
+	Attributes MatchAttributes
 }
 
 func (c RemoveHostsCommand) Execute(r *Runner) error {

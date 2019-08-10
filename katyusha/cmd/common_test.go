@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/go-test/deep"
@@ -41,32 +42,44 @@ func TestFilterCommands(t *testing.T) {
 		{"*", "foo=bar", "-", "*", "baz=quux"},
 		{"*", "foo=bar", "-", "*", "baz=quux", "+", "*", "zoinks=floop"},
 		{"*", "foo"},
+		{"*", "foo!=bar"},
+		{"*", "foo=~bar"},
+		{"*", "foo!~bar"},
 	}
 	expected := [][]katyusha.Command{
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{}},
 		},
 		nil,
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"foo": "bar"}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
 		},
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"foo": "bar", "baz": "quux"}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"foo": "bar"}},
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"baz": "quux"}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"foo": "bar"}},
-			katyusha.RemoveHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"baz": "quux"}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			katyusha.RemoveHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"foo": "bar"}},
-			katyusha.RemoveHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"baz": "quux"}},
-			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.HostAttributes{"zoinks": "floop"}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			katyusha.RemoveHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}},
 		},
 		nil,
+		{
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}},
+		},
+		{
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
+		},
+		{
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}},
+		},
 	}
 	errors := []string{
 		"",
@@ -77,6 +90,9 @@ func TestFilterCommands(t *testing.T) {
 		"",
 		"",
 		"incorrect filter: foo",
+		"",
+		"",
+		"",
 	}
 
 	for i, test := range tests {
