@@ -199,7 +199,7 @@ func (r *Runner) Run(command string) HistoryItem {
 	if viper.GetString("Output") == "pager" {
 		p := Pager{}
 		if err := p.Start(); err != nil {
-			UI.Errorf("Unable to start pager, displaying on stdout")
+			UI.Errorf("Unable to start pager, displaying on stdout: %s", err)
 			UI.PrintHistoryItem(hi)
 		} else {
 			p.PrintHistoryItem(hi)

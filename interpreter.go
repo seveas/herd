@@ -48,6 +48,27 @@ var tokenTypes = map[string]int{
 	"HostTimeout":    parser.HerdParserDURATION,
 	"ConnectTimeout": parser.HerdParserDURATION,
 	"Parallel":       parser.HerdParserNUMBER,
+	"Output":         parser.HerdParserSTRING,
+	"LogLevel":       parser.HerdParserSTRING,
+}
+
+var validators = map[string]func(interface{}) (interface{}, error){
+	"Output": func(i interface{}) (interface{}, error) {
+		s := i.(string)
+		if s == "all" || s == "host" || s == "line" || s == "pager" {
+			return s, nil
+		}
+		return nil, fmt.Errorf("Unknown output mode: %s. Known modes: all, host, line, pager", s)
+	},
+	"LogLevel": func(i interface{}) (interface{}, error) {
+		s := i.(string)
+		logLevels := map[string]int{"DEBUG": DEBUG, "INFO": INFO, "NORMAL": NORMAL, "WARNING": WARNING, "ERROR": ERROR}
+		if level, ok := logLevels[s]; ok {
+			return level, nil
+		} else {
+			return nil, fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
+		}
+	},
 }
 
 type herdListener struct {
@@ -85,6 +106,15 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 		p := valueCtx.GetParser()
 		p.NotifyErrorListeners(err.Error(), valueToken, nil)
 		return
+	}
+	validator, ok := validators[varName]
+	if ok {
+		val, err = validator(val)
+		if err != nil {
+			p := valueCtx.GetParser()
+			p.NotifyErrorListeners(err.Error(), valueToken, nil)
+			return
+		}
 	}
 
 	command := SetCommand{

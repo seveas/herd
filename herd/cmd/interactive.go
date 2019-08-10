@@ -99,6 +99,8 @@ func (l *InteractiveLoop) AutoComplete() readline.AutoCompleter {
 			p("HostTimeout"),
 			p("ConnectTimeout"),
 			p("Parallel"),
+			p("Output"),
+			p("LogLevel"),
 		),
 		p("add hosts"),
 		p("remove hosts"),
