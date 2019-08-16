@@ -22,7 +22,7 @@ func TestLoadProviders(t *testing.T) {
 type FakeProvider struct {
 }
 
-func (p *FakeProvider) GetHosts(glob string, attrs MatchAttributes) Hosts {
+func (p *FakeProvider) GetHosts(glob string) Hosts {
 	return Hosts{NewHost(glob, HostAttributes{})}
 }
 

@@ -11,7 +11,7 @@ type KnownHostsProvider struct {
 	Files []string
 }
 
-func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
+func (p *KnownHostsProvider) GetHosts(hostnameGlob string) Hosts {
 	hosts := make(Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.Files {
@@ -41,7 +41,7 @@ func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes MatchAttri
 			}
 			host := NewHost(name, HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
-			if !host.Match(hostnameGlob, attributes) {
+			if !host.Match(hostnameGlob, MatchAttributes{}) {
 				seen[host.Name] = -1
 				continue
 			}
