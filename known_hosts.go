@@ -48,11 +48,12 @@ func (p *KnownHostsProvider) GetHosts(hostnameGlob string, attributes MatchAttri
 				// -1 means: seen but did not match
 				// FIXME: if we ever match on key attributes, this is wrong.
 				if idx != -1 {
-					hosts[idx].PublicKeys = append(hosts[idx].PublicKeys, key)
+					hosts[idx].AddPublicKey(key)
 				}
 				continue
 			}
-			host := NewHost(name, []ssh.PublicKey{key}, HostAttributes{"PublicKeyComment": comment})
+			host := NewHost(name, HostAttributes{"PublicKeyComment": comment})
+			host.AddPublicKey(key)
 			if !host.Match(hostnameGlob, attributes) {
 				seen[host.Name] = -1
 				continue

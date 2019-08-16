@@ -3,8 +3,6 @@ package herd
 import (
 	"reflect"
 	"testing"
-
-	"golang.org/x/crypto/ssh"
 )
 
 func TestLoadProviders(t *testing.T) {
@@ -25,7 +23,7 @@ type FakeProvider struct {
 }
 
 func (p *FakeProvider) GetHosts(glob string, attrs MatchAttributes) Hosts {
-	return Hosts{NewHost(glob, []ssh.PublicKey{}, HostAttributes{})}
+	return Hosts{NewHost(glob, HostAttributes{})}
 }
 
 func TestGetHosts(t *testing.T) {
