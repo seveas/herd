@@ -1,7 +1,6 @@
 package katyusha
 
 import (
-	"golang.org/x/crypto/ssh"
 	"net"
 )
 
@@ -16,6 +15,6 @@ func (p *CliProvider) GetHosts(name string, attributes MatchAttributes) Hosts {
 	if _, err := net.LookupHost(name); err != nil {
 		return Hosts{}
 	}
-	return Hosts{NewHost(name, []ssh.PublicKey{}, HostAttributes{})}
+	return Hosts{NewHost(name, HostAttributes{})}
 
 }

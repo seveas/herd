@@ -163,10 +163,10 @@ func (h Hosts) SortAndUniq() Hosts {
 	return h[:dst+1]
 }
 
-func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *Host {
+func NewHost(name string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
-		PublicKeys: pubKeys,
+		PublicKeys: make([]ssh.PublicKey, 0),
 		Attributes: attributes,
 		SshConfig: &ssh.ClientConfig{
 			ClientVersion: "SSH-2.0-Katyusha-0.1",
@@ -195,6 +195,10 @@ func NewHost(name string, pubKeys []ssh.PublicKey, attributes HostAttributes) *H
 
 func (host Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s, Config: %v}", host.Name, len(host.PublicKeys), host.Attributes, host.SshConfig)
+}
+
+func (h *Host) AddPublicKey(k ssh.PublicKey) {
+	h.PublicKeys = append(h.PublicKeys, k)
 }
 
 func (h *Host) Address() string {
@@ -247,7 +251,9 @@ func (h *Host) Amend(h2 *Host) {
 	for attr, value := range h2.Attributes {
 		h.Attributes[attr] = value
 	}
-	// FIXME merge keys and ssh config
+	for _, k := range h2.PublicKeys {
+		h.AddPublicKey(k)
+	}
 }
 
 func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
