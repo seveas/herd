@@ -6,9 +6,9 @@ import (
 )
 
 func TestLoadProviders(t *testing.T) {
-	ret := LoadProviders()
-	if len(ret) != 2 {
-		t.Errorf("got %d providers, expected 2", len(ret))
+	ret, _ := LoadProviders()
+	if len(ret) < 2 {
+		t.Errorf("got %d providers, expected at least 2", len(ret))
 		return
 	}
 	if _, ok := ret[0].(*KnownHostsProvider); !ok {
