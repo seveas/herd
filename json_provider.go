@@ -24,6 +24,9 @@ func (p *JsonProvider) GetHosts(glob string, attributes MatchAttributes) Hosts {
 		return hosts
 	}
 	for _, obj := range objects {
+		if p.PreProcess != nil {
+			p.PreProcess(&obj)
+		}
 		hostname := ""
 		var ok bool
 		if val, exists := obj["name"]; exists {
