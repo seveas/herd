@@ -1,5 +1,11 @@
 package herd
 
+import (
+	"path"
+
+	homedir "github.com/mitchellh/go-homedir"
+)
+
 type HostProvider interface {
 	GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts
 }
@@ -7,11 +13,16 @@ type HostProvider interface {
 type Providers []HostProvider
 
 func LoadProviders() Providers {
+	files := []string{"/etc/ssh/ssh_known_hosts"}
+	home, err := homedir.Dir()
+	if err == nil {
+		files = append(files, path.Join(home, ".ssh", "known_hosts"))
+	}
 	ret := Providers{
-		// Always load the known hosts provider
-		NewKnownHostsProvider(),
-		// Always load the command-line provider
-		NewCliProvider(),
+		&KnownHostsProvider{
+			Files: files,
+		},
+		&CliProvider{},
 	}
 
 	// Load the consul provider if ...?

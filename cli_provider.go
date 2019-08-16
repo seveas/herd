@@ -5,10 +5,7 @@ import (
 )
 
 type CliProvider struct {
-}
-
-func NewCliProvider() *CliProvider {
-	return &CliProvider{}
+	Name string
 }
 
 func (p *CliProvider) GetHosts(name string, attributes MatchAttributes) Hosts {
