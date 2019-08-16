@@ -79,6 +79,13 @@ func runCommands(commands []katyusha.Command, doEnd bool) *katyusha.Runner {
 		katyusha.UI.Errorf("%s", err.Error())
 		return nil
 	}
+	errs := providers.Cache()
+	if len(errs) != 0 {
+		for _, err := range errs {
+			katyusha.UI.Errorf("%s", err.Error())
+		}
+		return nil
+	}
 	runner := katyusha.NewRunner(providers)
 
 	for _, command := range commands {
