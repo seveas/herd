@@ -11,7 +11,7 @@ import (
 )
 
 type HostProvider interface {
-	GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts
+	GetHosts(hostnameGlob string) Hosts
 }
 
 type Cacher interface {
@@ -88,16 +88,22 @@ func (p *Providers) Cache() []error {
 }
 
 func (p *Providers) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
-	ret := make(Hosts, 0)
+	hosts := make(Hosts, 0)
 	seen := make(map[string]int)
 	for _, provider := range *p {
-		for _, host := range provider.GetHosts(hostnameGlob, attributes) {
+		for _, host := range provider.GetHosts(hostnameGlob) {
 			if existing, ok := seen[host.Name]; ok {
-				ret[existing].Amend(host)
+				hosts[existing].Amend(host)
 			} else {
-				seen[host.Name] = len(ret)
-				ret = append(ret, host)
+				seen[host.Name] = len(hosts)
+				hosts = append(hosts, host)
 			}
+		}
+	}
+	ret := make(Hosts, 0)
+	for _, host := range hosts {
+		if host.Match(hostnameGlob, attributes) {
+			ret = append(ret, host)
 		}
 	}
 	return ret

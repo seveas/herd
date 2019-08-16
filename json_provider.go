@@ -10,7 +10,7 @@ type JsonProvider struct {
 	File string
 }
 
-func (p *JsonProvider) GetHosts(glob string, attributes MatchAttributes) Hosts {
+func (p *JsonProvider) GetHosts(hostnameGlob string) Hosts {
 	hosts := make(Hosts, 0)
 	data, err := ioutil.ReadFile(p.File)
 	if err != nil {
@@ -46,7 +46,7 @@ func (p *JsonProvider) GetHosts(glob string, attributes MatchAttributes) Hosts {
 			continue
 		}
 		host := NewHost(hostname, obj)
-		if host.Match(glob, attributes) {
+		if host.Match(hostnameGlob, MatchAttributes{}) {
 			hosts = append(hosts, host)
 		}
 	}

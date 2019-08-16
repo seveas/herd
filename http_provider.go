@@ -63,7 +63,7 @@ func (p *HttpProvider) Cache(ctx *context.Context) error {
 	return nil
 }
 
-func (p *HttpProvider) GetHosts(name string, attributes MatchAttributes) Hosts {
+func (p *HttpProvider) GetHosts(hostnameGlob string) Hosts {
 	jp := &JsonProvider{Name: p.Name, File: p.File}
-	return jp.GetHosts(name, attributes)
+	return jp.GetHosts(hostnameGlob)
 }

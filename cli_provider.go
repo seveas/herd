@@ -8,7 +8,7 @@ type CliProvider struct {
 	Name string
 }
 
-func (p *CliProvider) GetHosts(name string, attributes MatchAttributes) Hosts {
+func (p *CliProvider) GetHosts(name string) Hosts {
 	if _, err := net.LookupHost(name); err != nil {
 		return Hosts{}
 	}
