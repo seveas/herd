@@ -315,7 +315,7 @@ func (host *Host) Disconnect() {
 	}
 }
 
-func (host *Host) Run(ctx context.Context, command string, c chan Result) {
+func (host *Host) Run(ctx context.Context, command string) Result {
 	now := time.Now()
 	r := Result{Host: host.Name, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
 	var stdout, stderr ByteWriter
@@ -337,20 +337,17 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 
 	if err := ctx.Err(); err != nil {
 		r.Err = err
-		c <- r
-		return
+		return r
 	}
 	client, err := host.Connect(ctx)
 	if err != nil {
 		r.Err = err
-		c <- r
-		return
+		return r
 	}
 	sess, err := client.NewSession()
 	if err != nil {
 		r.Err = err
-		c <- r
-		return
+		return r
 	}
 	defer sess.Close()
 
@@ -385,5 +382,5 @@ func (host *Host) Run(ctx context.Context, command string, c chan Result) {
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
 	host.LastResult = &r
-	c <- r
+	return r
 }
