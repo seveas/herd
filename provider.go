@@ -12,7 +12,7 @@ type HostProvider interface {
 
 type Providers []HostProvider
 
-func LoadProviders() Providers {
+func LoadProviders() (Providers, error) {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
 	home, err := homedir.Dir()
 	if err == nil {
@@ -24,12 +24,23 @@ func LoadProviders() Providers {
 		},
 		&CliProvider{},
 	}
-
-	// Load the consul provider if ...?
-
-	// Load the puppetdb provider if ...?
-
-	return ret
+	providers := viper.Sub("Providers")
+	if providers != nil {
+		for key, _ := range providers.AllSettings() {
+			ps := providers.Sub(key)
+			pname := ps.GetString("Provider")
+			var provider HostProvider
+			if pname == "json" {
+				provider = &JsonProvider{}
+			}
+			err := ps.Unmarshal(provider)
+			if err != nil {
+				return nil, err
+			}
+			ret = append(ret, provider)
+		}
+	}
+	return ret, nil
 }
 
 func (p *Providers) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {

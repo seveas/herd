@@ -35,6 +35,10 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	runner := runCommands(commands, false)
+	// Nil return means provider problems
+	if runner == nil {
+		return nil
+	}
 
 	// Enter interactive mode
 	il := &InteractiveLoop{Runner: runner}
