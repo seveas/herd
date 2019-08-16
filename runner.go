@@ -146,7 +146,7 @@ func (r *Runner) Run(command string) HistoryItem {
 				for host := range hqueue {
 					host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
 					hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
-					host.Run(hctx, command, c)
+					c <- host.Run(hctx, command)
 					hcancel()
 				}
 			}()
@@ -155,7 +155,7 @@ func (r *Runner) Run(command string) HistoryItem {
 		for _, host := range hi.Hosts {
 			hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
 			host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
-			go func(ctx context.Context, h *Host) { defer hcancel(); h.Run(ctx, command, c) }(hctx, host)
+			go func(ctx context.Context, h *Host) { defer hcancel(); c <- h.Run(ctx, command) }(hctx, host)
 		}
 	}
 	ticker := time.NewTicker(time.Second / 2)
