@@ -16,38 +16,46 @@ var _ = reflect.Copy
 var _ = strconv.Itoa
 
 var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 21, 79, 4,
+	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 21, 93, 4,
 	2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7, 4,
 	8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 3, 2, 7, 2, 22, 10, 2, 12, 2, 14, 2,
 	25, 11, 2, 3, 2, 3, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 34, 10, 3, 3,
 	3, 3, 3, 3, 4, 3, 4, 3, 5, 3, 5, 3, 5, 5, 5, 43, 10, 5, 3, 5, 3, 5, 3,
-	6, 3, 6, 3, 6, 3, 6, 7, 6, 51, 10, 6, 12, 6, 14, 6, 54, 11, 6, 3, 7, 3,
-	7, 3, 7, 3, 7, 7, 7, 60, 10, 7, 12, 7, 14, 7, 63, 11, 7, 3, 8, 3, 8, 3,
-	8, 5, 8, 68, 10, 8, 3, 9, 3, 9, 3, 9, 3, 9, 3, 9, 5, 9, 75, 10, 9, 3, 10,
-	3, 10, 3, 10, 2, 2, 11, 2, 4, 6, 8, 10, 12, 14, 16, 18, 2, 5, 4, 2, 15,
-	15, 17, 17, 4, 2, 16, 16, 18, 18, 4, 2, 11, 13, 19, 19, 2, 80, 2, 23, 3,
-	2, 2, 2, 4, 33, 3, 2, 2, 2, 6, 37, 3, 2, 2, 2, 8, 39, 3, 2, 2, 2, 10, 46,
-	3, 2, 2, 2, 12, 55, 3, 2, 2, 2, 14, 64, 3, 2, 2, 2, 16, 69, 3, 2, 2, 2,
-	18, 76, 3, 2, 2, 2, 20, 22, 5, 4, 3, 2, 21, 20, 3, 2, 2, 2, 22, 25, 3,
-	2, 2, 2, 23, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 26, 3, 2, 2, 2, 25,
-	23, 3, 2, 2, 2, 26, 27, 7, 2, 2, 3, 27, 3, 3, 2, 2, 2, 28, 34, 5, 6, 4,
-	2, 29, 34, 5, 8, 5, 2, 30, 34, 5, 10, 6, 2, 31, 34, 5, 12, 7, 2, 32, 34,
-	5, 14, 8, 2, 33, 28, 3, 2, 2, 2, 33, 29, 3, 2, 2, 2, 33, 30, 3, 2, 2, 2,
-	33, 31, 3, 2, 2, 2, 33, 32, 3, 2, 2, 2, 33, 34, 3, 2, 2, 2, 34, 35, 3,
-	2, 2, 2, 35, 36, 7, 3, 2, 2, 36, 5, 3, 2, 2, 2, 37, 38, 7, 4, 2, 2, 38,
-	7, 3, 2, 2, 2, 39, 40, 7, 5, 2, 2, 40, 42, 7, 13, 2, 2, 41, 43, 7, 15,
-	2, 2, 42, 41, 3, 2, 2, 2, 42, 43, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2, 44, 45,
-	5, 18, 10, 2, 45, 9, 3, 2, 2, 2, 46, 47, 7, 6, 2, 2, 47, 48, 7, 9, 2, 2,
-	48, 52, 7, 14, 2, 2, 49, 51, 5, 16, 9, 2, 50, 49, 3, 2, 2, 2, 51, 54, 3,
-	2, 2, 2, 52, 50, 3, 2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 11, 3, 2, 2, 2, 54,
-	52, 3, 2, 2, 2, 55, 56, 7, 7, 2, 2, 56, 57, 7, 9, 2, 2, 57, 61, 7, 14,
-	2, 2, 58, 60, 5, 16, 9, 2, 59, 58, 3, 2, 2, 2, 60, 63, 3, 2, 2, 2, 61,
-	59, 3, 2, 2, 2, 61, 62, 3, 2, 2, 2, 62, 13, 3, 2, 2, 2, 63, 61, 3, 2, 2,
-	2, 64, 65, 7, 8, 2, 2, 65, 67, 7, 9, 2, 2, 66, 68, 7, 10, 2, 2, 67, 66,
-	3, 2, 2, 2, 67, 68, 3, 2, 2, 2, 68, 15, 3, 2, 2, 2, 69, 74, 7, 13, 2, 2,
-	70, 71, 9, 2, 2, 2, 71, 75, 5, 18, 10, 2, 72, 73, 9, 3, 2, 2, 73, 75, 7,
-	20, 2, 2, 74, 70, 3, 2, 2, 2, 74, 72, 3, 2, 2, 2, 75, 17, 3, 2, 2, 2, 76,
-	77, 9, 4, 2, 2, 77, 19, 3, 2, 2, 2, 9, 23, 33, 42, 52, 61, 67, 74,
+	6, 3, 6, 3, 6, 3, 6, 7, 6, 51, 10, 6, 12, 6, 14, 6, 54, 11, 6, 3, 6, 6,
+	6, 57, 10, 6, 13, 6, 14, 6, 58, 5, 6, 61, 10, 6, 3, 7, 3, 7, 3, 7, 3, 7,
+	7, 7, 67, 10, 7, 12, 7, 14, 7, 70, 11, 7, 3, 7, 6, 7, 73, 10, 7, 13, 7,
+	14, 7, 74, 5, 7, 77, 10, 7, 3, 8, 3, 8, 3, 8, 5, 8, 82, 10, 8, 3, 9, 3,
+	9, 3, 9, 3, 9, 3, 9, 5, 9, 89, 10, 9, 3, 10, 3, 10, 3, 10, 2, 2, 11, 2,
+	4, 6, 8, 10, 12, 14, 16, 18, 2, 6, 3, 2, 13, 14, 4, 2, 15, 15, 17, 17,
+	4, 2, 16, 16, 18, 18, 4, 2, 11, 13, 19, 19, 2, 98, 2, 23, 3, 2, 2, 2, 4,
+	33, 3, 2, 2, 2, 6, 37, 3, 2, 2, 2, 8, 39, 3, 2, 2, 2, 10, 46, 3, 2, 2,
+	2, 12, 62, 3, 2, 2, 2, 14, 78, 3, 2, 2, 2, 16, 83, 3, 2, 2, 2, 18, 90,
+	3, 2, 2, 2, 20, 22, 5, 4, 3, 2, 21, 20, 3, 2, 2, 2, 22, 25, 3, 2, 2, 2,
+	23, 21, 3, 2, 2, 2, 23, 24, 3, 2, 2, 2, 24, 26, 3, 2, 2, 2, 25, 23, 3,
+	2, 2, 2, 26, 27, 7, 2, 2, 3, 27, 3, 3, 2, 2, 2, 28, 34, 5, 6, 4, 2, 29,
+	34, 5, 8, 5, 2, 30, 34, 5, 10, 6, 2, 31, 34, 5, 12, 7, 2, 32, 34, 5, 14,
+	8, 2, 33, 28, 3, 2, 2, 2, 33, 29, 3, 2, 2, 2, 33, 30, 3, 2, 2, 2, 33, 31,
+	3, 2, 2, 2, 33, 32, 3, 2, 2, 2, 33, 34, 3, 2, 2, 2, 34, 35, 3, 2, 2, 2,
+	35, 36, 7, 3, 2, 2, 36, 5, 3, 2, 2, 2, 37, 38, 7, 4, 2, 2, 38, 7, 3, 2,
+	2, 2, 39, 40, 7, 5, 2, 2, 40, 42, 7, 13, 2, 2, 41, 43, 7, 15, 2, 2, 42,
+	41, 3, 2, 2, 2, 42, 43, 3, 2, 2, 2, 43, 44, 3, 2, 2, 2, 44, 45, 5, 18,
+	10, 2, 45, 9, 3, 2, 2, 2, 46, 47, 7, 6, 2, 2, 47, 60, 7, 9, 2, 2, 48, 52,
+	9, 2, 2, 2, 49, 51, 5, 16, 9, 2, 50, 49, 3, 2, 2, 2, 51, 54, 3, 2, 2, 2,
+	52, 50, 3, 2, 2, 2, 52, 53, 3, 2, 2, 2, 53, 61, 3, 2, 2, 2, 54, 52, 3,
+	2, 2, 2, 55, 57, 5, 16, 9, 2, 56, 55, 3, 2, 2, 2, 57, 58, 3, 2, 2, 2, 58,
+	56, 3, 2, 2, 2, 58, 59, 3, 2, 2, 2, 59, 61, 3, 2, 2, 2, 60, 48, 3, 2, 2,
+	2, 60, 56, 3, 2, 2, 2, 61, 11, 3, 2, 2, 2, 62, 63, 7, 7, 2, 2, 63, 76,
+	7, 9, 2, 2, 64, 68, 9, 2, 2, 2, 65, 67, 5, 16, 9, 2, 66, 65, 3, 2, 2, 2,
+	67, 70, 3, 2, 2, 2, 68, 66, 3, 2, 2, 2, 68, 69, 3, 2, 2, 2, 69, 77, 3,
+	2, 2, 2, 70, 68, 3, 2, 2, 2, 71, 73, 5, 16, 9, 2, 72, 71, 3, 2, 2, 2, 73,
+	74, 3, 2, 2, 2, 74, 72, 3, 2, 2, 2, 74, 75, 3, 2, 2, 2, 75, 77, 3, 2, 2,
+	2, 76, 64, 3, 2, 2, 2, 76, 72, 3, 2, 2, 2, 77, 13, 3, 2, 2, 2, 78, 79,
+	7, 8, 2, 2, 79, 81, 7, 9, 2, 2, 80, 82, 7, 10, 2, 2, 81, 80, 3, 2, 2, 2,
+	81, 82, 3, 2, 2, 2, 82, 15, 3, 2, 2, 2, 83, 88, 7, 13, 2, 2, 84, 85, 9,
+	3, 2, 2, 85, 89, 5, 18, 10, 2, 86, 87, 9, 4, 2, 2, 87, 89, 7, 20, 2, 2,
+	88, 84, 3, 2, 2, 2, 88, 86, 3, 2, 2, 2, 89, 17, 3, 2, 2, 2, 90, 91, 9,
+	5, 2, 2, 91, 19, 3, 2, 2, 2, 13, 23, 33, 42, 52, 58, 60, 68, 74, 76, 81,
+	88,
 }
 var deserializer = antlr.NewATNDeserializer(nil)
 var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
@@ -752,6 +760,10 @@ func (s *AddContext) GLOB() antlr.TerminalNode {
 	return s.GetToken(HerdParserGLOB, 0)
 }
 
+func (s *AddContext) IDENTIFIER() antlr.TerminalNode {
+	return s.GetToken(HerdParserIDENTIFIER, 0)
+}
+
 func (s *AddContext) AllFilter() []IFilterContext {
 	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IFilterContext)(nil)).Elem())
 	var tst = make([]IFilterContext, len(ts))
@@ -825,29 +837,65 @@ func (p *HerdParser) Add() (localctx IAddContext) {
 		p.SetState(45)
 		p.Match(HerdParserHOSTS)
 	}
-	{
-		p.SetState(46)
-
-		var _m = p.Match(HerdParserGLOB)
-
-		localctx.(*AddContext).glob = _m
-	}
-	p.SetState(50)
+	p.SetState(58)
 	p.GetErrorHandler().Sync(p)
-	_la = p.GetTokenStream().LA(1)
-
-	for _la == HerdParserIDENTIFIER {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 5, p.GetParserRuleContext()) {
+	case 1:
 		{
-			p.SetState(47)
+			p.SetState(46)
 
-			var _x = p.Filter()
+			var _lt = p.GetTokenStream().LT(1)
 
-			localctx.(*AddContext).filters = _x
+			localctx.(*AddContext).glob = _lt
+
+			_la = p.GetTokenStream().LA(1)
+
+			if !(_la == HerdParserIDENTIFIER || _la == HerdParserGLOB) {
+				var _ri = p.GetErrorHandler().RecoverInline(p)
+
+				localctx.(*AddContext).glob = _ri
+			} else {
+				p.GetErrorHandler().ReportMatch(p)
+				p.Consume()
+			}
 		}
-
-		p.SetState(52)
+		p.SetState(50)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
+
+		for _la == HerdParserIDENTIFIER {
+			{
+				p.SetState(47)
+
+				var _x = p.Filter()
+
+				localctx.(*AddContext).filters = _x
+			}
+
+			p.SetState(52)
+			p.GetErrorHandler().Sync(p)
+			_la = p.GetTokenStream().LA(1)
+		}
+
+	case 2:
+		p.SetState(54)
+		p.GetErrorHandler().Sync(p)
+		_la = p.GetTokenStream().LA(1)
+
+		for ok := true; ok; ok = _la == HerdParserIDENTIFIER {
+			{
+				p.SetState(53)
+
+				var _x = p.Filter()
+
+				localctx.(*AddContext).filters = _x
+			}
+
+			p.SetState(56)
+			p.GetErrorHandler().Sync(p)
+			_la = p.GetTokenStream().LA(1)
+		}
+
 	}
 
 	return localctx
@@ -925,6 +973,10 @@ func (s *RemoveContext) GLOB() antlr.TerminalNode {
 	return s.GetToken(HerdParserGLOB, 0)
 }
 
+func (s *RemoveContext) IDENTIFIER() antlr.TerminalNode {
+	return s.GetToken(HerdParserIDENTIFIER, 0)
+}
+
 func (s *RemoveContext) AllFilter() []IFilterContext {
 	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IFilterContext)(nil)).Elem())
 	var tst = make([]IFilterContext, len(ts))
@@ -991,36 +1043,72 @@ func (p *HerdParser) Remove() (localctx IRemoveContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(53)
+		p.SetState(60)
 		p.Match(HerdParserREMOVE)
 	}
 	{
-		p.SetState(54)
+		p.SetState(61)
 		p.Match(HerdParserHOSTS)
 	}
-	{
-		p.SetState(55)
-
-		var _m = p.Match(HerdParserGLOB)
-
-		localctx.(*RemoveContext).glob = _m
-	}
-	p.SetState(59)
+	p.SetState(74)
 	p.GetErrorHandler().Sync(p)
-	_la = p.GetTokenStream().LA(1)
-
-	for _la == HerdParserIDENTIFIER {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 8, p.GetParserRuleContext()) {
+	case 1:
 		{
-			p.SetState(56)
+			p.SetState(62)
 
-			var _x = p.Filter()
+			var _lt = p.GetTokenStream().LT(1)
 
-			localctx.(*RemoveContext).filters = _x
+			localctx.(*RemoveContext).glob = _lt
+
+			_la = p.GetTokenStream().LA(1)
+
+			if !(_la == HerdParserIDENTIFIER || _la == HerdParserGLOB) {
+				var _ri = p.GetErrorHandler().RecoverInline(p)
+
+				localctx.(*RemoveContext).glob = _ri
+			} else {
+				p.GetErrorHandler().ReportMatch(p)
+				p.Consume()
+			}
 		}
-
-		p.SetState(61)
+		p.SetState(66)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
+
+		for _la == HerdParserIDENTIFIER {
+			{
+				p.SetState(63)
+
+				var _x = p.Filter()
+
+				localctx.(*RemoveContext).filters = _x
+			}
+
+			p.SetState(68)
+			p.GetErrorHandler().Sync(p)
+			_la = p.GetTokenStream().LA(1)
+		}
+
+	case 2:
+		p.SetState(70)
+		p.GetErrorHandler().Sync(p)
+		_la = p.GetTokenStream().LA(1)
+
+		for ok := true; ok; ok = _la == HerdParserIDENTIFIER {
+			{
+				p.SetState(69)
+
+				var _x = p.Filter()
+
+				localctx.(*RemoveContext).filters = _x
+			}
+
+			p.SetState(72)
+			p.GetErrorHandler().Sync(p)
+			_la = p.GetTokenStream().LA(1)
+		}
+
 	}
 
 	return localctx
@@ -1130,20 +1218,20 @@ func (p *HerdParser) List() (localctx IListContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(62)
+		p.SetState(76)
 		p.Match(HerdParserLIST)
 	}
 	{
-		p.SetState(63)
+		p.SetState(77)
 		p.Match(HerdParserHOSTS)
 	}
-	p.SetState(65)
+	p.SetState(79)
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == HerdParserONELINE {
 		{
-			p.SetState(64)
+			p.SetState(78)
 
 			var _m = p.Match(HerdParserONELINE)
 
@@ -1270,16 +1358,16 @@ func (p *HerdParser) Filter() (localctx IFilterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(67)
+		p.SetState(81)
 		p.Match(HerdParserIDENTIFIER)
 	}
-	p.SetState(72)
+	p.SetState(86)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case HerdParserEQUALS, HerdParserNOT_EQUALS:
 		{
-			p.SetState(68)
+			p.SetState(82)
 			_la = p.GetTokenStream().LA(1)
 
 			if !(_la == HerdParserEQUALS || _la == HerdParserNOT_EQUALS) {
@@ -1290,13 +1378,13 @@ func (p *HerdParser) Filter() (localctx IFilterContext) {
 			}
 		}
 		{
-			p.SetState(69)
+			p.SetState(83)
 			p.Value()
 		}
 
 	case HerdParserMATCHES, HerdParserNOT_MATCHES:
 		{
-			p.SetState(70)
+			p.SetState(84)
 			_la = p.GetTokenStream().LA(1)
 
 			if !(_la == HerdParserMATCHES || _la == HerdParserNOT_MATCHES) {
@@ -1307,7 +1395,7 @@ func (p *HerdParser) Filter() (localctx IFilterContext) {
 			}
 		}
 		{
-			p.SetState(71)
+			p.SetState(85)
 			p.Match(HerdParserREGEXP)
 		}
 
@@ -1415,7 +1503,7 @@ func (p *HerdParser) Value() (localctx IValueContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(74)
+		p.SetState(88)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<HerdParserDURATION)|(1<<HerdParserNUMBER)|(1<<HerdParserIDENTIFIER)|(1<<HerdParserSTRING))) != 0) {

@@ -25,8 +25,14 @@ func filterCommands(filters []string) ([]herd.Command, error) {
 hostspecLoop:
 	for len(filters) > 0 {
 		glob := filters[0]
+		pos := 1
+		// Do we have a glob or not?
+		if comparison.MatchString(glob) {
+			pos = 0
+			glob = "*"
+		}
 		attrs := make(herd.MatchAttributes, 0)
-		for i, arg := range filters[1:] {
+		for i, arg := range filters[pos:] {
 			if arg == "+" || arg == "-" {
 				filters = filters[i+2:]
 				if add {

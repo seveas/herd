@@ -17,8 +17,7 @@ MATCHES: '=~' ;
 NOT_EQUALS: '!=';
 NOT_MATCHES: '!~';
 STRING
- : '\'' ( '\\' . | ~[\\\r\n\f'] )* '\''
- | '"' ( '\\' . | ~[\\\r\n\f"] )* '"'
+ : '"' ( '\\' . | ~[\\\r\n\f"] )* '"'
  ;
 REGEXP
  : '/' ( '\\' . | ~[\\\r\n\f/] )* '/'
@@ -33,8 +32,8 @@ prog : line* EOF ;
 line : ( run | set | add | remove | list )? '\n' ;
 run : RUN ;
 set: SET varname=IDENTIFIER EQUALS? varvalue=value ;
-add: ADD HOSTS glob=GLOB filters=filter* ;
-remove: REMOVE HOSTS glob=GLOB filters=filter* ;
+add: ADD HOSTS ( glob=(GLOB|IDENTIFIER) filters=filter* | filters=filter+ );
+remove: REMOVE HOSTS ( glob=(GLOB|IDENTIFIER) filters=filter* | filters=filter+ );
 list: LIST HOSTS oneline=ONELINE? ;
 filter: IDENTIFIER ( ( EQUALS | NOT_EQUALS ) value | ( MATCHES | NOT_MATCHES ) REGEXP );
 value: NUMBER | STRING | DURATION | IDENTIFIER ;
