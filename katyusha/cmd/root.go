@@ -59,11 +59,13 @@ func initConfig() {
 	}
 
 	// We only need to set defaults for things that don't have a flag bound to them
-	viper.SetDefault("HistoryDir", path.Join(home, ".katyusha", "history"))
-	viper.SetDefault("CacheDir", path.Join(home, ".katyusha", "cache"))
+	root := path.Join(home, ".katyusha")
+	viper.Set("RootDir", root)
+	viper.SetDefault("HistoryDir", path.Join(root, "history"))
+	viper.SetDefault("CacheDir", path.Join(root, "cache"))
 	viper.SetDefault("Formatter", "pretty")
 
-	viper.AddConfigPath(path.Join(home, ".katyusha"))
+	viper.AddConfigPath(root)
 	viper.AddConfigPath("/etc/katyusha")
 	viper.SetConfigName("config")
 	if err := viper.ReadInConfig(); err != nil {
