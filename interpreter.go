@@ -129,7 +129,10 @@ func (l *katyushaListener) ExitAdd(c *parser.AddContext) {
 	if l.ErrorListener.HasErrors {
 		return
 	}
-	glob := c.GetGlob().GetText()
+	glob := "*"
+	if g := c.GetGlob(); g != nil {
+		glob = g.GetText()
+	}
 	attrs := l.ParseFilters(c.AllFilter())
 	command := AddHostsCommand{Glob: glob, Attributes: attrs}
 	l.Commands = append(l.Commands, command)
@@ -139,7 +142,10 @@ func (l *katyushaListener) ExitRemove(c *parser.RemoveContext) {
 	if l.ErrorListener.HasErrors {
 		return
 	}
-	glob := c.GetGlob().GetText()
+	glob := "*"
+	if g := c.GetGlob(); g != nil {
+		glob = g.GetText()
+	}
 	attrs := l.ParseFilters(c.AllFilter())
 	command := RemoveHostsCommand{Glob: glob, Attributes: attrs}
 	l.Commands = append(l.Commands, command)
