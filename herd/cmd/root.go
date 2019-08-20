@@ -59,11 +59,13 @@ func initConfig() {
 	}
 
 	// We only need to set defaults for things that don't have a flag bound to them
-	viper.SetDefault("HistoryDir", path.Join(home, ".herd", "history"))
-	viper.SetDefault("CacheDir", path.Join(home, ".herd", "cache"))
+	root := path.Join(home, ".herd")
+	viper.Set("RootDir", root)
+	viper.SetDefault("HistoryDir", path.Join(root, "history"))
+	viper.SetDefault("CacheDir", path.Join(root, "cache"))
 	viper.SetDefault("Formatter", "pretty")
 
-	viper.AddConfigPath(path.Join(home, ".herd"))
+	viper.AddConfigPath(root)
 	viper.AddConfigPath("/etc/herd")
 	viper.SetConfigName("config")
 	if err := viper.ReadInConfig(); err != nil {

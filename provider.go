@@ -53,6 +53,15 @@ func LoadProviders() (Providers, error) {
 			ret = append(ret, provider)
 		}
 	}
+	// Magic
+	if _, err := os.Stat(path.Join(viper.GetString("RootDir"), "inventory")); err == nil {
+		p := &PlainTextProvider{Name: "inventory", File: path.Join(viper.GetString("RootDir"), "inventory")}
+		ret = append(ret, p)
+	}
+	if _, err := os.Stat(path.Join(viper.GetString("RootDir"), "inventory.json")); err == nil {
+		p := &JsonProvider{Name: "inventory.json", File: path.Join(viper.GetString("RootDir"), "inventory.json")}
+		ret = append(ret, p)
+	}
 	return ret, nil
 }
 
