@@ -321,13 +321,13 @@ func (host *Host) Run(ctx context.Context, command string) Result {
 	var stdout, stderr ByteWriter
 	if viper.GetString("Output") == "line" {
 		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
-		stdout = NewLineWriterBuffer(prefix, false)
-		stderr = NewLineWriterBuffer(prefix, true)
+		stdout = UI.NewLineWriterBuffer(host, prefix, false)
+		stderr = UI.NewLineWriterBuffer(host, prefix, true)
 		defer func() {
 			if r.Err != nil {
-				UI.GetFormatter().FormatStatus(r, stderr)
+				stderr.(*LineWriterBuffer).WriteStatus(r)
 			} else {
-				UI.GetFormatter().FormatStatus(r, stdout)
+				stdout.(*LineWriterBuffer).WriteStatus(r)
 			}
 		}()
 	} else {
