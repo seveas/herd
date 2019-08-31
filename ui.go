@@ -30,6 +30,7 @@ type KatyushaUI interface {
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
 	PrintHistoryItemWithPager(hi HistoryItem)
+	PrintCommand(command string)
 	PrintResult(r Result)
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
@@ -82,6 +83,15 @@ func (ui *SimpleUI) Printer() {
 func (ui *SimpleUI) Wait() {
 	close(ui.Pchan)
 	<-ui.Dchan
+}
+
+func (ui *SimpleUI) PrintCommand(command string) {
+	if viper.GetInt("LogLevel") < NORMAL {
+		return
+	}
+	buf := strings.Builder{}
+	ui.Formatter.FormatCommand(command, &buf)
+	ui.Pchan <- buf.String()
 }
 
 func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {

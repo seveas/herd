@@ -124,6 +124,7 @@ func (r *Runner) Run(command string) HistoryItem {
 	ctx, cancel := context.WithCancel(context.Background())
 	if viper.GetString("Output") == "line" {
 		ctx = context.WithValue(ctx, "hostnamelen", maxHostNameLen(hi.Hosts))
+		UI.PrintCommand(hi.Command)
 	}
 	defer cancel()
 	queued := -1
