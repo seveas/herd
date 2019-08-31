@@ -200,12 +200,13 @@ func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneF
 		return
 	}
 	since := time.Since(start).Truncate(time.Second)
+	togo := viper.GetDuration("Timeout") - since
 	if todo == 0 {
 		ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, doneOk, doneFail, doneError, since)
 	} else if queued >= 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, total-todo, total, queued, doneOk, doneFail, doneError)
+		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s)... %d/%d done, %d ok, %d fail, %d error", since, total-todo, total, doneOk, doneFail, doneError)
+		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, doneOk, doneFail, doneError)
 	}
 }
 
