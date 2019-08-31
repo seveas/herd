@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"regexp"
 	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -41,6 +42,7 @@ func init() {
 	rootCmd.PersistentFlags().StringArray("output-filter", []string{}, "Only output results for hosts matching this filter")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringP("sort", "s", "name", "Sort hosts before running commands")
+	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Don't show status for succesful commands with no output")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
@@ -48,6 +50,7 @@ func init() {
 	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
 	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
+	viper.BindPFlag("Quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 }
 
 func initConfig() {
@@ -102,6 +105,15 @@ func initConfig() {
 	outputFilters := make([]katyusha.FilterCommand, len(commands))
 	for i, c := range commands {
 		outputFilters[i] = c.(katyusha.FilterCommand)
+	}
+	if viper.GetBool("quiet") {
+		if viper.GetString("Output") == "line" {
+			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}}})
+		} else {
+			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}}})
+			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}}})
+			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}}})
+		}
 	}
 	katyusha.UI.SetOutputFilter(outputFilters)
 }
