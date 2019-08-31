@@ -14,20 +14,12 @@ var Formatters = map[string]Formatter{
 }
 
 type Formatter interface {
-	FormatHistoryItem(hi HistoryItem, w io.Writer)
 	FormatCommand(c string, w io.Writer)
 	FormatResult(r Result, w io.Writer)
 	FormatStatus(r Result, w io.Writer)
 }
 
 type PrettyFormatter struct {
-}
-
-func (f PrettyFormatter) FormatHistoryItem(hi HistoryItem, w io.Writer) {
-	f.FormatCommand(hi.Command, w)
-	for _, h := range hi.Hosts {
-		f.FormatResult(hi.Results[h.Name], w)
-	}
 }
 
 func (f PrettyFormatter) FormatCommand(command string, w io.Writer) {

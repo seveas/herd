@@ -3,6 +3,7 @@ package herd
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -28,9 +29,10 @@ type HerdUI interface {
 	Errorf(format string, v ...interface{})
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
+	PrintHistoryItemWithPager(hi HistoryItem)
 	PrintResult(r Result)
 	Wait()
-	GetFormatter() Formatter
+	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
 }
 
 type SimpleUI struct {
@@ -55,9 +57,6 @@ func NewSimpleUI() *SimpleUI {
 	return ui
 }
 
-func (ui *SimpleUI) GetFormatter() Formatter {
-	return ui.Formatter
-}
 
 func (ui *SimpleUI) Printer() {
 	for msg := range ui.Pchan {
@@ -90,8 +89,28 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 		return
 	}
 	buf := strings.Builder{}
-	ui.Formatter.FormatHistoryItem(hi, &buf)
+	ui.printHistoryItem(hi, &buf)
 	ui.Pchan <- buf.String()
+}
+
+func (ui *SimpleUI) PrintHistoryItemWithPager(hi HistoryItem) {
+	p := Pager{}
+	if err := p.Start(); err != nil {
+		ui.Errorf("Unable to start pager, displaying on stdout: %s", err)
+		ui.PrintHistoryItem(hi)
+	} else {
+		ui.printHistoryItem(hi, &p)
+		p.Wait()
+	}
+}
+
+func (ui *SimpleUI) printHistoryItem(hi HistoryItem, w io.Writer) {
+	ui.Formatter.FormatCommand(hi.Command, w)
+	for _, h := range hi.Hosts {
+		if ui.Filtered(h) {
+			ui.Formatter.FormatResult(hi.Results[h.Name], w)
+		}
+	}
 }
 
 func (ui *SimpleUI) PrintResult(r Result) {
@@ -170,15 +189,17 @@ type ByteWriter interface {
 type LineWriterBuffer struct {
 	buf     *bytes.Buffer
 	lineBuf []byte
+	host    *Host
 	prefix  string
 	pos     int
+	ui      *SimpleUI
 }
 
-func NewLineWriterBuffer(prefix string, isError bool) *LineWriterBuffer {
+func (ui *SimpleUI) NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer {
 	if isError {
 		prefix = ansi.Color(prefix, "red")
 	}
-	return &LineWriterBuffer{buf: bytes.NewBuffer([]byte{}), prefix: prefix, pos: 0, lineBuf: []byte{}}
+	return &LineWriterBuffer{buf: bytes.NewBuffer([]byte{}), lineBuf: []byte{}, host: host, prefix: prefix, pos: 0, ui: ui}
 }
 
 func (buf *LineWriterBuffer) Write(p []byte) (int, error) {
@@ -189,10 +210,19 @@ func (buf *LineWriterBuffer) Write(p []byte) (int, error) {
 		if idx == -1 {
 			break
 		}
-		UI.Printf("%s %s", buf.prefix, buf.lineBuf[:idx+1])
+		buf.ui.Printf("%s %s", buf.prefix, buf.lineBuf[:idx+1])
 		buf.lineBuf = buf.lineBuf[idx+1:]
 	}
 	return n, err
+}
+
+func (buf *LineWriterBuffer) WriteStatus(r Result) {
+	if !buf.ui.Filtered(buf.host) {
+		return
+	}
+	sb := strings.Builder{}
+	buf.ui.Formatter.FormatStatus(r, &sb)
+	buf.Write([]byte(sb.String()))
 }
 
 func (buf *LineWriterBuffer) Bytes() []byte {
