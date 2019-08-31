@@ -10,6 +10,10 @@ type Command interface {
 	Execute(r *Runner) error
 }
 
+type FilterCommand interface {
+	Match(h *Host) bool
+}
+
 type SetCommand struct {
 	Variable string
 	Value    interface{}
@@ -34,6 +38,10 @@ func (c AddHostsCommand) Execute(r *Runner) error {
 	return nil
 }
 
+func (c AddHostsCommand) Match(h *Host) bool {
+	return h.Match(c.Glob, c.Attributes)
+}
+
 func (c AddHostsCommand) String() string {
 	return fmt.Sprintf("add hosts %s %v", c.Glob, c.Attributes)
 }
@@ -46,6 +54,10 @@ type RemoveHostsCommand struct {
 func (c RemoveHostsCommand) Execute(r *Runner) error {
 	r.RemoveHosts(c.Glob, c.Attributes)
 	return nil
+}
+
+func (c RemoveHostsCommand) Match(h *Host) bool {
+	return !h.Match(c.Glob, c.Attributes)
 }
 
 func (c RemoveHostsCommand) String() string {

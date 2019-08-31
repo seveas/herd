@@ -57,6 +57,9 @@ func (m MatchAttribute) Match(value interface{}) (matches bool) {
 		if bvalue, ok := value.(bool); ok && (m.Value == "true" || m.Value == "false") {
 			return bvalue == (m.Value == "true")
 		}
+		if m.Value == "nil" {
+			return value == nil
+		}
 		myival, err := strconv.ParseInt(m.Value.(string), 0, 64)
 		if err != nil {
 			return false

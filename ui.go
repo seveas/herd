@@ -34,6 +34,7 @@ type KatyushaUI interface {
 	PrintResult(r Result)
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
+	SetOutputFilter([]FilterCommand)
 }
 
 type SimpleUI struct {
@@ -43,6 +44,7 @@ type SimpleUI struct {
 	Pchan        chan string
 	Dchan        chan interface{}
 	Formatter    Formatter
+	OutputFilter []FilterCommand
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -53,11 +55,27 @@ func NewSimpleUI() *SimpleUI {
 		Pchan:        make(chan string),
 		Dchan:        make(chan interface{}),
 		Formatter:    Formatters[viper.GetString("Formatter")],
+		OutputFilter: []FilterCommand{},
 	}
 	go ui.Printer()
 	return ui
 }
 
+func (ui *SimpleUI) SetOutputFilter(f []FilterCommand) {
+	ui.OutputFilter = f
+}
+
+func (ui *SimpleUI) Filtered(h *Host) bool {
+	if len(ui.OutputFilter) == 0 {
+		return true
+	}
+	for _, f := range ui.OutputFilter {
+		if f.Match(h) {
+			return true
+		}
+	}
+	return false
+}
 
 func (ui *SimpleUI) Printer() {
 	for msg := range ui.Pchan {
