@@ -12,10 +12,10 @@ $(antlr_sources): Katyusha.g4
 	antlr -Dlanguage=Go -o parser Katyusha.g4
 
 fmt:
-	gofmt -w . katyusha katyusha/cmd
+	go fmt ./...
 
 vet:
-	go vet github.com/seveas/katyusha github.com/seveas/katyusha/katyusha github.com/seveas/katyusha/katyusha/cmd
+	go vet ./...
 
 test: fmt vet
-	go test github.com/seveas/katyusha github.com/seveas/katyusha/katyusha github.com/seveas/katyusha/katyusha/cmd
+	go test ./...
