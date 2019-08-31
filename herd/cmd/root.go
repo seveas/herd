@@ -25,9 +25,6 @@ var rootCmd = &cobra.Command{
   herd interactive *vpn-gateway*`,
 	Args:    cobra.NoArgs,
 	Version: herd.Version(),
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		herd.UI = herd.NewSimpleUI()
-	},
 }
 
 func Execute() error {
@@ -41,6 +38,7 @@ func init() {
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	rootCmd.PersistentFlags().StringArray("output-filter", []string{}, "Only output results for hosts matching this filter")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringP("sort", "s", "name", "Sort hosts before running commands")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
@@ -93,6 +91,19 @@ func initConfig() {
 	if _, ok := outputModes[viper.GetString("Output")]; !ok {
 		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
 	}
+	filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
+	commands, err := filterCommands(filters)
+	if err != nil {
+		bail("Invalid filters: %v", filters)
+	}
+
+	// Set up the UI
+	herd.UI = herd.NewSimpleUI()
+	outputFilters := make([]herd.FilterCommand, len(commands))
+	for i, c := range commands {
+		outputFilters[i] = c.(herd.FilterCommand)
+	}
+	herd.UI.SetOutputFilter(outputFilters)
 }
 
 func bail(format string, args ...interface{}) {
