@@ -12,10 +12,10 @@ $(antlr_sources): Herd.g4
 	antlr -Dlanguage=Go -o parser Herd.g4
 
 fmt:
-	gofmt -w . herd herd/cmd
+	go fmt ./...
 
 vet:
-	go vet github.com/seveas/herd github.com/seveas/herd/herd github.com/seveas/herd/herd/cmd
+	go vet ./...
 
 test: fmt vet
-	go test github.com/seveas/herd github.com/seveas/herd/herd github.com/seveas/herd/herd/cmd
+	go test ./...
