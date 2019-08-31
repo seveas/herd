@@ -122,11 +122,11 @@ func (r *Runner) Run(command string) HistoryItem {
 	c := make(chan Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	if viper.GetString("Output") == "line" {
 		ctx = context.WithValue(ctx, "hostnamelen", maxHostNameLen(hi.Hosts))
 		UI.PrintCommand(hi.Command)
 	}
-	defer cancel()
 	queued := -1
 	todo := len(hi.Hosts)
 	total, doneOk, doneFail, doneError := todo, 0, 0, 0
@@ -156,7 +156,7 @@ func (r *Runner) Run(command string) HistoryItem {
 		for _, host := range hi.Hosts {
 			hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
 			host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
-			go func(ctx context.Context, h *Host) { defer hcancel(); c <- h.Run(ctx, command) }(hctx, host)
+			go func(ctx context.Context, h *Host) { c <- h.Run(ctx, command); hcancel() }(hctx, host)
 		}
 	}
 	ticker := time.NewTicker(time.Second / 2)
