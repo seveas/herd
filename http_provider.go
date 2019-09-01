@@ -10,20 +10,22 @@ import (
 )
 
 type HttpProvider struct {
-	Name     string
-	File     string
-	Url      string
-	Username string
-	Password string
-	Headers  map[string]string
+	Name          string
+	File          string
+	Url           string
+	Username      string
+	Password      string
+	Headers       map[string]string
+	Timeout       time.Duration
+	CacheLifetime time.Duration
 }
 
 func (p *HttpProvider) String() string {
 	return p.Name
 }
 
-func (p *HttpProvider) Cache(ctx *context.Context) error {
-	if info, err := os.Stat(p.File); err == nil && time.Since(info.ModTime()) < 1*time.Hour {
+func (p *HttpProvider) Cache(ctx context.Context) error {
+	if info, err := os.Stat(p.File); err == nil && time.Since(info.ModTime()) < p.CacheLifetime {
 		return nil
 	}
 	UI.Infof("Refreshing %s cache", p.Name)
@@ -32,7 +34,9 @@ func (p *HttpProvider) Cache(ctx *context.Context) error {
 	if err != nil {
 		return err
 	}
-	req = req.WithContext(*ctx)
+	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
 	if p.Username != "" {
 		req.SetBasicAuth(p.Username, p.Password)
 	}
