@@ -15,7 +15,7 @@ type HostProvider interface {
 }
 
 type Cacher interface {
-	Cache(ctx *context.Context) error
+	Cache(ctx context.Context) error
 }
 
 type Providers []HostProvider
@@ -42,8 +42,10 @@ func LoadProviders() (Providers, error) {
 				provider = &JsonProvider{}
 			} else if pname == "http" {
 				provider = &HttpProvider{
-					Name: key,
-					File: path.Join(viper.GetString("CacheDir"), key+".cache"),
+					Name:          key,
+					File:          path.Join(viper.GetString("CacheDir"), key+".cache"),
+					CacheLifetime: 1 * time.Hour,
+					Timeout:       30 * time.Second,
 				}
 			}
 			err := ps.Unmarshal(provider)
@@ -69,8 +71,7 @@ func (p *Providers) Cache() []error {
 	if err := os.MkdirAll(viper.GetString("CacheDir"), 0700); err != nil {
 		return []error{err}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+	ctx := context.Background()
 	errs := make([]error, 0)
 	todo := 0
 	ec := make(chan error)
@@ -78,7 +79,7 @@ func (p *Providers) Cache() []error {
 		if c, ok := pr.(Cacher); ok {
 			todo += 1
 			go func(pr Cacher) {
-				err := c.Cache(&ctx)
+				err := c.Cache(ctx)
 				if err != nil {
 					err = fmt.Errorf("Error contacting %s: %s", pr, err)
 				}
