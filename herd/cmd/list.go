@@ -10,7 +10,7 @@ import (
 
 var listCmd = &cobra.Command{
 	Use:                   "list [--oneline] glob [filters] [<+|-> glob [filters]...]",
-	Short:                 "Query your datasources and hosts matching globs and filters",
+	Short:                 "Query your datasources and list hosts matching globs and filters",
 	Example:               "  herd list *.site2.example.com os=Debian",
 	DisableFlagsInUseLine: true,
 	RunE:                  runList,
@@ -18,7 +18,13 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.Flags().Bool("oneline", false, "List all hosts on one line, separated by commas")
+	listCmd.Flags().StringSlice("attributes", []string{}, "Show not onlt the names, but also the specified attributes")
+	listCmd.Flags().Bool("all-attributes", false, "List hosts with all their attributes")
+	listCmd.Flags().Bool("csv", false, "Output in csv format")
 	viper.BindPFlag("OneLine", listCmd.Flags().Lookup("oneline"))
+	viper.BindPFlag("AllAttributes", listCmd.Flags().Lookup("all-attributes"))
+	viper.BindPFlag("Attributes", listCmd.Flags().Lookup("attributes"))
+	viper.BindPFlag("Csv", listCmd.Flags().Lookup("csv"))
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -31,7 +37,12 @@ func runList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	commands = append(commands, herd.ListHostsCommand{OneLine: viper.GetBool("OneLine")})
+	commands = append(commands, herd.ListHostsCommand{
+		OneLine:       viper.GetBool("OneLine"),
+		AllAttributes: viper.GetBool("AllAttributes"),
+		Attributes:    viper.GetStringSlice("Attributes"),
+		Csv:           viper.GetBool("Csv"),
+	})
 	runCommands(commands, true)
 	return nil
 }
