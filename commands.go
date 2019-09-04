@@ -2,6 +2,7 @@ package katyusha
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -65,20 +66,29 @@ func (c RemoveHostsCommand) String() string {
 }
 
 type ListHostsCommand struct {
-	OneLine bool
+	OneLine       bool
+	AllAttributes bool
+	Attributes    []string
+	Csv           bool
 }
 
 func (c ListHostsCommand) Execute(r *Runner) error {
-	r.ListHosts(c.OneLine)
+	r.ListHosts(c.OneLine, c.AllAttributes, c.Attributes, c.Csv)
 	return nil
 }
 
 func (c ListHostsCommand) String() string {
+	ret := "list hosts"
 	if c.OneLine {
-		return "list hosts --oneline"
-	} else {
-		return "list hosts"
+		ret += " --oneline"
 	}
+	if c.AllAttributes {
+		ret += " --all-attributes"
+	}
+	if len(c.Attributes) != 0 {
+		ret += " --attributes=" + strings.Join(c.Attributes, ",")
+	}
+	return ret
 }
 
 type RunCommand struct {
