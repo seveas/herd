@@ -43,11 +43,10 @@ func (p *HttpProvider) String() string {
 	return p.Name
 }
 
-func (p *HttpProvider) Cache(ctx context.Context) error {
+func (p *HttpProvider) Cache(mc chan CacheMessage, ctx context.Context) error {
 	if info, err := os.Stat(p.File); err == nil && time.Since(info.ModTime()) < p.CacheLifetime {
 		return nil
 	}
-	UI.Infof("Refreshing %s cache", p.Name)
 
 	req, err := http.NewRequest("GET", p.Url, nil)
 	if err != nil {

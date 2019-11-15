@@ -15,7 +15,14 @@ type HostProvider interface {
 }
 
 type Cacher interface {
-	Cache(ctx context.Context) error
+	Cache(mc chan CacheMessage, ctx context.Context) error
+	String() string
+}
+
+type CacheMessage struct {
+	name     string
+	finished bool
+	err      error
 }
 
 type Providers []HostProvider
@@ -57,26 +64,44 @@ func (p *Providers) Cache() []error {
 	}
 	ctx := context.Background()
 	errs := make([]error, 0)
-	todo := 0
-	ec := make(chan error)
+	mc := make(chan CacheMessage)
+	caches := make([]string, 0)
+	st := time.Now()
 	for _, pr := range *p {
 		if c, ok := pr.(Cacher); ok {
-			todo += 1
+			caches = append(caches, c.String())
 			go func(pr Cacher) {
-				err := c.Cache(ctx)
+				err := c.Cache(mc, ctx)
 				if err != nil {
 					err = fmt.Errorf("Error contacting %s: %s", pr, err)
 				}
-				ec <- err
+				mc <- CacheMessage{name: c.String(), finished: true, err: err}
 			}(c)
 		}
 	}
-	for todo > 0 {
-		err := <-ec
-		if err != nil {
-			errs = append(errs, err)
+	UI.CacheProgress(st, caches)
+	ticker := time.NewTicker(time.Second / 2)
+	defer ticker.Stop()
+	for len(caches) > 0 {
+		select {
+		case msg := <-mc:
+			if msg.err != nil {
+				errs = append(errs, msg.err)
+			}
+			if msg.finished {
+				UI.Debugf("Cache updated for %s", msg.name)
+				for i, v := range caches {
+					if v == msg.name {
+						caches = append(caches[:i], caches[i+1:]...)
+						break
+					}
+				}
+			} else {
+				caches = append(caches, msg.name)
+			}
+		case <-ticker.C:
 		}
-		todo -= 1
+		UI.CacheProgress(st, caches)
 	}
 	return errs
 }
