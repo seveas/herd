@@ -25,16 +25,16 @@ func filterCommands(filters []string) ([]katyusha.Command, error) {
 hostspecLoop:
 	for len(filters) > 0 {
 		glob := filters[0]
-		pos := 1
 		// Do we have a glob or not?
 		if comparison.MatchString(glob) {
-			pos = 0
 			glob = "*"
+		} else {
+			filters = filters[1:]
 		}
 		attrs := make(katyusha.MatchAttributes, 0)
-		for i, arg := range filters[pos:] {
+		for i, arg := range filters[:] {
 			if arg == "+" || arg == "-" {
-				filters = filters[i+2:]
+				filters = filters[i+1:]
 				if add {
 					commands = append(commands, katyusha.AddHostsCommand{Glob: glob, Attributes: attrs})
 				} else {

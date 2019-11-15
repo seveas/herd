@@ -45,6 +45,8 @@ func TestFilterCommands(t *testing.T) {
 		{"*", "foo!=bar"},
 		{"*", "foo=~bar"},
 		{"*", "foo!~bar"},
+		{"foo=bar"},
+		{"foo=bar", "+", "baz=quux"},
 	}
 	expected := [][]katyusha.Command{
 		{
@@ -80,6 +82,13 @@ func TestFilterCommands(t *testing.T) {
 		{
 			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}},
 		},
+		{
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+		},
+		{
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			katyusha.AddHostsCommand{Glob: "*", Attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+		},
 	}
 	errors := []string{
 		"",
@@ -90,6 +99,8 @@ func TestFilterCommands(t *testing.T) {
 		"",
 		"",
 		"incorrect filter: foo",
+		"",
+		"",
 		"",
 		"",
 		"",
