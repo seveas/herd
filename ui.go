@@ -27,6 +27,7 @@ type KatyushaUI interface {
 	Warnf(format string, v ...interface{})
 	Debugf(format string, v ...interface{})
 	Errorf(format string, v ...interface{})
+	CacheProgress(start time.Time, caches []string)
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi HistoryItem)
 	PrintHistoryItemWithPager(hi HistoryItem)
@@ -45,6 +46,7 @@ type SimpleUI struct {
 	Dchan        chan interface{}
 	Formatter    Formatter
 	OutputFilter []FilterCommand
+	Width        int
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -56,7 +58,9 @@ func NewSimpleUI() *SimpleUI {
 		Dchan:        make(chan interface{}),
 		Formatter:    Formatters[viper.GetString("Formatter")],
 		OutputFilter: []FilterCommand{},
+		Width:        GetTerminalWidth(),
 	}
+	go ListenForWindowChange(ui)
 	go ui.Printer()
 	return ui
 }
@@ -207,6 +211,22 @@ func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneF
 		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {
 		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, doneOk, doneFail, doneError)
+	}
+}
+
+func (ui *SimpleUI) CacheProgress(start time.Time, caches []string) {
+	if viper.GetInt("LogLevel") < INFO {
+		return
+	}
+	since := time.Since(start).Truncate(time.Second)
+	if len(caches) == 0 {
+		ui.Pchan <- fmt.Sprintf("\r\033[2KAll caches updated\n")
+	} else {
+		cs := strings.Join(caches, ", ")
+		if len(cs) > ui.Width-25 {
+			cs = cs[:ui.Width-30] + "..."
+		}
+		ui.Pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
 	}
 }
 
