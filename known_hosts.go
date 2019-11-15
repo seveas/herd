@@ -3,9 +3,22 @@ package herd
 import (
 	"io"
 	"io/ioutil"
+	"path"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"golang.org/x/crypto/ssh"
 )
+
+func init() {
+	ProviderMagic["ssh"] = func(p Providers) Providers {
+		files := []string{"/etc/ssh/ssh_known_hosts"}
+		home, err := homedir.Dir()
+		if err == nil {
+			files = append(files, path.Join(home, ".ssh", "known_hosts"))
+		}
+		return append(p, &KnownHostsProvider{Files: files})
+	}
+}
 
 type KnownHostsProvider struct {
 	Files []string

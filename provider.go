@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"strings"
 	"time"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/viper"
 )
 
 type HostProvider interface {
@@ -20,49 +20,33 @@ type Cacher interface {
 
 type Providers []HostProvider
 
+var ProviderMakers = make(map[string]func(string, *viper.Viper) (HostProvider, error))
+var ProviderMagic = make(map[string]func(Providers) Providers)
+
 func LoadProviders() (Providers, error) {
-	files := []string{"/etc/ssh/ssh_known_hosts"}
-	home, err := homedir.Dir()
-	if err == nil {
-		files = append(files, path.Join(home, ".ssh", "known_hosts"))
+	ret := make(Providers, 0)
+
+	// Initialize all the magic providers
+	for _, callable := range ProviderMagic {
+		ret = callable(ret)
 	}
-	ret := Providers{
-		&KnownHostsProvider{
-			Files: files,
-		},
-		&CliProvider{},
-	}
+
+	// And now all the explicitely configured ones
 	providers := viper.Sub("Providers")
 	if providers != nil {
 		for key, _ := range providers.AllSettings() {
 			ps := providers.Sub(key)
 			pname := ps.GetString("Provider")
-			var provider HostProvider
-			if pname == "json" {
-				provider = &JsonProvider{}
-			} else if pname == "http" {
-				provider = &HttpProvider{
-					Name:          key,
-					File:          path.Join(viper.GetString("CacheDir"), key+".cache"),
-					CacheLifetime: 1 * time.Hour,
-					Timeout:       30 * time.Second,
-				}
+			maker, ok := ProviderMakers[strings.ToLower(pname)]
+			if !ok {
+				return nil, fmt.Errorf("No such provider: %s", pname)
 			}
-			err := ps.Unmarshal(provider)
+			p, err := maker(pname, ps)
 			if err != nil {
 				return nil, err
 			}
-			ret = append(ret, provider)
+			ret = append(ret, p)
 		}
-	}
-	// Magic
-	if _, err := os.Stat(path.Join(viper.GetString("RootDir"), "inventory")); err == nil {
-		p := &PlainTextProvider{Name: "inventory", File: path.Join(viper.GetString("RootDir"), "inventory")}
-		ret = append(ret, p)
-	}
-	if _, err := os.Stat(path.Join(viper.GetString("RootDir"), "inventory.json")); err == nil {
-		p := &JsonProvider{Name: "inventory.json", File: path.Join(viper.GetString("RootDir"), "inventory.json")}
-		ret = append(ret, p)
 	}
 	return ret, nil
 }

@@ -3,11 +3,28 @@ package herd
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"path"
+
+	"github.com/spf13/viper"
 )
 
 type JsonProvider struct {
 	Name string
 	File string
+}
+
+func init() {
+	ProviderMagic["json"] = func(p Providers) Providers {
+		fn := path.Join(viper.GetString("RootDir"), "inventory.json")
+		if _, err := os.Stat(fn); err != nil {
+			return p
+		}
+		return append(p, &JsonProvider{Name: "inventory", File: fn})
+	}
+	ProviderMakers["json"] = func(name string, v *viper.Viper) (HostProvider, error) {
+		return &JsonProvider{Name: name, File: viper.GetString("File")}, nil
+	}
 }
 
 func (p *JsonProvider) GetHosts(hostnameGlob string) Hosts {

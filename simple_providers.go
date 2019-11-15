@@ -3,8 +3,28 @@ package herd
 import (
 	"io/ioutil"
 	"net"
+	"os"
+	"path"
 	"strings"
+
+	"github.com/spf13/viper"
 )
+
+func init() {
+	ProviderMagic["cli"] = func(p Providers) Providers {
+		return append(p, &CliProvider{})
+	}
+	ProviderMagic["plain"] = func(p Providers) Providers {
+		fn := path.Join(viper.GetString("RootDir"), "inventory")
+		if _, err := os.Stat(fn); err != nil {
+			return p
+		}
+		return append(p, &PlainTextProvider{Name: "inventory", File: fn})
+	}
+	ProviderMakers["plain"] = func(name string, v *viper.Viper) (HostProvider, error) {
+		return &PlainTextProvider{Name: name, File: viper.GetString("File")}, nil
+	}
+}
 
 type CliProvider struct {
 	Name string
@@ -19,9 +39,8 @@ func (p *CliProvider) GetHosts(name string) Hosts {
 }
 
 type PlainTextProvider struct {
-	Name       string
-	File       string
-	PreProcess func(*map[string]interface{})
+	Name string
+	File string
 }
 
 func (p *PlainTextProvider) GetHosts(hostnameGlob string) Hosts {
