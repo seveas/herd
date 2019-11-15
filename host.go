@@ -29,6 +29,10 @@ type MatchAttribute struct {
 	Value       interface{}
 }
 
+type MatchValue interface {
+	Match(m MatchAttribute) bool
+}
+
 func (m MatchAttribute) String() string {
 	c1, c2 := '=', '='
 	if m.Negate {
@@ -52,6 +56,9 @@ func (m MatchAttribute) Match(value interface{}) (matches bool) {
 	if m.Regex {
 		svalue, ok := value.(string)
 		return ok && m.Value.(*regexp.Regexp).MatchString(svalue)
+	}
+	if v, ok := value.(MatchValue); ok {
+		return v.Match(m)
 	}
 	if m.FuzzyTyping {
 		if bvalue, ok := value.(bool); ok && (m.Value == "true" || m.Value == "false") {
