@@ -45,6 +45,8 @@ func TestFilterCommands(t *testing.T) {
 		{"*", "foo!=bar"},
 		{"*", "foo=~bar"},
 		{"*", "foo!~bar"},
+		{"foo=bar"},
+		{"foo=bar", "+", "baz=quux"},
 	}
 	expected := [][]herd.Command{
 		{
@@ -80,6 +82,13 @@ func TestFilterCommands(t *testing.T) {
 		{
 			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}},
 		},
+		{
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+		},
+		{
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			herd.AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+		},
 	}
 	errors := []string{
 		"",
@@ -90,6 +99,8 @@ func TestFilterCommands(t *testing.T) {
 		"",
 		"",
 		"incorrect filter: foo",
+		"",
+		"",
 		"",
 		"",
 		"",
