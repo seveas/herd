@@ -5,8 +5,8 @@ import (
 	"io"
 	"path"
 
-	"github.com/chzyer/readline"
 	"github.com/seveas/katyusha"
+	"github.com/seveas/readline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
