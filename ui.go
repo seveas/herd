@@ -33,6 +33,7 @@ type HerdUI interface {
 	PrintHistoryItemWithPager(hi HistoryItem)
 	PrintCommand(command string)
 	PrintResult(r Result)
+	Write([]byte) (int, error)
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
 	SetOutputFilter([]FilterCommand)
@@ -47,6 +48,7 @@ type SimpleUI struct {
 	Formatter    Formatter
 	OutputFilter []FilterCommand
 	Width        int
+	LineBuf      string
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -100,6 +102,15 @@ func (ui *SimpleUI) Printer() {
 		ui.Output.Sync()
 	}
 	close(ui.Dchan)
+}
+
+func (ui *SimpleUI) Write(msg []byte) (int, error) {
+	ui.LineBuf += string(msg)
+	if strings.HasSuffix(ui.LineBuf, "\n") {
+		ui.Pchan <- ui.LineBuf
+		ui.LineBuf = ""
+	}
+	return len(msg), nil
 }
 
 func (ui *SimpleUI) Wait() {

@@ -114,9 +114,9 @@ func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csv
 	} else if allAttributes || len(attributes) > 0 {
 		var writer datawriter
 		if csvOutput {
-			writer = csv.NewWriter(os.Stdout)
+			writer = csv.NewWriter(UI)
 		} else {
-			writer = NewColumnizer(os.Stdout, "   ")
+			writer = NewColumnizer(UI, "   ")
 		}
 		if allAttributes {
 			attrs := make(map[string]bool)
