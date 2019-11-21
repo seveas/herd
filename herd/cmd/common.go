@@ -87,9 +87,6 @@ func runCommands(commands []herd.Command, doEnd bool) *herd.Runner {
 	}
 	errs := providers.Cache()
 	if len(errs) != 0 {
-		for _, err := range errs {
-			herd.UI.Errorf("%s", err.Error())
-		}
 		return nil
 	}
 	runner := herd.NewRunner(providers)

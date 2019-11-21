@@ -72,9 +72,6 @@ func (p *Providers) Cache() []error {
 			caches = append(caches, c.String())
 			go func(pr Cacher) {
 				err := c.Cache(mc, ctx)
-				if err != nil {
-					err = fmt.Errorf("Error contacting %s: %s", pr, err)
-				}
 				mc <- CacheMessage{name: c.String(), finished: true, err: err}
 			}(c)
 		}
@@ -86,7 +83,9 @@ func (p *Providers) Cache() []error {
 		select {
 		case msg := <-mc:
 			if msg.err != nil {
-				errs = append(errs, msg.err)
+				err := fmt.Errorf("Error contacting %s: %s", msg.name, msg.err)
+				errs = append(errs, err)
+				UI.Errorf("%s", err.Error())
 			}
 			if msg.finished {
 				UI.Debugf("Cache updated for %s", msg.name)
