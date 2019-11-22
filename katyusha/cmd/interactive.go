@@ -34,18 +34,16 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	runner := runCommands(commands, false)
-	// Nil return means provider problems
-	if runner == nil {
-		return nil
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	runner, err := runCommands(commands, false)
+	if err == nil {
+		// Enter interactive mode
+		il := &InteractiveLoop{Runner: runner}
+		il.Run()
+		err = runner.End()
 	}
-
-	// Enter interactive mode
-	il := &InteractiveLoop{Runner: runner}
-	il.Run()
-	runner.End()
-
-	return nil
+	return err
 }
 
 type InteractiveLoop struct {

@@ -43,6 +43,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		Attributes:    viper.GetStringSlice("Attributes"),
 		Csv:           viper.GetBool("Csv"),
 	})
-	runCommands(commands, true)
-	return nil
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	_, err = runCommands(commands, true)
+	return err
 }

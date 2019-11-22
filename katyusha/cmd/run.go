@@ -30,6 +30,8 @@ func runCommand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	commands = append(commands, katyusha.RunCommand{Command: strings.Join(rest, " ")})
-	runCommands(commands, true)
-	return nil
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	_, err = runCommands(commands, true)
+	return err
 }

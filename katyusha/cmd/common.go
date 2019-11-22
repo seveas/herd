@@ -79,15 +79,15 @@ hostspecLoop:
 	return commands, nil
 }
 
-func runCommands(commands []katyusha.Command, doEnd bool) *katyusha.Runner {
+func runCommands(commands []katyusha.Command, doEnd bool) (*katyusha.Runner, error) {
 	providers, err := katyusha.LoadProviders()
 	if err != nil {
 		katyusha.UI.Errorf("%s", err.Error())
-		return nil
+		return nil, err
 	}
 	errs := providers.Cache()
 	if len(errs) != 0 {
-		return nil
+		return nil, errs[0]
 	}
 	runner := katyusha.NewRunner(providers)
 
@@ -96,7 +96,8 @@ func runCommands(commands []katyusha.Command, doEnd bool) *katyusha.Runner {
 		command.Execute(runner)
 	}
 	if doEnd {
-		runner.End()
+		err = runner.End()
+		return nil, err
 	}
-	return runner
+	return runner, nil
 }

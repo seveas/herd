@@ -60,16 +60,17 @@ type HistoryItem struct {
 
 type History []HistoryItem
 
-func (h History) Save(path string) {
+func (h History) Save(path string) error {
 	data, err := json.Marshal(h)
 	if err != nil {
 		UI.Warnf("Unable to export history: %s", err)
-		return
+		return err
 	}
 	err = ioutil.WriteFile(path, data, 0600)
 	if err != nil {
 		UI.Warnf("Unable to save history to %s: %s", path, err)
 	}
+	return err
 }
 
 type Runner struct {
@@ -241,21 +242,23 @@ func (r *Runner) Run(command string) HistoryItem {
 	return hi
 }
 
-func (r *Runner) End() {
+func (r *Runner) End() error {
 	for _, host := range r.Hosts {
 		host.Disconnect()
 	}
 
 	// Save history, if there is any
+	var err error
 	if len(r.History) > 0 {
-		if err := os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
+		if err = os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
 			UI.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
 		} else {
 			fn := path.Join(viper.GetString("HistoryDir"), r.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
-			r.History.Save(fn)
+			err = r.History.Save(fn)
 			UI.Infof("History saved to %s", fn)
 		}
 	}
+	return err
 }
 
 func (r *Runner) NewHistoryItem(command string) HistoryItem {
