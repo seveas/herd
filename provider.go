@@ -60,6 +60,7 @@ func LoadProviders() (Providers, error) {
 
 func (p *Providers) Cache() []error {
 	if err := os.MkdirAll(viper.GetString("CacheDir"), 0700); err != nil {
+		UI.Errorf("Unable to create cache: %s", err.Error())
 		return []error{err}
 	}
 	ctx := context.Background()

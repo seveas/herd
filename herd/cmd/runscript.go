@@ -37,6 +37,8 @@ func runScript(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
 	scriptCommands, err := herd.ParseScript(args[0])
 	if err != nil {
 		// This should not show the usage message
@@ -47,6 +49,6 @@ func runScript(cmd *cobra.Command, args []string) error {
 		commands = append(commands, command)
 	}
 
-	runCommands(commands, true)
-	return nil
+	_, err = runCommands(commands, true)
+	return err
 }

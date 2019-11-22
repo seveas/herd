@@ -79,15 +79,15 @@ hostspecLoop:
 	return commands, nil
 }
 
-func runCommands(commands []herd.Command, doEnd bool) *herd.Runner {
+func runCommands(commands []herd.Command, doEnd bool) (*herd.Runner, error) {
 	providers, err := herd.LoadProviders()
 	if err != nil {
 		herd.UI.Errorf("%s", err.Error())
-		return nil
+		return nil, err
 	}
 	errs := providers.Cache()
 	if len(errs) != 0 {
-		return nil
+		return nil, errs[0]
 	}
 	runner := herd.NewRunner(providers)
 
@@ -96,7 +96,8 @@ func runCommands(commands []herd.Command, doEnd bool) *herd.Runner {
 		command.Execute(runner)
 	}
 	if doEnd {
-		runner.End()
+		err = runner.End()
+		return nil, err
 	}
-	return runner
+	return runner, nil
 }
