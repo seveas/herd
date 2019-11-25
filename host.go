@@ -96,8 +96,8 @@ type MatchAttributes []MatchAttribute
 
 type Host struct {
 	Name       string
+	Attributes HostAttributes
 	PublicKeys []ssh.PublicKey   `json:"-"`
-	Attributes HostAttributes    `json:"-"`
 	SshBanner  string            `json:"-"`
 	SshConfig  *ssh.ClientConfig `json:"-"`
 	Connection *ssh.Client       `json:"-"`
@@ -118,9 +118,9 @@ func (hosts Hosts) String() string {
 	return ret.String()
 }
 
-func (h Hosts) SortAndUniq() Hosts {
+func (h Hosts) Sort() {
 	if len(h) < 2 {
-		return h
+		return
 	}
 	field := viper.GetString("Sort")
 	if field == "name" {
@@ -159,6 +159,12 @@ func (h Hosts) SortAndUniq() Hosts {
 			}
 			return v1.(string) < v2.(string)
 		})
+	}
+}
+
+func (h Hosts) Uniq() Hosts {
+	if len(h) < 2 {
+		return h
 	}
 	src, dst := 1, 0
 	for src < len(h) {
