@@ -2,26 +2,27 @@ package katyusha
 
 import (
 	"fmt"
+	"strings"
 )
 
 type MultiError struct {
-	Errors  []error
-	Message string
+	Subject  string
+	errors   []error
+	messages []string
 }
 
 func (m *MultiError) Error() string {
-	return m.Message
+	if m.Subject != "" && len(m.messages) != 0 {
+		return fmt.Sprintf("%s:\n%s", m.Subject, strings.Join(m.messages, "\n"))
+	}
+	return strings.Join(m.messages, "\n")
 }
 
 func (m *MultiError) Add(e error) {
-	m.Errors = append(m.Errors, e)
-	if m.Message == "" {
-		m.Message = e.Error()
-	} else {
-		m.Message = fmt.Sprintf("%s\n%s", m.Message, e.Error())
-	}
+	m.errors = append(m.errors, e)
+	m.messages = append(m.messages, e.Error())
 }
 
-func (m *MultiError) AddHidden(e error) {
-	m.Errors = append(m.Errors, e)
+func (m *MultiError) HasErrors() bool {
+	return len(m.errors) > 0
 }

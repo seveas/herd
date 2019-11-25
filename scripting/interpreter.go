@@ -13,7 +13,7 @@ import (
 	"github.com/seveas/katyusha/scripting/parser"
 )
 
-type ConfigSetter struct {
+type configSetter struct {
 	tokenType int
 }
 
@@ -60,6 +60,7 @@ var logLevels = map[string]int{
 	"WARNING": katyusha.WARNING,
 	"ERROR":   katyusha.ERROR,
 }
+
 var validators = map[string]func(interface{}) (interface{}, error){
 	"Output": func(i interface{}) (interface{}, error) {
 		s := i.(string)
@@ -80,13 +81,13 @@ var validators = map[string]func(interface{}) (interface{}, error){
 
 type katyushaListener struct {
 	*parser.BaseKatyushaListener
-	Commands      []Command
-	ConfigSetters map[string]ConfigSetter
-	ErrorListener *KatyushaErrorListener
+	commands      []Command
+	configSetters map[string]configSetter
+	errorListener *katyushaErrorListener
 }
 
 func (l *katyushaListener) ExitSet(c *parser.SetContext) {
-	if l.ErrorListener.HasErrors {
+	if l.errorListener.hasErrors() {
 		return
 	}
 	varName := c.GetVarname().GetText()
@@ -129,36 +130,36 @@ func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 		Value:    val,
 	}
 
-	l.Commands = append(l.Commands, command)
+	l.commands = append(l.commands, command)
 }
 
 func (l *katyushaListener) ExitAdd(c *parser.AddContext) {
-	if l.ErrorListener.HasErrors {
+	if l.errorListener.hasErrors() {
 		return
 	}
 	glob := "*"
 	if g := c.GetGlob(); g != nil {
 		glob = g.GetText()
 	}
-	attrs := l.ParseFilters(c.AllFilter())
+	attrs := l.parseFilters(c.AllFilter())
 	command := AddHostsCommand{Glob: glob, Attributes: attrs}
-	l.Commands = append(l.Commands, command)
+	l.commands = append(l.commands, command)
 }
 
 func (l *katyushaListener) ExitRemove(c *parser.RemoveContext) {
-	if l.ErrorListener.HasErrors {
+	if l.errorListener.hasErrors() {
 		return
 	}
 	glob := "*"
 	if g := c.GetGlob(); g != nil {
 		glob = g.GetText()
 	}
-	attrs := l.ParseFilters(c.AllFilter())
+	attrs := l.parseFilters(c.AllFilter())
 	command := RemoveHostsCommand{Glob: glob, Attributes: attrs}
-	l.Commands = append(l.Commands, command)
+	l.commands = append(l.commands, command)
 }
 
-func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) katyusha.MatchAttributes {
+func (l *katyushaListener) parseFilters(filters []parser.IFilterContext) katyusha.MatchAttributes {
 	attrs := make(katyusha.MatchAttributes, 0)
 	for _, filter := range filters {
 		// If there already are lexer/parser errors, don't bother anymore
@@ -203,7 +204,7 @@ func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) katyush
 }
 
 func (l *katyushaListener) ExitList(c *parser.ListContext) {
-	if l.ErrorListener.HasErrors {
+	if l.errorListener.hasErrors() {
 		return
 	}
 	oneline := c.GetOneline()
@@ -211,11 +212,11 @@ func (l *katyushaListener) ExitList(c *parser.ListContext) {
 	if oneline != nil {
 		command.OneLine = true
 	}
-	l.Commands = append(l.Commands, command)
+	l.commands = append(l.commands, command)
 }
 
 func (l *katyushaListener) ExitRun(c *parser.RunContext) {
-	if l.ErrorListener.HasErrors {
+	if l.errorListener.hasErrors() {
 		return
 	}
 	command := strings.TrimLeft(c.GetText()[3:], " \t")
@@ -224,7 +225,7 @@ func (l *katyushaListener) ExitRun(c *parser.RunContext) {
 		c.GetParser().NotifyErrorListeners(err.Error(), c.GetStart(), nil)
 		return
 	}
-	l.Commands = append(l.Commands, RunCommand{Command: command})
+	l.commands = append(l.commands, RunCommand{Command: command})
 }
 
 func ParseScript(fn string) ([]Command, error) {
@@ -241,26 +242,32 @@ func ParseCode(code string) ([]Command, error) {
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	p := parser.NewKatyushaParser(stream)
-	el := KatyushaErrorListener{HasErrors: false}
+	el := katyushaErrorListener{
+		errors: &katyusha.MultiError{Subject: "Syntax errors found"},
+	}
 	l := katyushaListener{
-		Commands:      make([]Command, 0),
-		ErrorListener: &el,
+		commands:      make([]Command, 0),
+		errorListener: &el,
 	}
 	p.RemoveErrorListeners()
 	p.AddErrorListener(&el)
 	antlr.ParseTreeWalkerDefault.Walk(&l, p.Prog())
-	if el.HasErrors {
-		return nil, fmt.Errorf("syntax errors found")
+	if el.hasErrors() {
+		return nil, el.errors
 	}
-	return l.Commands, nil
+	return l.commands, nil
 }
 
-type KatyushaErrorListener struct {
+type katyushaErrorListener struct {
 	*antlr.DefaultErrorListener
-	HasErrors bool
+	errors *katyusha.MultiError
 }
 
-func (l *KatyushaErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
-	katyusha.UI.Errorf("line %d:%d %s", line, column, msg)
-	l.HasErrors = true
+func (l *katyushaErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+	msg = strings.ReplaceAll(msg, "'\n'", "<NEWLINE>")
+	l.errors.Add(fmt.Errorf("line %d:%d %s", line, column, msg))
+}
+
+func (l *katyushaErrorListener) hasErrors() bool {
+	return l.errors.HasErrors()
 }

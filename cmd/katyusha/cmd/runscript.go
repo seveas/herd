@@ -44,7 +44,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		// This should not show the usage message
 		katyusha.UI.Errorf("Unable to parse script %s: %s", args[0], err)
-		return nil
+		return err
 	}
 	for _, command := range scriptCommands {
 		commands = append(commands, command)

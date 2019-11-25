@@ -135,15 +135,15 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 	for todo > 0 {
 		r := <-rc
 		if r.err != nil {
-			errs.AddHidden(r.err)
+			errs.Add(r.err)
 		}
 		hosts = append(hosts, r.hosts...)
 		todo -= 1
 	}
-	if len(errs.Errors) != 0 {
-		return hosts, errs
+	if !errs.HasErrors() {
+		return hosts, nil
 	}
-	return hosts, nil
+	return hosts, errs
 }
 
 func (p *ConsulProvider) LoadDatacenter(conf *consul.Config, dc string) (Hosts, error) {
