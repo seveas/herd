@@ -1,4 +1,4 @@
-package katyusha
+package scripting
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
-	"github.com/seveas/katyusha/parser"
+	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/scripting/parser"
 )
 
 type ConfigSetter struct {
@@ -52,6 +53,13 @@ var tokenTypes = map[string]int{
 	"LogLevel":       parser.KatyushaParserSTRING,
 }
 
+var logLevels = map[string]int{
+	"DEBUG":   katyusha.DEBUG,
+	"INFO":    katyusha.INFO,
+	"NORMAL":  katyusha.NORMAL,
+	"WARNING": katyusha.WARNING,
+	"ERROR":   katyusha.ERROR,
+}
 var validators = map[string]func(interface{}) (interface{}, error){
 	"Output": func(i interface{}) (interface{}, error) {
 		s := i.(string)
@@ -62,7 +70,6 @@ var validators = map[string]func(interface{}) (interface{}, error){
 	},
 	"LogLevel": func(i interface{}) (interface{}, error) {
 		s := i.(string)
-		logLevels := map[string]int{"DEBUG": DEBUG, "INFO": INFO, "NORMAL": NORMAL, "WARNING": WARNING, "ERROR": ERROR}
 		if level, ok := logLevels[s]; ok {
 			return level, nil
 		} else {
@@ -151,8 +158,8 @@ func (l *katyushaListener) ExitRemove(c *parser.RemoveContext) {
 	l.Commands = append(l.Commands, command)
 }
 
-func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) MatchAttributes {
-	attrs := make(MatchAttributes, 0)
+func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) katyusha.MatchAttributes {
+	attrs := make(katyusha.MatchAttributes, 0)
 	for _, filter := range filters {
 		// If there already are lexer/parser errors, don't bother anymore
 		for _, child := range filter.GetChildren() {
@@ -161,7 +168,7 @@ func (l *katyushaListener) ParseFilters(filters []parser.IFilterContext) MatchAt
 			}
 		}
 		key := filter.GetChild(0).(antlr.ParseTree)
-		attr := MatchAttribute{Name: key.GetText()}
+		attr := katyusha.MatchAttribute{Name: key.GetText()}
 		comp := filter.GetChild(1).(antlr.ParseTree).GetText()
 		if strings.HasPrefix(comp, "!") {
 			attr.Negate = true
@@ -254,6 +261,6 @@ type KatyushaErrorListener struct {
 }
 
 func (l *KatyushaErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
-	UI.Errorf("line %d:%d %s", line, column, msg)
+	katyusha.UI.Errorf("line %d:%d %s", line, column, msg)
 	l.HasErrors = true
 }

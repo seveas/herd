@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,6 +15,8 @@ type Registry struct {
 	Providers []HostProvider
 	Hosts     Hosts
 }
+
+type Hosts []*Host
 
 type HostProvider interface {
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
@@ -164,4 +167,76 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hos
 		}
 	}
 	return ret
+}
+
+func (hosts Hosts) String() string {
+	var ret strings.Builder
+	for i, h := range hosts {
+		if i > 0 {
+			ret.WriteString(", ")
+		}
+		ret.WriteString(h.Name)
+	}
+	return ret.String()
+}
+
+func (h Hosts) Sort() {
+	if len(h) < 2 {
+		return
+	}
+	field := viper.GetString("Sort")
+	if field == "name" {
+		sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
+	} else if field == "domainname" {
+		// Special-case domainname, as it's common and known to exist and be a string
+		sort.Slice(h, func(i, j int) bool {
+			v1, v2 := h[i].Attributes["domainname"].(string), h[j].Attributes["domainname"].(string)
+			if v1 == v2 {
+				return h[i].Name < h[j].Name
+			}
+			return v1 < v2
+		})
+	} else if field == "random" {
+		sort.Slice(h, func(i, j int) bool { return h[i].Csum < h[j].Csum })
+	} else {
+		sort.Slice(h, func(i, j int) bool {
+			v1, ok1 := h[i].Attributes[field]
+			v2, ok2 := h[j].Attributes[field]
+			// Sort nodes that are missing the attribute last
+			if ok1 && !ok2 {
+				return true
+			}
+			if !ok1 && ok2 {
+				return false
+			}
+			if !ok1 && !ok2 {
+				return h[i].Name < h[j].Name
+			}
+			// FIXME need to support more types
+			if _, ok := v1.(string); !ok {
+				return h[i].Name < h[j].Name
+			}
+			if v1.(string) == v2.(string) {
+				return h[i].Name < h[j].Name
+			}
+			return v1.(string) < v2.(string)
+		})
+	}
+}
+
+func (h Hosts) Uniq() Hosts {
+	if len(h) < 2 {
+		return h
+	}
+	src, dst := 1, 0
+	for src < len(h) {
+		if h[src].Name != h[dst].Name {
+			dst += 1
+			if dst != src {
+				h[dst] = h[src]
+			}
+		}
+		src += 1
+	}
+	return h[:dst+1]
 }

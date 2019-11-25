@@ -9,6 +9,7 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/scripting"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -102,17 +103,17 @@ func initConfig() {
 
 	// Set up the UI
 	katyusha.UI = katyusha.NewSimpleUI()
-	outputFilters := make([]katyusha.FilterCommand, len(commands))
+	outputFilters := make([]katyusha.MatchAttributes, len(commands))
 	for i, c := range commands {
-		outputFilters[i] = c.(katyusha.FilterCommand)
+		outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
 	}
 	if viper.GetBool("quiet") {
 		if viper.GetString("Output") == "line" {
-			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}}})
+			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
 		} else {
-			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}}})
-			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}}})
-			outputFilters = append(outputFilters, katyusha.AddHostsCommand{Attributes: katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}}})
+			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
+			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
+			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
 		}
 	}
 	katyusha.UI.SetOutputFilter(outputFilters)

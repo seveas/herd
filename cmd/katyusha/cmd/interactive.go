@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/scripting"
 	"github.com/seveas/readline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -76,7 +77,7 @@ func (l *InteractiveLoop) Run() {
 		if line == "exit" {
 			break
 		}
-		commands, err := katyusha.ParseCode(line + "\n")
+		commands, err := scripting.ParseCode(line + "\n")
 		if err != nil {
 			katyusha.UI.Errorf(err.Error())
 			continue

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/scripting"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +29,7 @@ func runCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	commands = append(commands, katyusha.RunCommand{Command: strings.Join(rest, " ")})
+	commands = append(commands, scripting.RunCommand{Command: strings.Join(rest, " ")})
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 	_, err = runCommands(commands, true)

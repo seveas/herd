@@ -3,9 +3,7 @@ package katyusha
 import (
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
 	"path"
@@ -15,63 +13,6 @@ import (
 
 	"github.com/spf13/viper"
 )
-
-type Result struct {
-	Host        string
-	ExitStatus  int
-	Stdout      []byte
-	Stderr      []byte
-	Err         error
-	StartTime   time.Time
-	EndTime     time.Time
-	ElapsedTime float64
-}
-
-func (r Result) MarshalJSON() ([]byte, error) {
-	r_ := map[string]interface{}{
-		"Host":        r.Host,
-		"ExitStatus":  r.ExitStatus,
-		"Stdout":      string(r.Stdout),
-		"Stderr":      string(r.Stderr),
-		"Err":         r.Err,
-		"ErrString":   "",
-		"StartTime":   r.StartTime,
-		"EndTime":     r.EndTime,
-		"ElapsedTime": r.ElapsedTime,
-	}
-	if r.Err != nil {
-		r_["ErrString"] = r.Err.Error()
-	}
-	return json.Marshal(r_)
-}
-
-func (r Result) String() string {
-	return fmt.Sprintf("[%s] (Err: %s)]\n%s\n---\n%s\n", r.Host, r.Err, string(r.Stdout), string(r.Stderr))
-}
-
-type HistoryItem struct {
-	Hosts       Hosts
-	Command     string
-	Results     map[string]Result
-	StartTime   time.Time
-	EndTime     time.Time
-	ElapsedTime float64
-}
-
-type History []HistoryItem
-
-func (h History) Save(path string) error {
-	data, err := json.Marshal(h)
-	if err != nil {
-		UI.Warnf("Unable to export history: %s", err)
-		return err
-	}
-	err = ioutil.WriteFile(path, data, 0600)
-	if err != nil {
-		UI.Warnf("Unable to save history to %s: %s", path, err)
-	}
-	return err
-}
 
 type Runner struct {
 	Registry *Registry
@@ -83,7 +24,7 @@ func NewRunner(registry *Registry) *Runner {
 	return &Runner{
 		Hosts:    make(Hosts, 0),
 		Registry: registry,
-		History:  make([]HistoryItem, 0),
+		History:  make(History, 0),
 	}
 }
 
@@ -102,6 +43,7 @@ func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 	}
 	r.Hosts = newHosts
 }
+
 func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csvOutput bool) {
 	if oneline {
 		hosts := strings.Builder{}
@@ -157,8 +99,8 @@ func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csv
 	}
 }
 
-func (r *Runner) Run(command string) HistoryItem {
-	hi := r.NewHistoryItem(command)
+func (r *Runner) Run(command string) {
+	hi := NewHistoryItem(command, r.Hosts)
 	c := make(chan Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -231,8 +173,7 @@ func (r *Runner) Run(command string) HistoryItem {
 		}
 		UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 	}
-	hi.EndTime = time.Now()
-	hi.ElapsedTime = hi.EndTime.Sub(hi.StartTime).Seconds()
+	hi.End()
 	r.History = append(r.History, hi)
 	if viper.GetString("Output") == "all" {
 		UI.PrintHistoryItem(hi)
@@ -240,7 +181,6 @@ func (r *Runner) Run(command string) HistoryItem {
 	if viper.GetString("Output") == "pager" {
 		UI.PrintHistoryItemWithPager(hi)
 	}
-	return hi
 }
 
 func (r *Runner) End() error {
@@ -260,15 +200,6 @@ func (r *Runner) End() error {
 		}
 	}
 	return err
-}
-
-func (r *Runner) NewHistoryItem(command string) HistoryItem {
-	return HistoryItem{
-		Hosts:     r.Hosts,
-		Command:   command,
-		Results:   make(map[string]Result),
-		StartTime: time.Now(),
-	}
 }
 
 func maxHostNameLen(hosts Hosts) int {

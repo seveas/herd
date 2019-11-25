@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/scripting"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -37,7 +37,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	commands = append(commands, katyusha.ListHostsCommand{
+	commands = append(commands, scripting.ListHostsCommand{
 		OneLine:       viper.GetBool("OneLine"),
 		AllAttributes: viper.GetBool("AllAttributes"),
 		Attributes:    viper.GetStringSlice("Attributes"),

@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/seveas/katyusha"
-	"github.com/seveas/katyusha/katyusha/cmd"
+	"github.com/seveas/katyusha/cmd/katyusha/cmd"
 )
 
 func main() {

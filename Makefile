@@ -2,14 +2,14 @@
 ifeq ("", "$(strip $(shell which antlr))")
 	antlr_sources :=
 else
-	antlr_sources := parser/katyusha_base_listener.go parser/katyusha_lexer.go parser/katyusha_listener.go parser/katyusha_parser.go
+	antlr_sources := scripting/parser/katyusha_base_listener.go scripting/parser/katyusha_lexer.go scripting/parser/katyusha_listener.go scripting/parser/katyusha_parser.go
 endif
 
-katyusha.bin: go.mod *.go katyusha/*.go katyusha/cmd/*.go $(antlr_sources)
-	go build -o "$@" github.com/seveas/katyusha/katyusha
+katyusha: go.mod *.go cmd/katyusha/*.go cmd/katyusha/cmd/*.go scripting/*.go $(antlr_sources)
+	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
-$(antlr_sources): Katyusha.g4
-	antlr -Dlanguage=Go -o parser Katyusha.g4
+$(antlr_sources): scripting/Katyusha.g4
+	(cd scripting; antlr -Dlanguage=Go -o parser Katyusha.g4)
 
 fmt:
 	go fmt ./...
