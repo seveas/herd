@@ -1,8 +1,8 @@
 package herd
 
 import (
+	"context"
 	"io/ioutil"
-	"net"
 	"os"
 	"path"
 	"strings"
@@ -11,31 +11,16 @@ import (
 )
 
 func init() {
-	ProviderMagic["cli"] = func(p Providers) Providers {
-		return append(p, &CliProvider{})
-	}
-	ProviderMagic["plain"] = func(p Providers) Providers {
+	ProviderMagic["plain"] = func() []HostProvider {
 		fn := path.Join(viper.GetString("RootDir"), "inventory")
 		if _, err := os.Stat(fn); err != nil {
-			return p
+			return []HostProvider{}
 		}
-		return append(p, &PlainTextProvider{Name: "inventory", File: fn})
+		return []HostProvider{&PlainTextProvider{Name: "inventory", File: fn}}
 	}
 	ProviderMakers["plain"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		return &PlainTextProvider{Name: name, File: viper.GetString("File")}, nil
 	}
-}
-
-type CliProvider struct {
-	Name string
-}
-
-func (p *CliProvider) GetHosts(name string) Hosts {
-	if _, err := net.LookupHost(name); err != nil {
-		return Hosts{}
-	}
-	return Hosts{NewHost(name, HostAttributes{})}
-
 }
 
 type PlainTextProvider struct {
@@ -43,12 +28,12 @@ type PlainTextProvider struct {
 	File string
 }
 
-func (p *PlainTextProvider) GetHosts(hostnameGlob string) Hosts {
+func (p *PlainTextProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	hosts := make(Hosts, 0)
 	data, err := ioutil.ReadFile(p.File)
 	if err != nil {
 		UI.Errorf("Could not load %s data in %s: %s", p.Name, p.File, err)
-		return hosts
+		return hosts, err
 	}
 	for _, line := range strings.Split(string(data), "\n") {
 		line := strings.TrimSpace(line)
@@ -58,5 +43,9 @@ func (p *PlainTextProvider) GetHosts(hostnameGlob string) Hosts {
 		host := NewHost(line, HostAttributes{})
 		hosts = append(hosts, host)
 	}
-	return hosts
+	return hosts, nil
+}
+
+func (p *PlainTextProvider) String() string {
+	return p.Name
 }

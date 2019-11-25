@@ -1,6 +1,7 @@
 package herd
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"path"
@@ -10,13 +11,13 @@ import (
 )
 
 func init() {
-	ProviderMagic["ssh"] = func(p Providers) Providers {
+	ProviderMagic["ssh"] = func() []HostProvider {
 		files := []string{"/etc/ssh/ssh_known_hosts"}
 		home, err := homedir.Dir()
 		if err == nil {
 			files = append(files, path.Join(home, ".ssh", "known_hosts"))
 		}
-		return append(p, &KnownHostsProvider{Files: files})
+		return []HostProvider{&KnownHostsProvider{Files: files}}
 	}
 }
 
@@ -24,7 +25,7 @@ type KnownHostsProvider struct {
 	Files []string
 }
 
-func (p *KnownHostsProvider) GetHosts(hostnameGlob string) Hosts {
+func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	hosts := make(Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.Files {
@@ -54,13 +55,13 @@ func (p *KnownHostsProvider) GetHosts(hostnameGlob string) Hosts {
 			}
 			host := NewHost(name, HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
-			if !host.Match(hostnameGlob, MatchAttributes{}) {
-				seen[host.Name] = -1
-				continue
-			}
 			seen[host.Name] = len(hosts)
 			hosts = append(hosts, host)
 		}
 	}
-	return hosts
+	return hosts, nil
+}
+
+func (p *KnownHostsProvider) String() string {
+	return "ssh_known_hosts"
 }

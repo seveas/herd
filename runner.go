@@ -50,7 +50,7 @@ func (r Result) String() string {
 }
 
 type HistoryItem struct {
-	Hosts       []*Host
+	Hosts       Hosts
 	Command     string
 	Results     map[string]Result
 	StartTime   time.Time
@@ -74,26 +74,27 @@ func (h History) Save(path string) error {
 }
 
 type Runner struct {
-	Hosts     Hosts
-	Providers Providers
-	History   History
+	Registry *Registry
+	Hosts    Hosts
+	History  History
 }
 
-func NewRunner(providers Providers) *Runner {
+func NewRunner(registry *Registry) *Runner {
 	return &Runner{
-		Hosts:     make([]*Host, 0),
-		Providers: providers,
-		History:   make([]HistoryItem, 0),
+		Hosts:    make(Hosts, 0),
+		Registry: registry,
+		History:  make([]HistoryItem, 0),
 	}
 }
 
 func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
-	hosts := append(r.Hosts, r.Providers.GetHosts(glob, attrs)...)
-	r.Hosts = hosts.SortAndUniq()
+	hosts := append(r.Hosts, r.Registry.GetHosts(glob, attrs)...)
+	hosts.Sort()
+	r.Hosts = hosts.Uniq()
 }
 
 func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
-	newHosts := make([]*Host, 0)
+	newHosts := make(Hosts, 0)
 	for _, host := range r.Hosts {
 		if !host.Match(glob, attrs) {
 			newHosts = append(newHosts, host)
@@ -270,7 +271,7 @@ func (r *Runner) NewHistoryItem(command string) HistoryItem {
 	}
 }
 
-func maxHostNameLen(hosts []*Host) int {
+func maxHostNameLen(hosts Hosts) int {
 	max := 0
 	for _, host := range hosts {
 		if len(host.Name) > max {

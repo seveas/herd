@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -21,12 +20,6 @@ type ConsulProvider struct {
 	CacheLifetime time.Duration
 }
 
-type ConsulNode struct {
-	Name     string `json:"name"`
-	Node     *consul.Node
-	Services []*consul.CatalogService
-}
-
 func init() {
 	ProviderMakers["consul"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		p := &ConsulProvider{
@@ -38,29 +31,41 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return p, nil
+		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
 	}
-	ProviderMagic["consul"] = func(p Providers) Providers {
-		if addr, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
-			return append(p, &ConsulProvider{Name: "consul", File: path.Join(viper.GetString("CacheDir"), "consul.cache"), Address: addr, CacheLifetime: 1 * time.Hour})
+	ProviderMagic["consul"] = func() []HostProvider {
+		addr, ok := os.LookupEnv("CONSUL_HTTP_ADDR")
+		if !ok {
+			return []HostProvider{}
 		}
-		return p
+		p := &ConsulProvider{
+			Name:          "consul",
+			File:          path.Join(viper.GetString("CacheDir"), "consul.cache"),
+			Address:       addr,
+			CacheLifetime: 1 * time.Hour,
+		}
+		return []HostProvider{&Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}}
 	}
 }
 
-type ConsulServices []struct {
-	name string
-	tags []string
+type ConsulService struct {
+	Name string
+	Tags []string
+}
+
+type ConsulServices []ConsulService
+
+func (s ConsulService) String() string {
+	if len(s.Tags) > 0 {
+		return fmt.Sprintf("%s=%s", s.Name, strings.Join(s.Tags, ","))
+	}
+	return s.Name
 }
 
 func (s ConsulServices) String() string {
 	data := make([]string, len(s))
 	for i, service := range s {
-		if len(service.tags) > 0 {
-			data[i] = fmt.Sprintf("%s=%s", service.name, strings.Join(service.tags, ","))
-		} else {
-			data[i] = service.name
-		}
+		data[i] = service.String()
 	}
 	return strings.Join(data, ";")
 }
@@ -78,10 +83,10 @@ func (s ConsulServices) Match(m MatchAttribute) bool {
 		tags = strings.Split(parts[1], ",")
 	}
 	for _, s := range s {
-		if s.name == v {
+		if s.Name == v {
 			for _, t := range tags {
 				found := false
-				for _, t2 := range s.tags {
+				for _, t2 := range s.Tags {
 					if t == t2 || t == "" {
 						found = true
 						break
@@ -101,105 +106,92 @@ func (p *ConsulProvider) String() string {
 	return p.Name
 }
 
-func (p *ConsulProvider) Cache(mc chan CacheMessage, ctx context.Context) error {
-	if info, err := os.Stat(p.File); err == nil && time.Since(info.ModTime()) < p.CacheLifetime {
-		return nil
-	}
-
+func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	conf := consul.DefaultConfig()
 	conf.Address = p.Address
 	client, err := consul.NewClient(conf)
 	if err != nil {
-		return err
+		return Hosts{}, err
 	}
 	catalog := client.Catalog()
 	datacenters, err := catalog.Datacenters()
 	if err != nil {
-		return err
+		return Hosts{}, err
 	}
 	UI.Debugf("Consul datacenters: %v", datacenters)
-	nodes := make([]*ConsulNode, 0)
-	nc := make(chan map[string]*ConsulNode)
+	hosts := make(Hosts, 0)
+	rc := make(chan loadresult)
 	for _, dc := range datacenters {
 		name := fmt.Sprintf("%s@%s", p.Name, dc)
 		mc <- CacheMessage{name: name, finished: false, err: nil}
 		go func(dc, name string) {
-			nodes, err := p.CacheDatacenter(conf, dc)
+			hosts, err := p.LoadDatacenter(conf, dc)
 			mc <- CacheMessage{name: name, finished: true, err: err}
-			nc <- nodes
+			rc <- loadresult{hosts: hosts, err: err}
 		}(dc, name)
 	}
 	todo := len(datacenters)
+	errs := &MultiError{}
 	for todo > 0 {
-		for key, node := range <-nc {
-			node.Name = key
-			nodes = append(nodes, node)
+		r := <-rc
+		if r.err != nil {
+			errs.AddHidden(r.err)
 		}
+		hosts = append(hosts, r.hosts...)
 		todo -= 1
 	}
-	data, err := json.Marshal(nodes)
-	if err != nil {
-		return err
+	if len(errs.Errors) != 0 {
+		return hosts, errs
 	}
-	if err := ioutil.WriteFile(p.File+".new", data, 0600); err != nil {
-		return err
-	}
-	if err := os.Rename(p.File+".new", p.File); err != nil {
-		return err
-	}
-	return nil
+	return hosts, nil
 }
 
-func (p *ConsulProvider) CacheDatacenter(conf *consul.Config, dc string) (map[string]*ConsulNode, error) {
-	nodes := make(map[string]*ConsulNode)
+func (p *ConsulProvider) LoadDatacenter(conf *consul.Config, dc string) (Hosts, error) {
+	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(conf)
 	catalog := client.Catalog()
 	if err != nil {
-		return nodes, err
+		return Hosts{}, err
 	}
 	opts := consul.QueryOptions{Datacenter: dc, WaitTime: 5 * time.Second}
 	catalognodes, _, err := catalog.Nodes(&opts)
 	if err != nil {
-		return nodes, err
+		return Hosts{}, err
 	}
-	for _, node := range catalognodes {
-		nodes[node.Node] = &ConsulNode{Node: node, Services: []*consul.CatalogService{}}
+	hosts := make(Hosts, len(catalognodes))
+	for i, node := range catalognodes {
+		nodePositions[node.Node] = i
+		hosts[i] = NewHost(node.Node, HostAttributes{"datacenter": node.Datacenter})
 	}
 	services, _, err := catalog.Services(&opts)
 	if err != nil {
-		return nodes, err
+		return hosts, err
 	}
 	for service, _ := range services {
 		servicenodes, _, err := catalog.Service(service, "", &opts)
 		if err != nil {
-			return nodes, err
+			return hosts, err
 		}
-		for _, node := range servicenodes {
-			nodes[node.Node].Services = append(nodes[node.Node].Services, node)
+		for _, service := range servicenodes {
+			s := ConsulServices{}
+			si, ok := hosts[nodePositions[service.Node]].Attributes["service"]
+			if ok {
+				s = si.(ConsulServices)
+			}
+			svc := ConsulService{Name: service.ServiceName, Tags: service.ServiceTags}
+			hosts[nodePositions[service.Node]].Attributes["service"] = append(s, svc)
 		}
 	}
-	return nodes, nil
+	return hosts, nil
 }
 
-func (p *ConsulProvider) GetHosts(hostnameGlob string) Hosts {
-	jp := &JsonProvider{Name: p.Name, File: p.File, PreProcess: func(obj *map[string]interface{}) {
-		node := (*obj)["Node"].(map[string]interface{})
-		(*obj)["datacenter"] = node["Datacenter"]
-		svc := (*obj)["Services"].([]interface{})
-		services := make(ConsulServices, len(svc))
-		for i, s := range svc {
-			service := s.(map[string]interface{})
-			services[i].name = service["ServiceName"].(string)
-			svct := service["ServiceTags"].([]interface{})
-			services[i].tags = make([]string, len(svct))
-			for j, t := range svct {
-				services[i].tags[j] = t.(string)
-			}
+func (p *ConsulProvider) PostProcess(h Hosts) {
+	for i, host := range h {
+		if services, ok := host.Attributes["service"]; ok {
+			data, _ := json.Marshal(services)
+			svc := ConsulServices{}
+			json.Unmarshal(data, &svc)
+			h[i].Attributes["service"] = svc
 		}
-		(*obj)["service"] = services
-		delete(*obj, "Services")
-		delete(*obj, "Node")
-	},
 	}
-	return jp.GetHosts(hostnameGlob)
 }

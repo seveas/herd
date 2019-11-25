@@ -80,16 +80,17 @@ hostspecLoop:
 }
 
 func runCommands(commands []herd.Command, doEnd bool) (*herd.Runner, error) {
-	providers, err := herd.LoadProviders()
+	registry, err := herd.NewRegistry()
 	if err != nil {
 		herd.UI.Errorf("%s", err.Error())
 		return nil, err
 	}
-	errs := providers.Cache()
-	if len(errs) != 0 {
-		return nil, errs[0]
+	err = registry.Load()
+	if err != nil && err.Error() != "" {
+		herd.UI.Errorf("%s", err.Error())
+		return nil, err
 	}
-	runner := herd.NewRunner(providers)
+	runner := herd.NewRunner(registry)
 
 	for _, command := range commands {
 		herd.UI.Debugf("%s", command)

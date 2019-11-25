@@ -92,7 +92,7 @@ func (ui *SimpleUI) Printer() {
 			ui.Output.WriteString("\r\033[2K" + msg + ui.LastProgress)
 		} else {
 			ui.Output.WriteString(msg)
-			if msg[len(msg)-1] == '\n' {
+			if msg[len(msg)-1] == '\n' || msg == "\r\033[2K" {
 				ui.AtStart = true
 			} else {
 				ui.AtStart = false
@@ -231,7 +231,7 @@ func (ui *SimpleUI) CacheProgress(start time.Time, caches []string) {
 	}
 	since := time.Since(start).Truncate(time.Second)
 	if len(caches) == 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KAll caches updated\n")
+		ui.Pchan <- fmt.Sprintf("\r\033[2K")
 	} else {
 		cs := strings.Join(caches, ", ")
 		if len(cs) > ui.Width-25 {

@@ -2,10 +2,10 @@ package herd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path"
 	"time"
 
@@ -35,7 +35,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		return p, nil
+		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
 	}
 }
 
@@ -43,14 +43,10 @@ func (p *HttpProvider) String() string {
 	return p.Name
 }
 
-func (p *HttpProvider) Cache(mc chan CacheMessage, ctx context.Context) error {
-	if info, err := os.Stat(p.File); err == nil && time.Since(info.ModTime()) < p.CacheLifetime {
-		return nil
-	}
-
+func (p *HttpProvider) Fetch(ctx context.Context, mc chan CacheMessage) ([]byte, error) {
 	req, err := http.NewRequest("GET", p.Url, nil)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
 	defer cancel()
@@ -65,27 +61,28 @@ func (p *HttpProvider) Cache(mc chan CacheMessage, ctx context.Context) error {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("http response code %d: %s", resp.StatusCode, body)
+		return []byte{}, fmt.Errorf("http response code %d: %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
-	if err := ioutil.WriteFile(p.File+".new", body, 0600); err != nil {
-		return err
-	}
-	if err := os.Rename(p.File+".new", p.File); err != nil {
-		return err
-	}
-	return nil
+	return body, err
 }
 
-func (p *HttpProvider) GetHosts(hostnameGlob string) Hosts {
-	jp := &JsonProvider{Name: p.Name, File: p.File}
-	return jp.GetHosts(hostnameGlob)
+func (p *HttpProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+	hosts := Hosts{}
+	data, err := p.Fetch(ctx, mc)
+	if err != nil {
+		return hosts, err
+	}
+	if err = json.Unmarshal(data, &hosts); err != nil {
+		err = fmt.Errorf("Could not parse %s data from %s: %s", p.Name, p.Url, err)
+	}
+	return hosts, err
 }
