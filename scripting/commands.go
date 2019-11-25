@@ -1,18 +1,15 @@
-package herd
+package scripting
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/seveas/herd"
 	"github.com/spf13/viper"
 )
 
 type Command interface {
-	Execute(r *Runner) error
-}
-
-type FilterCommand interface {
-	Match(h *Host) bool
+	Execute(r *herd.Runner) error
 }
 
 type SetCommand struct {
@@ -20,7 +17,7 @@ type SetCommand struct {
 	Value    interface{}
 }
 
-func (c SetCommand) Execute(r *Runner) error {
+func (c SetCommand) Execute(r *herd.Runner) error {
 	viper.Set(c.Variable, c.Value)
 	return nil
 }
@@ -31,16 +28,12 @@ func (c SetCommand) String() string {
 
 type AddHostsCommand struct {
 	Glob       string
-	Attributes MatchAttributes
+	Attributes herd.MatchAttributes
 }
 
-func (c AddHostsCommand) Execute(r *Runner) error {
+func (c AddHostsCommand) Execute(r *herd.Runner) error {
 	r.AddHosts(c.Glob, c.Attributes)
 	return nil
-}
-
-func (c AddHostsCommand) Match(h *Host) bool {
-	return h.Match(c.Glob, c.Attributes)
 }
 
 func (c AddHostsCommand) String() string {
@@ -49,16 +42,12 @@ func (c AddHostsCommand) String() string {
 
 type RemoveHostsCommand struct {
 	Glob       string
-	Attributes MatchAttributes
+	Attributes herd.MatchAttributes
 }
 
-func (c RemoveHostsCommand) Execute(r *Runner) error {
+func (c RemoveHostsCommand) Execute(r *herd.Runner) error {
 	r.RemoveHosts(c.Glob, c.Attributes)
 	return nil
-}
-
-func (c RemoveHostsCommand) Match(h *Host) bool {
-	return !h.Match(c.Glob, c.Attributes)
 }
 
 func (c RemoveHostsCommand) String() string {
@@ -72,7 +61,7 @@ type ListHostsCommand struct {
 	Csv           bool
 }
 
-func (c ListHostsCommand) Execute(r *Runner) error {
+func (c ListHostsCommand) Execute(r *herd.Runner) error {
 	r.ListHosts(c.OneLine, c.AllAttributes, c.Attributes, c.Csv)
 	return nil
 }
@@ -95,7 +84,7 @@ type RunCommand struct {
 	Command string
 }
 
-func (c RunCommand) Execute(r *Runner) error {
+func (c RunCommand) Execute(r *herd.Runner) error {
 	r.Run(c.Command)
 	return nil
 }

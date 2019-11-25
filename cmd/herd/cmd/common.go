@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/scripting"
 	"github.com/spf13/cobra"
 )
 
@@ -17,10 +18,10 @@ func splitArgs(cmd *cobra.Command, args []string) ([]string, []string) {
 	return args[:splitAt], args[splitAt:]
 }
 
-func filterCommands(filters []string) ([]herd.Command, error) {
+func filterCommands(filters []string) ([]scripting.Command, error) {
 	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~)(.*)$")
 	// First we add hosts from the command line, in all modes
-	commands := make([]herd.Command, 0)
+	commands := make([]scripting.Command, 0)
 	add := true
 hostspecLoop:
 	for len(filters) > 0 {
@@ -36,9 +37,9 @@ hostspecLoop:
 			if arg == "+" || arg == "-" {
 				filters = filters[i+1:]
 				if add {
-					commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
+					commands = append(commands, scripting.AddHostsCommand{Glob: glob, Attributes: attrs})
 				} else {
-					commands = append(commands, herd.RemoveHostsCommand{Glob: glob, Attributes: attrs})
+					commands = append(commands, scripting.RemoveHostsCommand{Glob: glob, Attributes: attrs})
 				}
 				if arg == "+" {
 					add = true
@@ -70,16 +71,16 @@ hostspecLoop:
 		}
 		// We've fallen through, so no more hostspecs
 		if add {
-			commands = append(commands, herd.AddHostsCommand{Glob: glob, Attributes: attrs})
+			commands = append(commands, scripting.AddHostsCommand{Glob: glob, Attributes: attrs})
 		} else {
-			commands = append(commands, herd.RemoveHostsCommand{Glob: glob, Attributes: attrs})
+			commands = append(commands, scripting.RemoveHostsCommand{Glob: glob, Attributes: attrs})
 		}
 		break
 	}
 	return commands, nil
 }
 
-func runCommands(commands []herd.Command, doEnd bool) (*herd.Runner, error) {
+func runCommands(commands []scripting.Command, doEnd bool) (*herd.Runner, error) {
 	registry, err := herd.NewRegistry()
 	if err != nil {
 		herd.UI.Errorf("%s", err.Error())

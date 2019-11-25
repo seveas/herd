@@ -1,4 +1,4 @@
-package herd
+package scripting
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/antlr/antlr4/runtime/Go/antlr"
-	"github.com/seveas/herd/parser"
+	"github.com/seveas/herd"
+	"github.com/seveas/herd/scripting/parser"
 )
 
 type ConfigSetter struct {
@@ -52,6 +53,13 @@ var tokenTypes = map[string]int{
 	"LogLevel":       parser.HerdParserSTRING,
 }
 
+var logLevels = map[string]int{
+	"DEBUG":   herd.DEBUG,
+	"INFO":    herd.INFO,
+	"NORMAL":  herd.NORMAL,
+	"WARNING": herd.WARNING,
+	"ERROR":   herd.ERROR,
+}
 var validators = map[string]func(interface{}) (interface{}, error){
 	"Output": func(i interface{}) (interface{}, error) {
 		s := i.(string)
@@ -62,7 +70,6 @@ var validators = map[string]func(interface{}) (interface{}, error){
 	},
 	"LogLevel": func(i interface{}) (interface{}, error) {
 		s := i.(string)
-		logLevels := map[string]int{"DEBUG": DEBUG, "INFO": INFO, "NORMAL": NORMAL, "WARNING": WARNING, "ERROR": ERROR}
 		if level, ok := logLevels[s]; ok {
 			return level, nil
 		} else {
@@ -151,8 +158,8 @@ func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
 	l.Commands = append(l.Commands, command)
 }
 
-func (l *herdListener) ParseFilters(filters []parser.IFilterContext) MatchAttributes {
-	attrs := make(MatchAttributes, 0)
+func (l *herdListener) ParseFilters(filters []parser.IFilterContext) herd.MatchAttributes {
+	attrs := make(herd.MatchAttributes, 0)
 	for _, filter := range filters {
 		// If there already are lexer/parser errors, don't bother anymore
 		for _, child := range filter.GetChildren() {
@@ -161,7 +168,7 @@ func (l *herdListener) ParseFilters(filters []parser.IFilterContext) MatchAttrib
 			}
 		}
 		key := filter.GetChild(0).(antlr.ParseTree)
-		attr := MatchAttribute{Name: key.GetText()}
+		attr := herd.MatchAttribute{Name: key.GetText()}
 		comp := filter.GetChild(1).(antlr.ParseTree).GetText()
 		if strings.HasPrefix(comp, "!") {
 			attr.Negate = true
@@ -254,6 +261,6 @@ type HerdErrorListener struct {
 }
 
 func (l *HerdErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
-	UI.Errorf("line %d:%d %s", line, column, msg)
+	herd.UI.Errorf("line %d:%d %s", line, column, msg)
 	l.HasErrors = true
 }

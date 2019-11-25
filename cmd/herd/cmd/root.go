@@ -9,6 +9,7 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/scripting"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -102,17 +103,17 @@ func initConfig() {
 
 	// Set up the UI
 	herd.UI = herd.NewSimpleUI()
-	outputFilters := make([]herd.FilterCommand, len(commands))
+	outputFilters := make([]herd.MatchAttributes, len(commands))
 	for i, c := range commands {
-		outputFilters[i] = c.(herd.FilterCommand)
+		outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
 	}
 	if viper.GetBool("quiet") {
 		if viper.GetString("Output") == "line" {
-			outputFilters = append(outputFilters, herd.AddHostsCommand{Attributes: herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}}})
+			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
 		} else {
-			outputFilters = append(outputFilters, herd.AddHostsCommand{Attributes: herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}}})
-			outputFilters = append(outputFilters, herd.AddHostsCommand{Attributes: herd.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}}})
-			outputFilters = append(outputFilters, herd.AddHostsCommand{Attributes: herd.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}}})
+			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
+			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
+			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
 		}
 	}
 	herd.UI.SetOutputFilter(outputFilters)

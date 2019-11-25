@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/scripting"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +40,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
-	scriptCommands, err := herd.ParseScript(args[0])
+	scriptCommands, err := scripting.ParseScript(args[0])
 	if err != nil {
 		// This should not show the usage message
 		herd.UI.Errorf("Unable to parse script %s: %s", args[0], err)

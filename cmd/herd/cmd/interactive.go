@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/scripting"
 	"github.com/seveas/readline"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -76,7 +77,7 @@ func (l *InteractiveLoop) Run() {
 		if line == "exit" {
 			break
 		}
-		commands, err := herd.ParseCode(line + "\n")
+		commands, err := scripting.ParseCode(line + "\n")
 		if err != nil {
 			herd.UI.Errorf(err.Error())
 			continue

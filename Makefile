@@ -2,14 +2,14 @@
 ifeq ("", "$(strip $(shell which antlr))")
 	antlr_sources :=
 else
-	antlr_sources := parser/herd_base_listener.go parser/herd_lexer.go parser/herd_listener.go parser/herd_parser.go
+	antlr_sources := scripting/parser/herd_base_listener.go scripting/parser/herd_lexer.go scripting/parser/herd_listener.go scripting/parser/herd_parser.go
 endif
 
-herd.bin: go.mod *.go herd/*.go herd/cmd/*.go $(antlr_sources)
-	go build -o "$@" github.com/seveas/herd/herd
+herd: go.mod *.go cmd/herd/*.go cmd/herd/cmd/*.go scripting/*.go $(antlr_sources)
+	go build -o "$@" github.com/seveas/herd/cmd/herd
 
-$(antlr_sources): Herd.g4
-	antlr -Dlanguage=Go -o parser Herd.g4
+$(antlr_sources): scripting/Herd.g4
+	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
 
 fmt:
 	go fmt ./...

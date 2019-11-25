@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/seveas/herd"
-	"github.com/seveas/herd/herd/cmd"
+	"github.com/seveas/herd/cmd/herd/cmd"
 )
 
 func main() {

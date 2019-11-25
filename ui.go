@@ -29,14 +29,14 @@ type HerdUI interface {
 	Errorf(format string, v ...interface{})
 	CacheProgress(start time.Time, caches []string)
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
-	PrintHistoryItem(hi HistoryItem)
-	PrintHistoryItemWithPager(hi HistoryItem)
+	PrintHistoryItem(hi *HistoryItem)
+	PrintHistoryItemWithPager(hi *HistoryItem)
 	PrintCommand(command string)
 	PrintResult(r Result)
 	Write([]byte) (int, error)
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
-	SetOutputFilter([]FilterCommand)
+	SetOutputFilter([]MatchAttributes)
 }
 
 type SimpleUI struct {
@@ -46,7 +46,7 @@ type SimpleUI struct {
 	Pchan        chan string
 	Dchan        chan interface{}
 	Formatter    Formatter
-	OutputFilter []FilterCommand
+	OutputFilter []MatchAttributes
 	Width        int
 	LineBuf      string
 }
@@ -59,7 +59,7 @@ func NewSimpleUI() *SimpleUI {
 		Pchan:        make(chan string),
 		Dchan:        make(chan interface{}),
 		Formatter:    Formatters[viper.GetString("Formatter")],
-		OutputFilter: []FilterCommand{},
+		OutputFilter: []MatchAttributes{},
 		Width:        GetTerminalWidth(),
 	}
 	go ListenForWindowChange(ui)
@@ -67,8 +67,8 @@ func NewSimpleUI() *SimpleUI {
 	return ui
 }
 
-func (ui *SimpleUI) SetOutputFilter(f []FilterCommand) {
-	ui.OutputFilter = f
+func (ui *SimpleUI) SetOutputFilter(m []MatchAttributes) {
+	ui.OutputFilter = m
 }
 
 func (ui *SimpleUI) Filtered(h *Host) bool {
@@ -76,7 +76,7 @@ func (ui *SimpleUI) Filtered(h *Host) bool {
 		return true
 	}
 	for _, f := range ui.OutputFilter {
-		if f.Match(h) {
+		if h.Match("", f) {
 			return true
 		}
 	}
@@ -127,7 +127,7 @@ func (ui *SimpleUI) PrintCommand(command string) {
 	ui.Pchan <- buf.String()
 }
 
-func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
+func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	if viper.GetInt("LogLevel") < NORMAL {
 		return
 	}
@@ -136,7 +136,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi HistoryItem) {
 	ui.Pchan <- buf.String()
 }
 
-func (ui *SimpleUI) PrintHistoryItemWithPager(hi HistoryItem) {
+func (ui *SimpleUI) PrintHistoryItemWithPager(hi *HistoryItem) {
 	p := Pager{}
 	if err := p.Start(); err != nil {
 		ui.Errorf("Unable to start pager, displaying on stdout: %s", err)
@@ -147,7 +147,7 @@ func (ui *SimpleUI) PrintHistoryItemWithPager(hi HistoryItem) {
 	}
 }
 
-func (ui *SimpleUI) printHistoryItem(hi HistoryItem, w io.Writer) {
+func (ui *SimpleUI) printHistoryItem(hi *HistoryItem, w io.Writer) {
 	ui.Formatter.FormatCommand(hi.Command, w)
 	for _, h := range hi.Hosts {
 		if ui.Filtered(h) {
