@@ -42,7 +42,7 @@ func NewRegistry() (*Registry, error) {
 		Providers: []HostProvider{},
 		Hosts:     Hosts{},
 	}
-	rerr := &MultiError{}
+	rerr := &MultiError{Subject: "Errors loading providers"}
 
 	// Initialize all the magic providers
 	for _, callable := range ProviderMagic {
@@ -69,7 +69,7 @@ func NewRegistry() (*Registry, error) {
 			ret.Providers = append(ret.Providers, p)
 		}
 	}
-	if len(rerr.Errors) != 0 {
+	if rerr.HasErrors() {
 		return nil, rerr
 	}
 	return ret, nil
@@ -100,7 +100,7 @@ func (r *Registry) Load() error {
 	}
 
 	caches := make([]string, 0)
-	rerr := &MultiError{}
+	rerr := &MultiError{Subject: "Errors querying providers"}
 	ticker := time.NewTicker(time.Second / 2)
 	defer ticker.Stop()
 	todo := len(r.Providers)
@@ -148,7 +148,7 @@ func (r *Registry) Load() error {
 	}
 	r.Hosts = hosts
 	r.Hosts.Sort()
-	if len(rerr.Errors) == 0 {
+	if !rerr.HasErrors() {
 		return nil
 	}
 	return rerr

@@ -33,6 +33,7 @@ func TestGetHosts(t *testing.T) {
 	r := Registry{Providers: []HostProvider{&FakeProvider{}, &FakeProvider{}}}
 	err := r.Load()
 	if err != nil {
+		t.Errorf("%t %v", err, err)
 		t.Errorf("Could not load hosts: %s", err.Error())
 	}
 	if len(r.Hosts) != 1 {
