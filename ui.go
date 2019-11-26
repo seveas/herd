@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
+	"github.com/seveas/readline"
 	"github.com/spf13/viper"
 )
 
@@ -60,9 +61,20 @@ func NewSimpleUI() *SimpleUI {
 		Dchan:        make(chan interface{}),
 		Formatter:    Formatters[viper.GetString("Formatter")],
 		OutputFilter: []MatchAttributes{},
-		Width:        GetTerminalWidth(),
+		Width:        readline.GetScreenWidth(),
 	}
-	go ListenForWindowChange(ui)
+	if ui.Width == -1 {
+		ui.Width = 80
+	}
+	if ui.Width < 40 {
+		ui.Width = 40
+	}
+	readline.DefaultOnWidthChanged(func() {
+		w := readline.GetScreenWidth()
+		if w >= 40 {
+			ui.Width = w
+		}
+	})
 	go ui.Printer()
 	return ui
 }
