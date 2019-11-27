@@ -2,19 +2,21 @@ package katyusha
 
 import (
 	"bytes"
+	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/mgutz/ansi"
 	"github.com/seveas/readline"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 type KatyushaUI interface {
-	Println(str string)
 	Printf(format string, v ...interface{})
 	CacheProgress(start time.Time, caches []string)
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
@@ -22,6 +24,7 @@ type KatyushaUI interface {
 	PrintHistoryItemWithPager(hi *HistoryItem)
 	PrintCommand(command string)
 	PrintResult(r Result)
+	PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool)
 	Write([]byte) (int, error)
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
@@ -156,10 +159,6 @@ func (ui *SimpleUI) PrintResult(r Result) {
 	ui.Pchan <- buf.String()
 }
 
-func (ui *SimpleUI) Println(str string) {
-	ui.Pchan <- str + "\n"
-}
-
 func (ui *SimpleUI) Printf(format string, v ...interface{}) {
 	ui.Pchan <- fmt.Sprintf(format, v...)
 }
@@ -186,6 +185,59 @@ func (ui *SimpleUI) CacheProgress(start time.Time, caches []string) {
 			cs = cs[:ui.Width-30] + "..."
 		}
 		ui.Pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
+	}
+}
+
+func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool) {
+	if oneline {
+		names := make([]string, len(hosts))
+		for i, host := range hosts {
+			names[i] = host.Name
+		}
+		ui.Pchan <- strings.Join(names, ",")
+		return
+	}
+	if allAttributes || len(attributes) > 0 {
+		var writer datawriter
+		if csvOutput {
+			writer = csv.NewWriter(ui)
+		} else {
+			writer = NewColumnizer(ui, "   ")
+		}
+		if allAttributes {
+			attrs := make(map[string]bool)
+			for _, host := range hosts {
+				for key, _ := range host.Attributes {
+					attrs[key] = true
+				}
+			}
+			for attr, _ := range attrs {
+				attributes = append(attributes, attr)
+			}
+			sort.Strings(attributes)
+			attrline := make([]string, len(attributes)+1)
+			attrline[0] = "name"
+			copy(attrline[1:], attributes)
+			writer.Write(attrline)
+		}
+		for _, host := range hosts {
+			line := make([]string, len(attributes)+1)
+			line[0] = host.Name
+			for i, attr := range attributes {
+				val, ok := host.Attributes[attr]
+				if ok {
+					line[i+1] = fmt.Sprintf("%v", val)
+				} else {
+					line[i+1] = ""
+				}
+			}
+			writer.Write(line)
+		}
+		writer.Flush()
+	} else {
+		for _, host := range hosts {
+			ui.Pchan <- host.Name + "\n"
+		}
 	}
 }
 
