@@ -2,13 +2,9 @@ package herd
 
 import (
 	"context"
-	"encoding/csv"
-	"fmt"
 	"os"
 	"os/signal"
 	"path"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -46,58 +42,7 @@ func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 }
 
 func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csvOutput bool) {
-	if oneline {
-		hosts := strings.Builder{}
-		for i, host := range r.Hosts {
-			if i == 0 {
-				fmt.Fprint(&hosts, host.Name)
-			} else {
-				fmt.Fprintf(&hosts, ",%s", host.Name)
-			}
-		}
-		UI.Println(hosts.String())
-	} else if allAttributes || len(attributes) > 0 {
-		var writer datawriter
-		if csvOutput {
-			writer = csv.NewWriter(UI)
-		} else {
-			writer = NewColumnizer(UI, "   ")
-		}
-		if allAttributes {
-			attrs := make(map[string]bool)
-			for _, host := range r.Hosts {
-				for key, _ := range host.Attributes {
-					attrs[key] = true
-				}
-			}
-			for attr, _ := range attrs {
-				attributes = append(attributes, attr)
-			}
-			sort.Strings(attributes)
-			attrline := make([]string, len(attributes)+1)
-			attrline[0] = "name"
-			copy(attrline[1:], attributes)
-			writer.Write(attrline)
-		}
-		for _, host := range r.Hosts {
-			line := make([]string, len(attributes)+1)
-			line[0] = host.Name
-			for i, attr := range attributes {
-				val, ok := host.Attributes[attr]
-				if ok {
-					line[i+1] = fmt.Sprintf("%v", val)
-				} else {
-					line[i+1] = ""
-				}
-			}
-			writer.Write(line)
-		}
-		writer.Flush()
-	} else {
-		for _, host := range r.Hosts {
-			UI.Println(host.Name)
-		}
-	}
+	UI.PrintHostList(r.Hosts, oneline, allAttributes, attributes, csvOutput)
 }
 
 func (r *Runner) Run(command string) {
