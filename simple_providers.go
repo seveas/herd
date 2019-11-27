@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -32,7 +33,7 @@ func (p *PlainTextProvider) Load(ctx context.Context, mc chan CacheMessage) (Hos
 	hosts := make(Hosts, 0)
 	data, err := ioutil.ReadFile(p.File)
 	if err != nil {
-		UI.Errorf("Could not load %s data in %s: %s", p.Name, p.File, err)
+		logrus.Errorf("Could not load %s data in %s: %s", p.Name, p.File, err)
 		return hosts, err
 	}
 	for _, line := range strings.Split(string(data), "\n") {

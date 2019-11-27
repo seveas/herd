@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -111,11 +112,10 @@ func (r *Registry) Load() error {
 		select {
 		case msg := <-mc:
 			if msg.err != nil && msg.err.Error() != "" {
-				err := fmt.Errorf("Error contacting %s: %s", msg.name, msg.err)
-				UI.Errorf("%s", err.Error())
+				logrus.Errorf("Error contacting %s: %s", msg.name, msg.err)
 			}
 			if msg.finished {
-				UI.Debugf("Cache updated for %s", msg.name)
+				logrus.Debugf("Cache updated for %s", msg.name)
 				for i, v := range caches {
 					if v == msg.name {
 						caches = append(caches[:i], caches[i+1:]...)
@@ -127,7 +127,7 @@ func (r *Registry) Load() error {
 			}
 			UI.CacheProgress(st, caches)
 		case r := <-rc:
-			UI.Debugf("%d hosts returned from %s", len(r.hosts), r.provider)
+			logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider)
 			if r.err != nil {
 				rerr.Add(r.err)
 			}

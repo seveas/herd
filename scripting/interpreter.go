@@ -11,6 +11,7 @@ import (
 	"github.com/antlr/antlr4/runtime/Go/antlr"
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting/parser"
+	"github.com/sirupsen/logrus"
 )
 
 type configSetter struct {
@@ -53,14 +54,6 @@ var tokenTypes = map[string]int{
 	"LogLevel":       parser.KatyushaParserSTRING,
 }
 
-var logLevels = map[string]int{
-	"DEBUG":   katyusha.DEBUG,
-	"INFO":    katyusha.INFO,
-	"NORMAL":  katyusha.NORMAL,
-	"WARNING": katyusha.WARNING,
-	"ERROR":   katyusha.ERROR,
-}
-
 var validators = map[string]func(interface{}) (interface{}, error){
 	"Output": func(i interface{}) (interface{}, error) {
 		s := i.(string)
@@ -71,11 +64,10 @@ var validators = map[string]func(interface{}) (interface{}, error){
 	},
 	"LogLevel": func(i interface{}) (interface{}, error) {
 		s := i.(string)
-		if level, ok := logLevels[s]; ok {
+		if level, err := logrus.ParseLevel(s); err == nil {
 			return level, nil
-		} else {
-			return nil, fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
 		}
+		return nil, fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
 	},
 }
 

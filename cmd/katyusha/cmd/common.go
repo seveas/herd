@@ -7,6 +7,7 @@ import (
 
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -83,18 +84,18 @@ hostspecLoop:
 func runCommands(commands []scripting.Command, doEnd bool) (*katyusha.Runner, error) {
 	registry, err := katyusha.NewRegistry()
 	if err != nil {
-		katyusha.UI.Errorf("%s", err.Error())
+		logrus.Error(err.Error())
 		return nil, err
 	}
 	err = registry.Load()
 	if err != nil && err.Error() != "" {
-		katyusha.UI.Errorf("%s", err.Error())
+		// Do not log this error, registry.Load() does its own error logging
 		return nil, err
 	}
 	runner := katyusha.NewRunner(registry)
 
 	for _, command := range commands {
-		katyusha.UI.Debugf("%s", command)
+		logrus.Debugf("%s", command)
 		command.Execute(runner)
 	}
 	if doEnd {

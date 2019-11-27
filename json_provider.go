@@ -3,11 +3,11 @@ package katyusha
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -33,12 +33,12 @@ func (p *JsonProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 	hosts := make(Hosts, 0)
 	data, err := ioutil.ReadFile(p.File)
 	if err != nil {
-		UI.Errorf("Could not load %s data in %s: %s", p.Name, p.File, err)
+		logrus.Errorf("Could not load %s data in %s: %s", p.Name, p.File, err)
 		return hosts, err
 	}
 
 	if err = json.Unmarshal(data, &hosts); err != nil {
-		err = fmt.Errorf("Could not parse %s data in %s: %s", p.Name, p.File, err)
+		logrus.Errorf("Could not parse %s data in %s: %s", p.Name, p.File, err)
 	}
 	return hosts, err
 }

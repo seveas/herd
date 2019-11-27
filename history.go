@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type History []*HistoryItem
@@ -68,12 +70,12 @@ func (r Result) String() string {
 func (h History) Save(path string) error {
 	data, err := json.Marshal(h)
 	if err != nil {
-		UI.Warnf("Unable to export history: %s", err)
+		logrus.Warnf("Unable to export history: %s", err)
 		return err
 	}
 	err = ioutil.WriteFile(path, data, 0600)
 	if err != nil {
-		UI.Warnf("Unable to save history to %s: %s", path, err)
+		logrus.Warnf("Unable to save history to %s: %s", path, err)
 	}
 	return err
 }

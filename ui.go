@@ -13,21 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	ERROR = iota
-	WARNING
-	NORMAL
-	INFO
-	DEBUG
-)
-
 type KatyushaUI interface {
 	Println(str string)
 	Printf(format string, v ...interface{})
-	Infof(format string, v ...interface{})
-	Warnf(format string, v ...interface{})
-	Debugf(format string, v ...interface{})
-	Errorf(format string, v ...interface{})
 	CacheProgress(start time.Time, caches []string)
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi *HistoryItem)
@@ -52,14 +40,14 @@ type SimpleUI struct {
 	LineBuf      string
 }
 
-func NewSimpleUI() *SimpleUI {
+func NewSimpleUI(f Formatter) *SimpleUI {
 	ui := &SimpleUI{
 		Output:       os.Stdout,
 		AtStart:      true,
 		LastProgress: "",
 		Pchan:        make(chan string),
 		Dchan:        make(chan interface{}),
-		Formatter:    Formatters[viper.GetString("Formatter")],
+		Formatter:    f,
 		OutputFilter: []MatchAttributes{},
 		Width:        readline.GetScreenWidth(),
 	}
@@ -131,18 +119,12 @@ func (ui *SimpleUI) Wait() {
 }
 
 func (ui *SimpleUI) PrintCommand(command string) {
-	if viper.GetInt("LogLevel") < NORMAL {
-		return
-	}
 	buf := strings.Builder{}
 	ui.Formatter.FormatCommand(command, &buf)
 	ui.Pchan <- buf.String()
 }
 
 func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
-	if viper.GetInt("LogLevel") < NORMAL {
-		return
-	}
 	buf := strings.Builder{}
 	ui.printHistoryItem(hi, &buf)
 	ui.Pchan <- buf.String()
@@ -151,7 +133,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 func (ui *SimpleUI) PrintHistoryItemWithPager(hi *HistoryItem) {
 	p := Pager{}
 	if err := p.Start(); err != nil {
-		ui.Errorf("Unable to start pager, displaying on stdout: %s", err)
+		ui.Printf("Unable to start pager, displaying on stdout: %s", err)
 		ui.PrintHistoryItem(hi)
 	} else {
 		ui.printHistoryItem(hi, &p)
@@ -169,63 +151,20 @@ func (ui *SimpleUI) printHistoryItem(hi *HistoryItem, w io.Writer) {
 }
 
 func (ui *SimpleUI) PrintResult(r Result) {
-	if viper.GetInt("LogLevel") < NORMAL {
-		return
-	}
 	buf := strings.Builder{}
 	ui.Formatter.FormatResult(r, &buf)
 	ui.Pchan <- buf.String()
 }
 
 func (ui *SimpleUI) Println(str string) {
-	if viper.GetInt("LogLevel") < NORMAL {
-		return
-	}
 	ui.Pchan <- str + "\n"
 }
 
 func (ui *SimpleUI) Printf(format string, v ...interface{}) {
-	if viper.GetInt("LogLevel") < NORMAL {
-		return
-	}
 	ui.Pchan <- fmt.Sprintf(format, v...)
 }
 
-func (ui *SimpleUI) Infof(format string, v ...interface{}) {
-	if viper.GetInt("LogLevel") < INFO {
-		return
-	}
-	ui.Pchan <- fmt.Sprintf(format+"\n", v...)
-}
-
-func (ui *SimpleUI) Errorf(format string, v ...interface{}) {
-	if viper.GetInt("LogLevel") < ERROR {
-		return
-	}
-	format = ansi.Color(format, "red+b")
-	ui.Pchan <- fmt.Sprintf(format+"\n", v...)
-}
-
-func (ui *SimpleUI) Warnf(format string, v ...interface{}) {
-	if viper.GetInt("LogLevel") < WARNING {
-		return
-	}
-	format = ansi.Color(format, "yellow")
-	ui.Pchan <- fmt.Sprintf(format+"\n", v...)
-}
-
-func (ui *SimpleUI) Debugf(format string, v ...interface{}) {
-	if viper.GetInt("LogLevel") < DEBUG {
-		return
-	}
-	format = ansi.Color(format, "black+h")
-	ui.Pchan <- fmt.Sprintf(format+"\n", v...)
-}
-
 func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneFail, doneError int) {
-	if viper.GetInt("LogLevel") < INFO {
-		return
-	}
 	since := time.Since(start).Truncate(time.Second)
 	togo := viper.GetDuration("Timeout") - since
 	if todo == 0 {
@@ -238,9 +177,6 @@ func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneF
 }
 
 func (ui *SimpleUI) CacheProgress(start time.Time, caches []string) {
-	if viper.GetInt("LogLevel") < INFO {
-		return
-	}
 	since := time.Since(start).Truncate(time.Second)
 	if len(caches) == 0 {
 		ui.Pchan <- fmt.Sprintf("\r\033[2K")

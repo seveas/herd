@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -43,7 +43,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 	scriptCommands, err := scripting.ParseScript(args[0])
 	if err != nil {
 		// This should not show the usage message
-		katyusha.UI.Errorf("Unable to parse script %s: %s", args[0], err)
+		logrus.Errorf("Unable to parse script %s: %s", args[0], err)
 		return err
 	}
 	for _, command := range scriptCommands {

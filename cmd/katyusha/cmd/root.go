@@ -10,6 +10,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -81,15 +82,16 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// Check configuration variables
-	if _, ok := katyusha.Formatters[viper.GetString("Formatter")]; !ok {
+	formatter, ok := katyusha.Formatters[viper.GetString("Formatter")]
+	if !ok {
 		bail("Unknown formatter: %s. Known formatters: pretty", viper.GetString("Formatter"))
 	}
-	logLevels := map[string]int{"DEBUG": katyusha.DEBUG, "INFO": katyusha.INFO, "NORMAL": katyusha.NORMAL, "WARNING": katyusha.WARNING, "ERROR": katyusha.ERROR}
-	if level, ok := logLevels[viper.GetString("LogLevel")]; ok {
-		viper.Set("LogLevel", level)
-	} else {
+
+	level, err := logrus.ParseLevel(viper.GetString("LogLevel"))
+	if err != nil {
 		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
 	}
+	logrus.SetLevel(level)
 
 	outputModes := map[string]bool{"all": true, "host": true, "line": true, "pager": true}
 	if _, ok := outputModes[viper.GetString("Output")]; !ok {
@@ -102,7 +104,7 @@ func initConfig() {
 	}
 
 	// Set up the UI
-	katyusha.UI = katyusha.NewSimpleUI()
+	katyusha.UI = katyusha.NewSimpleUI(formatter)
 	outputFilters := make([]katyusha.MatchAttributes, len(commands))
 	for i, c := range commands {
 		outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
@@ -117,6 +119,9 @@ func initConfig() {
 		}
 	}
 	katyusha.UI.SetOutputFilter(outputFilters)
+
+	logrus.SetOutput(katyusha.UI)
+	logrus.SetFormatter(formatter)
 }
 
 func bail(format string, args ...interface{}) {

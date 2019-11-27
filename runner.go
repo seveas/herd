@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -124,7 +125,7 @@ func (r *Runner) Run(command string) {
 			close(hqueue)
 		}()
 		for i := 0; i < viper.GetInt("Parallel"); i++ {
-			UI.Debugf("Starting worker %d/%d", i+1, viper.GetInt("Parallel"))
+			logrus.Debugf("Starting worker %d/%d", i+1, viper.GetInt("Parallel"))
 			go func() {
 				for host := range hqueue {
 					host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
@@ -152,10 +153,10 @@ func (r *Runner) Run(command string) {
 		case <-ticker.C:
 			UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 		case <-timeout:
-			UI.Errorf("Run canceled with %d unfinished tasks!", todo)
+			logrus.Errorf("Run canceled with %d unfinished tasks!", todo)
 			cancel()
 		case <-signals:
-			UI.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
+			logrus.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
 			cancel()
 		case r := <-c:
 			if r.ExitStatus == -1 {
@@ -192,11 +193,13 @@ func (r *Runner) End() error {
 	var err error
 	if len(r.History) > 0 {
 		if err = os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
-			UI.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
+			logrus.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
 		} else {
 			fn := path.Join(viper.GetString("HistoryDir"), r.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
 			err = r.History.Save(fn)
-			UI.Infof("History saved to %s", fn)
+			if err == nil {
+				logrus.Infof("History saved to %s", fn)
+			}
 		}
 	}
 	return err
