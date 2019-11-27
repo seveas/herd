@@ -29,7 +29,6 @@ func (p *FakeProvider) String() string {
 }
 
 func TestGetHosts(t *testing.T) {
-	UI = NewSimpleUI()
 	r := Registry{Providers: []HostProvider{&FakeProvider{}, &FakeProvider{}}}
 	err := r.Load()
 	if err != nil {

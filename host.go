@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
@@ -199,7 +200,7 @@ func (h *Host) Amend(h2 *Host) {
 
 func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	if len(h.PublicKeys) == 0 {
-		UI.Warnf("Warning: no known host key for %s, accepting any key", h.Name)
+		logrus.Warnf("Warning: no known host key for %s, accepting any key", h.Name)
 		return nil
 	}
 	bkey := key.Marshal()
@@ -228,7 +229,7 @@ func (host *Host) Connect(ctx context.Context) (*ssh.Client, error) {
 	if host.Connection != nil {
 		return host.Connection, nil
 	}
-	UI.Debugf("Connecting to %s", host.Address())
+	logrus.Debugf("Connecting to %s", host.Address())
 	ctx, cancel := context.WithTimeout(ctx, host.SshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
@@ -250,7 +251,7 @@ func (host *Host) Connect(ctx context.Context) (*ssh.Client, error) {
 
 func (host *Host) Disconnect() {
 	if host.Connection != nil {
-		UI.Debugf("Disconnecting from %s", host.Address())
+		logrus.Debugf("Disconnecting from %s", host.Address())
 		host.Connection.Close()
 		host.Connection = nil
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	consul "github.com/hashicorp/consul/api"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -118,7 +119,7 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 	if err != nil {
 		return Hosts{}, err
 	}
-	UI.Debugf("Consul datacenters: %v", datacenters)
+	logrus.Debugf("Consul datacenters: %v", datacenters)
 	hosts := make(Hosts, 0)
 	rc := make(chan loadresult)
 	for _, dc := range datacenters {

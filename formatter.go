@@ -7,19 +7,28 @@ import (
 	"time"
 
 	"github.com/mgutz/ansi"
+	"github.com/sirupsen/logrus"
 )
 
 var Formatters = map[string]Formatter{
-	"pretty": PrettyFormatter{},
+	"pretty": PrettyFormatter{
+		Colors: map[logrus.Level]string{
+			logrus.WarnLevel:  "yellow",
+			logrus.ErrorLevel: "red+b",
+			logrus.DebugLevel: "black+h",
+		},
+	},
 }
 
 type Formatter interface {
 	FormatCommand(c string, w io.Writer)
 	FormatResult(r Result, w io.Writer)
 	FormatStatus(r Result, w io.Writer)
+	Format(e *logrus.Entry) ([]byte, error)
 }
 
 type PrettyFormatter struct {
+	Colors map[logrus.Level]string
 }
 
 func (f PrettyFormatter) FormatCommand(command string, w io.Writer) {
@@ -58,4 +67,12 @@ func (f PrettyFormatter) WriteIndented(w io.Writer, msg []byte) {
 	}
 	w.Write(bytes.ReplaceAll(msg, []byte{0x0a}, []byte{0x0a, 0x20, 0x20, 0x20, 0x20}))
 	w.Write([]byte{0x0a})
+}
+
+func (f PrettyFormatter) Format(e *logrus.Entry) ([]byte, error) {
+	msg := e.Message
+	if color, ok := f.Colors[e.Level]; ok {
+		msg = ansi.Color(msg, color)
+	}
+	return []byte(msg + "\n"), nil
 }

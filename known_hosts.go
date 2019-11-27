@@ -7,6 +7,7 @@ import (
 	"path"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -39,7 +40,7 @@ func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 				break
 			}
 			if err != nil {
-				UI.Warnf("Error parsing known hosts file %s: %s", f, err)
+				logrus.Warnf("Error parsing known hosts file %s: %s", f, err)
 				data = rest
 				continue
 			}

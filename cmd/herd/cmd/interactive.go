@@ -8,6 +8,7 @@ import (
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
 	"github.com/seveas/readline"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -60,7 +61,7 @@ func (l *InteractiveLoop) Run() {
 		EOFPrompt:       "exit",
 	})
 	if err != nil {
-		herd.UI.Errorf("Unable to start interactive mode: %s", err)
+		logrus.Errorf("Unable to start interactive mode: %s", err)
 		return
 	}
 	defer rl.Close()
@@ -71,7 +72,7 @@ func (l *InteractiveLoop) Run() {
 		} else if err == io.EOF {
 			break
 		} else if err != nil {
-			herd.UI.Errorf(err.Error())
+			logrus.Error(err.Error())
 			break
 		}
 		if line == "exit" {
@@ -79,11 +80,11 @@ func (l *InteractiveLoop) Run() {
 		}
 		commands, err := scripting.ParseCode(line + "\n")
 		if err != nil {
-			herd.UI.Errorf(err.Error())
+			logrus.Error(err.Error())
 			continue
 		}
 		for _, command := range commands {
-			herd.UI.Debugf("%s", command)
+			logrus.Debugf("%s", command)
 			command.Execute(l.Runner)
 			rl.SetPrompt(l.Prompt())
 		}

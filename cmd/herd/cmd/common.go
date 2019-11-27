@@ -7,6 +7,7 @@ import (
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -83,18 +84,18 @@ hostspecLoop:
 func runCommands(commands []scripting.Command, doEnd bool) (*herd.Runner, error) {
 	registry, err := herd.NewRegistry()
 	if err != nil {
-		herd.UI.Errorf("%s", err.Error())
+		logrus.Error(err.Error())
 		return nil, err
 	}
 	err = registry.Load()
 	if err != nil && err.Error() != "" {
-		herd.UI.Errorf("%s", err.Error())
+		// Do not log this error, registry.Load() does its own error logging
 		return nil, err
 	}
 	runner := herd.NewRunner(registry)
 
 	for _, command := range commands {
-		herd.UI.Debugf("%s", command)
+		logrus.Debugf("%s", command)
 		command.Execute(runner)
 	}
 	if doEnd {
