@@ -87,7 +87,7 @@ func runCommands(commands []scripting.Command, doEnd bool) (*katyusha.Runner, er
 		logrus.Error(err.Error())
 		return nil, err
 	}
-	err = registry.Load()
+	err = registry.Load(katyusha.UI.CacheUpdateChannel())
 	if err != nil && err.Error() != "" {
 		// Do not log this error, registry.Load() does its own error logging
 		return nil, err
