@@ -18,7 +18,6 @@ import (
 
 type HerdUI interface {
 	Printf(format string, v ...interface{})
-	CacheProgress(start time.Time, caches []string)
 	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHistoryItemWithPager(hi *HistoryItem)
@@ -29,6 +28,7 @@ type HerdUI interface {
 	Wait()
 	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
 	SetOutputFilter([]MatchAttributes)
+	CacheUpdateChannel() chan CacheMessage
 }
 
 type SimpleUI struct {
@@ -136,7 +136,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 func (ui *SimpleUI) PrintHistoryItemWithPager(hi *HistoryItem) {
 	p := Pager{}
 	if err := p.Start(); err != nil {
-		ui.Printf("Unable to start pager, displaying on stdout: %s", err)
+		logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
 		ui.PrintHistoryItem(hi)
 	} else {
 		ui.printHistoryItem(hi, &p)
@@ -172,19 +172,6 @@ func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneF
 		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, doneOk, doneFail, doneError)
 	} else {
 		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, doneOk, doneFail, doneError)
-	}
-}
-
-func (ui *SimpleUI) CacheProgress(start time.Time, caches []string) {
-	since := time.Since(start).Truncate(time.Second)
-	if len(caches) == 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2K")
-	} else {
-		cs := strings.Join(caches, ", ")
-		if len(cs) > ui.Width-25 {
-			cs = cs[:ui.Width-30] + "..."
-		}
-		ui.Pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
 	}
 }
 
@@ -239,6 +226,50 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, allAttributes bool, attr
 			ui.Pchan <- host.Name + "\n"
 		}
 	}
+}
+
+func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
+	mc := make(chan CacheMessage)
+	go func() {
+		start := time.Now()
+		ticker := time.NewTicker(time.Second / 2)
+		defer ticker.Stop()
+		caches := make([]string, 0)
+		for {
+			select {
+			case msg, ok := <-mc:
+				// Cache message channel closed, we're done caching
+				if !ok {
+					ui.Pchan <- fmt.Sprintf("\r\033[2K")
+					return
+				}
+				if msg.err != nil {
+					logrus.Errorf("Error contacting %s: %s", msg.name, msg.err)
+				}
+				if msg.finished {
+					logrus.Debugf("Cache updated for %s", msg.name)
+					for i, v := range caches {
+						if v == msg.name {
+							caches = append(caches[:i], caches[i+1:]...)
+							break
+						}
+					}
+				} else {
+					caches = append(caches, msg.name)
+				}
+			case <-ticker.C:
+			}
+			if len(caches) > 0 {
+				since := time.Since(start).Truncate(time.Second)
+				cs := strings.Join(caches, ", ")
+				if len(cs) > ui.Width-25 {
+					cs = cs[:ui.Width-30] + "..."
+				}
+				ui.Pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
+			}
+		}
+	}()
+	return mc
 }
 
 type ByteWriter interface {

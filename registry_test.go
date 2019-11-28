@@ -30,7 +30,7 @@ func (p *FakeProvider) String() string {
 
 func TestGetHosts(t *testing.T) {
 	r := Registry{Providers: []HostProvider{&FakeProvider{}, &FakeProvider{}}}
-	err := r.Load()
+	err := r.Load(nil)
 	if err != nil {
 		t.Errorf("%t %v", err, err)
 		t.Errorf("Could not load hosts: %s", err.Error())

@@ -87,7 +87,7 @@ func runCommands(commands []scripting.Command, doEnd bool) (*herd.Runner, error)
 		logrus.Error(err.Error())
 		return nil, err
 	}
-	err = registry.Load()
+	err = registry.Load(herd.UI.CacheUpdateChannel())
 	if err != nil && err.Error() != "" {
 		// Do not log this error, registry.Load() does its own error logging
 		return nil, err

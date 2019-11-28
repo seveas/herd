@@ -6,7 +6,6 @@ import (
 	"net"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -82,17 +81,22 @@ type loadresult struct {
 	err      error
 }
 
-func (r *Registry) Load() error {
+func (r *Registry) Load(mc chan CacheMessage) error {
 	if len(r.Hosts) > 0 {
 		return nil
 	}
 	ctx := context.Background()
-	mc := make(chan CacheMessage)
 	rc := make(chan loadresult)
+	if mc == nil {
+		mc = make(chan CacheMessage)
+		go func() {
+			for range mc {
+			}
+		}()
+	}
 	defer close(mc)
 	defer close(rc)
 
-	st := time.Now()
 	for _, p := range r.Providers {
 		go func(pr HostProvider) {
 			hosts, err := pr.Load(ctx, mc)
@@ -100,51 +104,26 @@ func (r *Registry) Load() error {
 		}(p)
 	}
 
-	caches := make([]string, 0)
 	rerr := &MultiError{Subject: "Errors querying providers"}
-	ticker := time.NewTicker(time.Second / 2)
-	defer ticker.Stop()
 	todo := len(r.Providers)
 	seen := make(map[string]int)
 	hosts := make(Hosts, 0)
 
 	for todo > 0 {
-		select {
-		case msg := <-mc:
-			if msg.err != nil && msg.err.Error() != "" {
-				logrus.Errorf("Error contacting %s: %s", msg.name, msg.err)
-			}
-			if msg.finished {
-				logrus.Debugf("Cache updated for %s", msg.name)
-				for i, v := range caches {
-					if v == msg.name {
-						caches = append(caches[:i], caches[i+1:]...)
-						break
-					}
-				}
+		r := <-rc
+		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider)
+		if r.err != nil {
+			rerr.Add(r.err)
+		}
+		for _, host := range r.hosts {
+			if existing, ok := seen[host.Name]; ok {
+				hosts[existing].Amend(host)
 			} else {
-				caches = append(caches, msg.name)
-			}
-			UI.CacheProgress(st, caches)
-		case r := <-rc:
-			logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider)
-			if r.err != nil {
-				rerr.Add(r.err)
-			}
-			for _, host := range r.hosts {
-				if existing, ok := seen[host.Name]; ok {
-					hosts[existing].Amend(host)
-				} else {
-					seen[host.Name] = len(hosts)
-					hosts = append(hosts, host)
-				}
-			}
-			todo -= 1
-		case <-ticker.C:
-			if len(caches) > 0 {
-				UI.CacheProgress(st, caches)
+				seen[host.Name] = len(hosts)
+				hosts = append(hosts, host)
 			}
 		}
+		todo -= 1
 	}
 	r.Hosts = hosts
 	r.Hosts.Sort()
