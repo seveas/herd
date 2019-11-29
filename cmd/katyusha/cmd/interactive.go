@@ -5,7 +5,6 @@ import (
 	"io"
 	"path"
 
-	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
@@ -28,34 +27,37 @@ func init() {
 }
 
 func runInteractive(cmd *cobra.Command, args []string) error {
-	filters, rest := splitArgs(cmd, args)
-	if len(rest) > 0 {
+	splitAt := cmd.ArgsLenAtDash()
+	if splitAt != -1 {
 		return fmt.Errorf("Command provided, but interactive mode doesn't support that")
-	}
-	commands, err := filterCommands(filters)
-	if err != nil {
-		return err
 	}
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
-	runner, err := runCommands(commands, false)
-	if err == nil {
-		// Enter interactive mode
-		il := &InteractiveLoop{Runner: runner}
-		il.Run()
-		err = runner.End()
+
+	engine, err := setupScriptEngine()
+	if err != nil {
+		return err
 	}
-	return err
+	if err = engine.ParseCommandLine(args, splitAt); err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	engine.Execute()
+
+	// Enter interactive mode
+	il := &interactiveLoop{engine: engine}
+	il.run()
+	return engine.End()
 }
 
-type InteractiveLoop struct {
-	Runner *katyusha.Runner
+type interactiveLoop struct {
+	engine *scripting.ScriptEngine
 }
 
-func (l *InteractiveLoop) Run() {
+func (l *interactiveLoop) run() {
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          l.Prompt(),
-		AutoComplete:    l.AutoComplete(),
+		Prompt:          l.prompt(),
+		AutoComplete:    l.autoComplete(),
 		HistoryFile:     path.Join(viper.GetString("HistoryDir"), "interactive"),
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
@@ -78,24 +80,20 @@ func (l *InteractiveLoop) Run() {
 		if line == "exit" {
 			break
 		}
-		commands, err := scripting.ParseCode(line + "\n")
-		if err != nil {
+		if err := l.engine.ParseCodeLine(line + "\n"); err != nil {
 			logrus.Error(err.Error())
 			continue
 		}
-		for _, command := range commands {
-			logrus.Debugf("%s", command)
-			command.Execute(l.Runner)
-			rl.SetPrompt(l.Prompt())
-		}
+		l.engine.Execute()
+		rl.SetPrompt(l.prompt())
 	}
 }
 
-func (l *InteractiveLoop) Prompt() string {
-	return fmt.Sprintf("katyusha [%d hosts] $ ", len(l.Runner.Hosts))
+func (l *interactiveLoop) prompt() string {
+	return fmt.Sprintf("katyusha [%d hosts] $ ", len(l.engine.ActiveHosts()))
 }
 
-func (l *InteractiveLoop) AutoComplete() readline.AutoCompleter {
+func (l *interactiveLoop) autoComplete() readline.AutoCompleter {
 	p := readline.PcItem
 	return readline.NewPrefixCompleter(
 		p("set",

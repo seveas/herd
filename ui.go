@@ -15,12 +15,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type KatyushaUI interface {
+type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHistoryItemWithPager(hi *HistoryItem)
 	PrintCommand(command string)
 	PrintResult(r *Result)
-	PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool)
+	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
 	Write([]byte) (int, error)
 	Wait()
 	SetOutputFilter([]MatchAttributes)
@@ -161,7 +161,7 @@ func (ui *SimpleUI) Printf(format string, v ...interface{}) {
 	ui.Pchan <- fmt.Sprintf(format, v...)
 }
 
-func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool) {
+func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string) {
 	if oneline {
 		names := make([]string, len(hosts))
 		for i, host := range hosts {
@@ -323,5 +323,3 @@ func (ui *SimpleUI) ProgressChannel(r *Runner, printPerHost bool) chan ProgressM
 	}()
 	return pc
 }
-
-var UI KatyushaUI

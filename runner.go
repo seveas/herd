@@ -52,13 +52,9 @@ func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 	r.Hosts = newHosts
 }
 
-func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csvOutput bool) {
-	UI.PrintHostList(r.Hosts, oneline, allAttributes, attributes, csvOutput)
-}
-
 func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) *HistoryItem {
-	if pc != nil {
-		pc := make(chan ProgressMessage)
+	if pc == nil {
+		pc = make(chan ProgressMessage)
 		go func() {
 			for range pc {
 			}

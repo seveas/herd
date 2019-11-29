@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/seveas/katyusha/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -29,22 +29,22 @@ func init() {
 }
 
 func runList(cmd *cobra.Command, args []string) error {
-	filters, rest := splitArgs(cmd, args)
-	if len(rest) != 0 {
+	splitAt := cmd.ArgsLenAtDash()
+	if splitAt != -1 {
 		return fmt.Errorf("Command provided, but list mode doesn't support that")
 	}
-	commands, err := filterCommands(filters)
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	engine, err := setupScriptEngine()
 	if err != nil {
 		return err
 	}
-	commands = append(commands, scripting.ListHostsCommand{
-		OneLine:       viper.GetBool("OneLine"),
-		AllAttributes: viper.GetBool("AllAttributes"),
-		Attributes:    viper.GetStringSlice("Attributes"),
-		Csv:           viper.GetBool("Csv"),
-	})
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
-	_, err = runCommands(commands, true)
-	return err
+	if err = engine.ParseCommandLine(args, splitAt); err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	engine.AddListHostsCommand(viper.GetBool("OneLine"), viper.GetBool("csv"), viper.GetBool("AllAttributes"), viper.GetStringSlice("Attributes"))
+	engine.Execute()
+	return engine.End()
 }

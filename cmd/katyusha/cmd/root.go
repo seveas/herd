@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"regexp"
 	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/katyusha"
-	"github.com/seveas/katyusha/scripting"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -82,8 +80,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// Check configuration variables
-	formatter, ok := katyusha.Formatters[viper.GetString("Formatter")]
-	if !ok {
+	if _, ok := katyusha.Formatters[viper.GetString("Formatter")]; !ok {
 		bail("Unknown formatter: %s. Known formatters: pretty", viper.GetString("Formatter"))
 	}
 
@@ -97,31 +94,28 @@ func initConfig() {
 	if _, ok := outputModes[viper.GetString("Output")]; !ok {
 		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
 	}
-	filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
-	commands, err := filterCommands(filters)
-	if err != nil {
-		bail("Invalid filters: %v", filters)
-	}
-
-	// Set up the UI
-	katyusha.UI = katyusha.NewSimpleUI(formatter)
-	outputFilters := make([]katyusha.MatchAttributes, len(commands))
-	for i, c := range commands {
-		outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
-	}
-	if viper.GetBool("quiet") {
-		if viper.GetString("Output") == "line" {
-			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
-		} else {
-			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
-			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
-			outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
+	/*
+		filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
+		commands, err := filterCommands(filters)
+		if err != nil {
+			bail("Invalid filters: %v", filters)
 		}
-	}
-	katyusha.UI.SetOutputFilter(outputFilters)
 
-	logrus.SetOutput(katyusha.UI)
-	logrus.SetFormatter(formatter)
+		outputFilters := make([]katyusha.MatchAttributes, len(commands))
+		for i, c := range commands {
+			outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
+		}
+		if viper.GetBool("quiet") {
+			if viper.GetString("Output") == "line" {
+				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
+			} else {
+				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
+				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
+				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
+			}
+		}
+		katyusha.UI.SetOutputFilter(outputFilters)
+	*/
 }
 
 func bail(format string, args ...interface{}) {

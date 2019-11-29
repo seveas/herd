@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/seveas/katyusha/scripting"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -29,27 +28,31 @@ func init() {
 }
 
 func runScript(cmd *cobra.Command, args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("No script provided")
+	splitAt := cmd.ArgsLenAtDash()
+	var filters []string
+	if splitAt != -1 {
+		filters = args[:splitAt]
+		args = args[splitAt:]
 	}
-
-	commands, err := filterCommands(args[1:])
-	if err != nil {
-		return err
+	if len(args) != 1 {
+		return fmt.Errorf("A single script must be provided")
 	}
 
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
-	scriptCommands, err := scripting.ParseScript(args[0])
+
+	engine, err := setupScriptEngine()
 	if err != nil {
-		// This should not show the usage message
+		return err
+	}
+	if err = engine.ParseCommandLine(filters, -1); err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	if err = engine.ParseScriptFile(args[0]); err != nil {
 		logrus.Errorf("Unable to parse script %s: %s", args[0], err)
 		return err
 	}
-	for _, command := range scriptCommands {
-		commands = append(commands, command)
-	}
-
-	_, err = runCommands(commands, true)
-	return err
+	engine.Execute()
+	return engine.End()
 }
