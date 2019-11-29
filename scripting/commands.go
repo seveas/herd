@@ -85,7 +85,18 @@ type RunCommand struct {
 }
 
 func (c RunCommand) Execute(r *herd.Runner) error {
-	r.Run(c.Command)
+	output := viper.GetString("output")
+	var oc chan herd.OutputLine
+	if output == "line" {
+		oc = herd.UI.OutputChannel(r)
+	}
+	pc := herd.UI.ProgressChannel(r, output == "host")
+	hi := r.Run(c.Command, pc, oc)
+	if output == "all" {
+		herd.UI.PrintHistoryItem(hi)
+	} else if output == "pager" {
+		herd.UI.PrintHistoryItemWithPager(hi)
+	}
 	return nil
 }
 

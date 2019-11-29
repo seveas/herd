@@ -11,6 +11,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+type OutputLine struct {
+	Host   *Host
+	Stderr bool
+	Data   []byte
+}
+
+type ProgressMessage struct {
+	Host   *Host
+	Result *Result
+}
+
 type Runner struct {
 	Registry *Registry
 	Hosts    Hosts
@@ -45,27 +56,28 @@ func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csv
 	UI.PrintHostList(r.Hosts, oneline, allAttributes, attributes, csvOutput)
 }
 
-func (r *Runner) Run(command string) {
+func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) *HistoryItem {
+	if pc != nil {
+		pc := make(chan ProgressMessage)
+		go func() {
+			for range pc {
+			}
+		}()
+	}
+	defer close(pc)
+	if oc != nil {
+		defer close(oc)
+	}
 	hi := NewHistoryItem(command, r.Hosts)
 	c := make(chan *Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if viper.GetString("Output") == "line" {
-		ctx = context.WithValue(ctx, "hostnamelen", maxHostNameLen(hi.Hosts))
-		UI.PrintCommand(hi.Command)
-	}
-	queued := -1
-	todo := len(hi.Hosts)
-	total, doneOk, doneFail, doneError := todo, 0, 0, 0
 	if viper.GetInt("Parallel") > 0 {
-		queued = len(hi.Hosts)
 		hqueue := make(chan *Host)
 		go func() {
 			for _, host := range hi.Hosts {
 				hqueue <- host
-				queued--
-				UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 			}
 			close(hqueue)
 		}()
@@ -75,7 +87,8 @@ func (r *Runner) Run(command string) {
 				for host := range hqueue {
 					host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
 					hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
-					c <- host.Run(hctx, command)
+					pc <- ProgressMessage{Host: host}
+					c <- host.Run(hctx, command, oc)
 					hcancel()
 				}
 			}()
@@ -84,19 +97,20 @@ func (r *Runner) Run(command string) {
 		for _, host := range hi.Hosts {
 			hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
 			host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
-			go func(ctx context.Context, h *Host) { c <- h.Run(ctx, command); hcancel() }(hctx, host)
+			go func(ctx context.Context, h *Host) {
+				pc <- ProgressMessage{Host: h}
+				c <- h.Run(hctx, command, oc)
+				hcancel()
+			}(hctx, host)
 		}
 	}
-	ticker := time.NewTicker(time.Second / 2)
-	defer ticker.Stop()
 	timeout := time.After(viper.GetDuration("Timeout"))
 	signals := make(chan os.Signal)
 	signal.Notify(signals, os.Interrupt)
 	defer signal.Reset(os.Interrupt)
+	todo := len(r.Hosts)
 	for todo > 0 {
 		select {
-		case <-ticker.C:
-			UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 		case <-timeout:
 			logrus.Errorf("Run canceled with %d unfinished tasks!", todo)
 			cancel()
@@ -104,29 +118,14 @@ func (r *Runner) Run(command string) {
 			logrus.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
 			cancel()
 		case r := <-c:
-			if r.ExitStatus == -1 {
-				doneError++
-			} else if r.ExitStatus == 0 {
-				doneOk++
-			} else {
-				doneFail++
-			}
-			hi.Results[r.Host] = r
-			if viper.GetString("Output") == "host" {
-				UI.PrintResult(r)
-			}
+			pc <- ProgressMessage{Host: r.Host, Result: r}
+			hi.Results[r.Host.Name] = r
 			todo--
 		}
-		UI.Progress(hi.StartTime, total, todo, queued, doneOk, doneFail, doneError)
 	}
 	hi.End()
 	r.History = append(r.History, hi)
-	if viper.GetString("Output") == "all" {
-		UI.PrintHistoryItem(hi)
-	}
-	if viper.GetString("Output") == "pager" {
-		UI.PrintHistoryItemWithPager(hi)
-	}
+	return hi
 }
 
 func (r *Runner) End() error {
@@ -148,14 +147,4 @@ func (r *Runner) End() error {
 		}
 	}
 	return err
-}
-
-func maxHostNameLen(hosts Hosts) int {
-	max := 0
-	for _, host := range hosts {
-		if len(host.Name) > max {
-			max = len(host.Name)
-		}
-	}
-	return max
 }
