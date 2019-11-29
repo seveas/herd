@@ -9,9 +9,13 @@ import (
 	"github.com/seveas/herd"
 )
 
+func init() {
+	deep.CompareUnexportedFields = true
+}
+
 type testcase struct {
 	program  string
-	commands []Command
+	commands []command
 	errors   []error
 	err      error
 }
@@ -19,7 +23,7 @@ type testcase struct {
 var testcases = []testcase{
 	{
 		program:  "",
-		commands: []Command{},
+		commands: []command{},
 	},
 	{
 		program: "syntax error",
@@ -35,15 +39,15 @@ var testcases = []testcase{
 			"# comment, should be ignored\n" +
 			"run find / -name 'whatever' -delete\n" +
 			"list hosts --oneline\n",
-		commands: []Command{
-			AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar"}}},
-			RemoveHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: "bar"}}},
-			AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: int64(1)}}},
-			AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: nil}}},
-			AddHostsCommand{Glob: "*", Attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
-			ListHostsCommand{},
-			RunCommand{Command: "find / -name 'whatever' -delete"},
-			ListHostsCommand{OneLine: true},
+		commands: []command{
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar"}}},
+			removeHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar"}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: int64(1)}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: nil}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
+			listHostsCommand{},
+			runCommand{command: "find / -name 'whatever' -delete"},
+			listHostsCommand{oneLine: true},
 		},
 	},
 }

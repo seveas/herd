@@ -2,7 +2,6 @@ package scripting
 
 import (
 	"fmt"
-	"io/ioutil"
 	"regexp"
 	"strconv"
 	"strings"
@@ -73,7 +72,7 @@ var validators = map[string]func(interface{}) (interface{}, error){
 
 type herdListener struct {
 	*parser.BaseHerdListener
-	commands      []Command
+	commands      []command
 	configSetters map[string]configSetter
 	errorListener *herdErrorListener
 }
@@ -117,9 +116,9 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 		}
 	}
 
-	command := SetCommand{
-		Variable: varName,
-		Value:    val,
+	command := setCommand{
+		variable: varName,
+		value:    val,
 	}
 
 	l.commands = append(l.commands, command)
@@ -134,7 +133,7 @@ func (l *herdListener) ExitAdd(c *parser.AddContext) {
 		glob = g.GetText()
 	}
 	attrs := l.parseFilters(c.AllFilter())
-	command := AddHostsCommand{Glob: glob, Attributes: attrs}
+	command := addHostsCommand{glob: glob, attributes: attrs}
 	l.commands = append(l.commands, command)
 }
 
@@ -147,7 +146,7 @@ func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
 		glob = g.GetText()
 	}
 	attrs := l.parseFilters(c.AllFilter())
-	command := RemoveHostsCommand{Glob: glob, Attributes: attrs}
+	command := removeHostsCommand{glob: glob, attributes: attrs}
 	l.commands = append(l.commands, command)
 }
 
@@ -200,10 +199,7 @@ func (l *herdListener) ExitList(c *parser.ListContext) {
 		return
 	}
 	oneline := c.GetOneline()
-	command := ListHostsCommand{OneLine: false}
-	if oneline != nil {
-		command.OneLine = true
-	}
+	command := listHostsCommand{oneLine: oneline != nil}
 	l.commands = append(l.commands, command)
 }
 
@@ -217,18 +213,10 @@ func (l *herdListener) ExitRun(c *parser.RunContext) {
 		c.GetParser().NotifyErrorListeners(err.Error(), c.GetStart(), nil)
 		return
 	}
-	l.commands = append(l.commands, RunCommand{Command: command})
+	l.commands = append(l.commands, runCommand{command: command})
 }
 
-func ParseScript(fn string) ([]Command, error) {
-	code, err := ioutil.ReadFile(fn)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCode(string(code))
-}
-
-func ParseCode(code string) ([]Command, error) {
+func ParseCode(code string) ([]command, error) {
 	is := antlr.NewInputStream(code)
 	lexer := parser.NewHerdLexer(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
@@ -238,7 +226,7 @@ func ParseCode(code string) ([]Command, error) {
 		errors: &herd.MultiError{Subject: "Syntax errors found"},
 	}
 	l := herdListener{
-		commands:      make([]Command, 0),
+		commands:      make([]command, 0),
 		errorListener: &el,
 	}
 	p.RemoveErrorListeners()

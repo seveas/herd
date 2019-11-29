@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/seveas/herd/scripting"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -21,17 +20,21 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) error {
-	filters, rest := splitArgs(cmd, args)
-	if len(rest) == 0 {
+	splitAt := cmd.ArgsLenAtDash()
+	if splitAt == -1 {
 		return fmt.Errorf("A command is mandatory")
 	}
-	commands, err := filterCommands(filters)
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+
+	engine, err := setupScriptEngine()
 	if err != nil {
 		return err
 	}
-	commands = append(commands, scripting.RunCommand{Command: strings.Join(rest, " ")})
-	cmd.SilenceErrors = true
-	cmd.SilenceUsage = true
-	_, err = runCommands(commands, true)
-	return err
+	if err = engine.ParseCommandLine(args, splitAt); err != nil {
+		logrus.Error(err.Error())
+		return err
+	}
+	engine.Execute()
+	return engine.End()
 }

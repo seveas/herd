@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"regexp"
 	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/herd"
-	"github.com/seveas/herd/scripting"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -82,8 +80,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// Check configuration variables
-	formatter, ok := herd.Formatters[viper.GetString("Formatter")]
-	if !ok {
+	if _, ok := herd.Formatters[viper.GetString("Formatter")]; !ok {
 		bail("Unknown formatter: %s. Known formatters: pretty", viper.GetString("Formatter"))
 	}
 
@@ -97,31 +94,28 @@ func initConfig() {
 	if _, ok := outputModes[viper.GetString("Output")]; !ok {
 		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
 	}
-	filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
-	commands, err := filterCommands(filters)
-	if err != nil {
-		bail("Invalid filters: %v", filters)
-	}
-
-	// Set up the UI
-	herd.UI = herd.NewSimpleUI(formatter)
-	outputFilters := make([]herd.MatchAttributes, len(commands))
-	for i, c := range commands {
-		outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
-	}
-	if viper.GetBool("quiet") {
-		if viper.GetString("Output") == "line" {
-			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
-		} else {
-			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
-			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
-			outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
+	/*
+		filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
+		commands, err := filterCommands(filters)
+		if err != nil {
+			bail("Invalid filters: %v", filters)
 		}
-	}
-	herd.UI.SetOutputFilter(outputFilters)
 
-	logrus.SetOutput(herd.UI)
-	logrus.SetFormatter(formatter)
+		outputFilters := make([]herd.MatchAttributes, len(commands))
+		for i, c := range commands {
+			outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
+		}
+		if viper.GetBool("quiet") {
+			if viper.GetString("Output") == "line" {
+				outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
+			} else {
+				outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
+				outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
+				outputFilters = append(outputFilters, herd.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
+			}
+		}
+		herd.UI.SetOutputFilter(outputFilters)
+	*/
 }
 
 func bail(format string, args ...interface{}) {

@@ -8,98 +8,98 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Command interface {
-	Execute(r *herd.Runner) error
+type command interface {
+	execute(e *ScriptEngine) error
 }
 
-type SetCommand struct {
-	Variable string
-	Value    interface{}
+type setCommand struct {
+	variable string
+	value    interface{}
 }
 
-func (c SetCommand) Execute(r *herd.Runner) error {
-	viper.Set(c.Variable, c.Value)
+func (c setCommand) execute(e *ScriptEngine) error {
+	viper.Set(c.variable, c.value)
 	return nil
 }
 
-func (c SetCommand) String() string {
-	return fmt.Sprintf("set %s %v", c.Variable, c.Value)
+func (c setCommand) String() string {
+	return fmt.Sprintf("set %s %v", c.variable, c.value)
 }
 
-type AddHostsCommand struct {
-	Glob       string
-	Attributes herd.MatchAttributes
+type addHostsCommand struct {
+	glob       string
+	attributes herd.MatchAttributes
 }
 
-func (c AddHostsCommand) Execute(r *herd.Runner) error {
-	r.AddHosts(c.Glob, c.Attributes)
+func (c addHostsCommand) execute(e *ScriptEngine) error {
+	e.runner.AddHosts(c.glob, c.attributes)
 	return nil
 }
 
-func (c AddHostsCommand) String() string {
-	return fmt.Sprintf("add hosts %s %v", c.Glob, c.Attributes)
+func (c addHostsCommand) String() string {
+	return fmt.Sprintf("add hosts %s %v", c.glob, c.attributes)
 }
 
-type RemoveHostsCommand struct {
-	Glob       string
-	Attributes herd.MatchAttributes
+type removeHostsCommand struct {
+	glob       string
+	attributes herd.MatchAttributes
 }
 
-func (c RemoveHostsCommand) Execute(r *herd.Runner) error {
-	r.RemoveHosts(c.Glob, c.Attributes)
+func (c removeHostsCommand) execute(e *ScriptEngine) error {
+	e.runner.RemoveHosts(c.glob, c.attributes)
 	return nil
 }
 
-func (c RemoveHostsCommand) String() string {
-	return fmt.Sprintf("remove hosts %s %v", c.Glob, c.Attributes)
+func (c removeHostsCommand) String() string {
+	return fmt.Sprintf("remove hosts %s %v", c.glob, c.attributes)
 }
 
-type ListHostsCommand struct {
-	OneLine       bool
-	AllAttributes bool
-	Attributes    []string
-	Csv           bool
+type listHostsCommand struct {
+	oneLine       bool
+	csv           bool
+	allAttributes bool
+	attributes    []string
 }
 
-func (c ListHostsCommand) Execute(r *herd.Runner) error {
-	r.ListHosts(c.OneLine, c.AllAttributes, c.Attributes, c.Csv)
+func (c listHostsCommand) execute(e *ScriptEngine) error {
+	e.ui.PrintHostList(e.runner.Hosts, c.oneLine, c.csv, c.allAttributes, c.attributes)
 	return nil
 }
 
-func (c ListHostsCommand) String() string {
+func (c listHostsCommand) String() string {
 	ret := "list hosts"
-	if c.OneLine {
+	if c.oneLine {
 		ret += " --oneline"
 	}
-	if c.AllAttributes {
+	if c.allAttributes {
 		ret += " --all-attributes"
 	}
-	if len(c.Attributes) != 0 {
-		ret += " --attributes=" + strings.Join(c.Attributes, ",")
+	if len(c.attributes) != 0 {
+		ret += " --attributes=" + strings.Join(c.attributes, ",")
 	}
 	return ret
 }
 
-type RunCommand struct {
-	Command string
+type runCommand struct {
+	command string
 }
 
-func (c RunCommand) Execute(r *herd.Runner) error {
+func (c runCommand) execute(e *ScriptEngine) error {
 	output := viper.GetString("output")
 	var oc chan herd.OutputLine
 	if output == "line" {
-		oc = herd.UI.OutputChannel(r)
+		oc = e.ui.OutputChannel(e.runner)
 	}
-	pc := herd.UI.ProgressChannel(r, output == "host")
-	hi := r.Run(c.Command, pc, oc)
+	pc := e.ui.ProgressChannel(e.runner, output == "host")
+	hi := e.runner.Run(c.command, pc, oc)
 	if output == "all" {
-		herd.UI.PrintHistoryItem(hi)
+		e.ui.PrintHistoryItem(hi)
 	} else if output == "pager" {
-		herd.UI.PrintHistoryItemWithPager(hi)
+		e.ui.PrintHistoryItemWithPager(hi)
 	}
 	return nil
 }
 
-func (c RunCommand) String() string {
-	return "run " + c.Command
+func (c runCommand) String() string {
+	return "run " + c.command
 }
