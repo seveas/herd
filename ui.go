@@ -153,7 +153,7 @@ func (ui *SimpleUI) printHistoryItem(hi *HistoryItem, w io.Writer) {
 	}
 }
 
-func (ui *SimpleUI) PrintResult(r Result) {
+func (ui *SimpleUI) PrintResult(r *Result) {
 	buf := strings.Builder{}
 	ui.Formatter.FormatResult(r, &buf)
 	ui.Pchan <- buf.String()

@@ -22,8 +22,8 @@ var Formatters = map[string]Formatter{
 
 type Formatter interface {
 	FormatCommand(c string, w io.Writer)
-	FormatResult(r Result, w io.Writer)
-	FormatStatus(r Result, w io.Writer)
+	FormatResult(r *Result, w io.Writer)
+	FormatStatus(r *Result, w io.Writer)
 	Format(e *logrus.Entry) ([]byte, error)
 }
 
@@ -35,12 +35,12 @@ func (f PrettyFormatter) FormatCommand(command string, w io.Writer) {
 	fmt.Fprintln(w, ansi.Color(command, "cyan"))
 }
 
-func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
+func (f PrettyFormatter) FormatResult(r *Result, w io.Writer) {
 	if r.Err != nil {
-		fmt.Fprintf(w, ansi.Color(r.Host, "red")+" ")
+		fmt.Fprintf(w, ansi.Color(r.Host.Name, "red")+" ")
 		f.FormatStatus(r, w)
 	} else {
-		fmt.Fprintf(w, ansi.Color(r.Host, "green")+" ")
+		fmt.Fprintf(w, ansi.Color(r.Host.Name, "green")+" ")
 		f.FormatStatus(r, w)
 	}
 	if len(r.Stdout) > 0 {
@@ -52,7 +52,7 @@ func (f PrettyFormatter) FormatResult(r Result, w io.Writer) {
 	}
 }
 
-func (f PrettyFormatter) FormatStatus(r Result, w io.Writer) {
+func (f PrettyFormatter) FormatStatus(r *Result, w io.Writer) {
 	if r.Err != nil {
 		fmt.Fprintln(w, ansi.Color(fmt.Sprintf("%s after %s", r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red"))
 	} else {

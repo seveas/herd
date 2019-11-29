@@ -14,14 +14,14 @@ type History []*HistoryItem
 type HistoryItem struct {
 	Hosts       Hosts
 	Command     string
-	Results     map[string]Result
+	Results     map[string]*Result
 	StartTime   time.Time
 	EndTime     time.Time
 	ElapsedTime float64
 }
 
 type Result struct {
-	Host        string
+	Host        *Host
 	ExitStatus  int
 	Stdout      []byte
 	Stderr      []byte
@@ -35,9 +35,25 @@ func NewHistoryItem(command string, hosts Hosts) *HistoryItem {
 	return &HistoryItem{
 		Hosts:     hosts,
 		Command:   command,
-		Results:   make(map[string]Result),
+		Results:   make(map[string]*Result),
 		StartTime: time.Now(),
 	}
+}
+
+func (h *HistoryItem) MarshalJSON() ([]byte, error) {
+	hosts := make([]string, len(h.Hosts))
+	for i, h_ := range h.Hosts {
+		hosts[i] = h_.Name
+	}
+	r := map[string]interface{}{
+		"Hosts":       hosts,
+		"Command":     h.Command,
+		"Results":     h.Results,
+		"StartTime":   h.StartTime,
+		"EndTime":     h.EndTime,
+		"ElapsedTime": h.ElapsedTime,
+	}
+	return json.Marshal(r)
 }
 
 func (h *HistoryItem) End() {
@@ -47,7 +63,7 @@ func (h *HistoryItem) End() {
 
 func (r Result) MarshalJSON() ([]byte, error) {
 	r_ := map[string]interface{}{
-		"Host":        r.Host,
+		"Host":        r.Host.Name,
 		"ExitStatus":  r.ExitStatus,
 		"Stdout":      string(r.Stdout),
 		"Stderr":      string(r.Stderr),
