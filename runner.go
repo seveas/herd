@@ -47,7 +47,7 @@ func (r *Runner) ListHosts(oneline, allAttributes bool, attributes []string, csv
 
 func (r *Runner) Run(command string) {
 	hi := NewHistoryItem(command, r.Hosts)
-	c := make(chan Result)
+	c := make(chan *Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

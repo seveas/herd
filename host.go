@@ -257,9 +257,9 @@ func (host *Host) Disconnect() {
 	}
 }
 
-func (host *Host) Run(ctx context.Context, command string) Result {
+func (host *Host) Run(ctx context.Context, command string) *Result {
 	now := time.Now()
-	r := Result{Host: host.Name, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
+	r := &Result{Host: host, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
 	var stdout, stderr ByteWriter
 	if viper.GetString("Output") == "line" {
 		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
@@ -323,6 +323,6 @@ func (host *Host) Run(ctx context.Context, command string) Result {
 	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
-	host.LastResult = &r
+	host.LastResult = r
 	return r
 }
