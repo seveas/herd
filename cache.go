@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 type Cache struct {
@@ -39,8 +38,9 @@ func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	mc <- CacheMessage{name: c.Provider.String(), finished: true, err: err}
 	if len(hosts) > 0 {
 		var data []byte
-		if err = os.MkdirAll(viper.GetString("CacheDir"), 0700); err != nil {
-			return hosts, fmt.Errorf("Unable to create cache: %s", err.Error())
+		dir := filepath.Dir(c.File)
+		if err = os.MkdirAll(dir, 0700); err != nil {
+			return hosts, fmt.Errorf("Unable to create cache directory %s: %s", dir, err.Error())
 		}
 		data, err = json.Marshal(hosts)
 		if err == nil {
