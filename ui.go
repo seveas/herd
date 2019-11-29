@@ -116,7 +116,10 @@ func (ui *SimpleUI) Write(msg []byte) (int, error) {
 
 func (ui *SimpleUI) Wait() {
 	close(ui.Pchan)
+	ui.Pchan = make(chan string)
 	<-ui.Dchan
+	ui.Dchan = make(chan interface{})
+	go ui.Printer()
 }
 
 func (ui *SimpleUI) PrintCommand(command string) {
