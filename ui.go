@@ -1,7 +1,6 @@
 package katyusha
 
 import (
-	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -17,18 +16,17 @@ import (
 )
 
 type KatyushaUI interface {
-	Printf(format string, v ...interface{})
-	Progress(start time.Time, total, todo, queued, doneOk, doneFaile, doneError int)
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHistoryItemWithPager(hi *HistoryItem)
 	PrintCommand(command string)
-	PrintResult(r Result)
+	PrintResult(r *Result)
 	PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool)
 	Write([]byte) (int, error)
 	Wait()
-	NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer
 	SetOutputFilter([]MatchAttributes)
 	CacheUpdateChannel() chan CacheMessage
+	OutputChannel(r *Runner) chan OutputLine
+	ProgressChannel(r *Runner, printPerHost bool) chan ProgressMessage
 }
 
 type SimpleUI struct {
@@ -163,18 +161,6 @@ func (ui *SimpleUI) Printf(format string, v ...interface{}) {
 	ui.Pchan <- fmt.Sprintf(format, v...)
 }
 
-func (ui *SimpleUI) Progress(start time.Time, total, todo, queued, doneOk, doneFail, doneError int) {
-	since := time.Since(start).Truncate(time.Second)
-	togo := viper.GetDuration("Timeout") - since
-	if todo == 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, doneOk, doneFail, doneError, since)
-	} else if queued >= 0 {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, doneOk, doneFail, doneError)
-	} else {
-		ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, doneOk, doneFail, doneError)
-	}
-}
-
 func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, allAttributes bool, attributes []string, csvOutput bool) {
 	if oneline {
 		names := make([]string, len(hosts))
@@ -272,52 +258,70 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 	return mc
 }
 
-type ByteWriter interface {
-	Write([]byte) (int, error)
-	Bytes() []byte
-}
-
-type LineWriterBuffer struct {
-	buf     *bytes.Buffer
-	lineBuf []byte
-	host    *Host
-	prefix  string
-	pos     int
-	ui      *SimpleUI
-}
-
-func (ui *SimpleUI) NewLineWriterBuffer(host *Host, prefix string, isError bool) *LineWriterBuffer {
-	if isError {
-		prefix = ansi.Color(prefix, "red")
-	}
-	return &LineWriterBuffer{buf: bytes.NewBuffer([]byte{}), lineBuf: []byte{}, host: host, prefix: prefix, pos: 0, ui: ui}
-}
-
-func (buf *LineWriterBuffer) Write(p []byte) (int, error) {
-	n, err := buf.buf.Write(p)
-	buf.lineBuf = bytes.Join([][]byte{buf.lineBuf, p}, []byte{})
-	for {
-		idx := bytes.Index(buf.lineBuf, []byte("\n"))
-		if idx == -1 {
-			break
+func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
+	oc := make(chan OutputLine)
+	hlen := 0
+	for _, host := range r.Hosts {
+		if len(host.Name) > hlen {
+			hlen = len(host.Name)
 		}
-		buf.ui.Printf("%s %s", buf.prefix, buf.lineBuf[:idx+1])
-		buf.lineBuf = buf.lineBuf[idx+1:]
 	}
-	return n, err
+	go func() {
+		for msg := range oc {
+			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
+			if msg.Stderr {
+				name = ansi.Color(name, "red")
+			}
+			ui.Pchan <- fmt.Sprintf("%s  %s", name, msg.Data)
+		}
+	}()
+	return oc
 }
 
-func (buf *LineWriterBuffer) WriteStatus(r Result) {
-	if !buf.ui.Filtered(buf.host) {
-		return
-	}
-	sb := strings.Builder{}
-	buf.ui.Formatter.FormatStatus(r, &sb)
-	buf.Write([]byte(sb.String()))
-}
-
-func (buf *LineWriterBuffer) Bytes() []byte {
-	return buf.buf.Bytes()
+func (ui *SimpleUI) ProgressChannel(r *Runner, printPerHost bool) chan ProgressMessage {
+	pc := make(chan ProgressMessage)
+	go func() {
+		start := time.Now()
+		ticker := time.NewTicker(time.Second / 2)
+		defer ticker.Stop()
+		total := len(r.Hosts)
+		queued, todo := total, total
+		nok, nfail, nerr := 0, 0, 0
+		for {
+			select {
+			case <-ticker.C:
+			case msg, ok := <-pc:
+				if !ok {
+					return
+				}
+				if msg.Result == nil {
+					queued--
+					continue
+				}
+				if msg.Result.ExitStatus == -1 {
+					nerr++
+				} else if msg.Result.ExitStatus == 0 {
+					nok++
+				} else {
+					nfail++
+				}
+				if printPerHost {
+					ui.PrintResult(msg.Result)
+				}
+				todo--
+			}
+			since := time.Since(start).Truncate(time.Second)
+			togo := viper.GetDuration("Timeout") - since
+			if todo == 0 {
+				ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
+			} else if queued >= 0 {
+				ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, nok, nfail, nerr)
+			} else {
+				ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, nok, nfail, nerr)
+			}
+		}
+	}()
+	return pc
 }
 
 var UI KatyushaUI

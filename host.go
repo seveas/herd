@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -257,21 +256,54 @@ func (host *Host) Disconnect() {
 	}
 }
 
-func (host *Host) Run(ctx context.Context, command string) *Result {
+type byteWriter interface {
+	Write([]byte) (int, error)
+	Bytes() []byte
+}
+
+type lineWriterBuffer struct {
+	oc      chan OutputLine
+	host    *Host
+	stderr  bool
+	buf     *bytes.Buffer
+	lineBuf []byte
+}
+
+func newLineWriterBuffer(host *Host, stderr bool, oc chan OutputLine) *lineWriterBuffer {
+	return &lineWriterBuffer{
+		buf:     bytes.NewBuffer([]byte{}),
+		lineBuf: []byte{},
+		host:    host,
+		oc:      oc,
+		stderr:  stderr,
+	}
+}
+
+func (buf *lineWriterBuffer) Write(p []byte) (int, error) {
+	n, err := buf.buf.Write(p)
+	buf.lineBuf = bytes.Join([][]byte{buf.lineBuf, p}, []byte{})
+	for {
+		idx := bytes.Index(buf.lineBuf, []byte("\n"))
+		if idx == -1 {
+			break
+		}
+		buf.oc <- OutputLine{Host: buf.host, Data: buf.lineBuf[:idx+1], Stderr: buf.stderr}
+		buf.lineBuf = buf.lineBuf[idx+1:]
+	}
+	return n, err
+}
+
+func (buf *lineWriterBuffer) Bytes() []byte {
+	return buf.buf.Bytes()
+}
+
+func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *Result {
 	now := time.Now()
 	r := &Result{Host: host, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
-	var stdout, stderr ByteWriter
-	if viper.GetString("Output") == "line" {
-		prefix := fmt.Sprintf("%-*s  ", ctx.Value("hostnamelen").(int), host.Name)
-		stdout = UI.NewLineWriterBuffer(host, prefix, false)
-		stderr = UI.NewLineWriterBuffer(host, prefix, true)
-		defer func() {
-			if r.Err != nil {
-				stderr.(*LineWriterBuffer).WriteStatus(r)
-			} else {
-				stdout.(*LineWriterBuffer).WriteStatus(r)
-			}
-		}()
+	var stdout, stderr byteWriter
+	if oc != nil {
+		stdout = newLineWriterBuffer(host, false, oc)
+		stderr = newLineWriterBuffer(host, true, oc)
 	} else {
 		stdout = bytes.NewBuffer([]byte{})
 		stderr = bytes.NewBuffer([]byte{})
