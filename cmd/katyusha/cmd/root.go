@@ -42,7 +42,6 @@ func init() {
 	rootCmd.PersistentFlags().StringArray("output-filter", []string{}, "Only output results for hosts matching this filter")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringP("sort", "s", "name", "Sort hosts before running commands")
-	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "Don't show status for succesful commands with no output")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
@@ -50,7 +49,6 @@ func init() {
 	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
 	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
-	viper.BindPFlag("Quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 }
 
 func initConfig() {
@@ -94,28 +92,6 @@ func initConfig() {
 	if _, ok := outputModes[viper.GetString("Output")]; !ok {
 		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
 	}
-	/*
-		filters, err := rootCmd.PersistentFlags().GetStringArray("output-filter")
-		commands, err := filterCommands(filters)
-		if err != nil {
-			bail("Invalid filters: %v", filters)
-		}
-
-		outputFilters := make([]katyusha.MatchAttributes, len(commands))
-		for i, c := range commands {
-			outputFilters[i] = c.(scripting.AddHostsCommand).Attributes
-		}
-		if viper.GetBool("quiet") {
-			if viper.GetString("Output") == "line" {
-				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}, {Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true, Negate: true}})
-			} else {
-				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "err", Value: nil, Negate: true}})
-				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stdout", Value: regexp.MustCompile("\\S"), Regex: true}})
-				outputFilters = append(outputFilters, katyusha.MatchAttributes{{Name: "stderr", Value: regexp.MustCompile("\\S"), Regex: true}})
-			}
-		}
-		katyusha.UI.SetOutputFilter(outputFilters)
-	*/
 }
 
 func bail(format string, args ...interface{}) {

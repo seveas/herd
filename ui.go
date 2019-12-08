@@ -23,7 +23,6 @@ type UI interface {
 	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
 	Write([]byte) (int, error)
 	Wait()
-	SetOutputFilter([]MatchAttributes)
 	CacheUpdateChannel() chan CacheMessage
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner, printPerHost bool) chan ProgressMessage
@@ -36,7 +35,6 @@ type SimpleUI struct {
 	Pchan        chan string
 	Dchan        chan interface{}
 	Formatter    Formatter
-	OutputFilter []MatchAttributes
 	Width        int
 	LineBuf      string
 }
@@ -49,7 +47,6 @@ func NewSimpleUI(f Formatter) *SimpleUI {
 		Pchan:        make(chan string),
 		Dchan:        make(chan interface{}),
 		Formatter:    f,
-		OutputFilter: []MatchAttributes{},
 		Width:        readline.GetScreenWidth(),
 	}
 	if ui.Width == -1 {
@@ -66,22 +63,6 @@ func NewSimpleUI(f Formatter) *SimpleUI {
 	})
 	go ui.Printer()
 	return ui
-}
-
-func (ui *SimpleUI) SetOutputFilter(m []MatchAttributes) {
-	ui.OutputFilter = m
-}
-
-func (ui *SimpleUI) Filtered(h *Host) bool {
-	if len(ui.OutputFilter) == 0 {
-		return true
-	}
-	for _, f := range ui.OutputFilter {
-		if h.Match("", f) {
-			return true
-		}
-	}
-	return false
 }
 
 func (ui *SimpleUI) Printer() {
@@ -148,9 +129,7 @@ func (ui *SimpleUI) PrintHistoryItemWithPager(hi *HistoryItem) {
 func (ui *SimpleUI) printHistoryItem(hi *HistoryItem, w io.Writer) {
 	ui.Formatter.FormatCommand(hi.Command, w)
 	for _, h := range hi.Hosts {
-		if ui.Filtered(h) {
-			ui.Formatter.FormatResult(hi.Results[h.Name], w)
-		}
+		ui.Formatter.FormatResult(hi.Results[h.Name], w)
 	}
 }
 
