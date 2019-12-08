@@ -10,6 +10,8 @@ import (
 func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	formatter := herd.Formatters[viper.GetString("Formatter")]
 	ui := herd.NewSimpleUI(formatter)
+	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
+	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
 	logrus.SetFormatter(formatter)
 	logrus.SetOutput(ui)
 

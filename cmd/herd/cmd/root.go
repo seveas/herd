@@ -39,6 +39,7 @@ func init() {
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	rootCmd.PersistentFlags().Bool("no-pager", false, "Disable the use of the pager")
 	rootCmd.PersistentFlags().StringArray("output-filter", []string{}, "Only output results for hosts matching this filter")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringP("sort", "s", "name", "Sort hosts before running commands")
@@ -49,6 +50,7 @@ func init() {
 	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
 	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
+	viper.BindPFlag("NoPager", rootCmd.PersistentFlags().Lookup("no-pager"))
 }
 
 func initConfig() {
@@ -88,10 +90,17 @@ func initConfig() {
 	}
 	logrus.SetLevel(level)
 
-	outputModes := map[string]bool{"all": true, "host": true, "line": true, "pager": true}
-	if _, ok := outputModes[viper.GetString("Output")]; !ok {
-		bail("Unknown output mode: %s. Known modes: all, host, line, pager", viper.GetString("Output"))
+	outputModes := map[string]herd.OutputMode{
+		"all":      herd.OutputAll,
+		"inline":   herd.OutputInline,
+		"per-host": herd.OutputPerhost,
+		"tail":     herd.OutputTail,
 	}
+	om, ok := outputModes[viper.GetString("Output")]
+	if !ok {
+		bail("Unknown output mode: %s. Known modes: all, inline, per-host, tail", viper.GetString("Output"))
+	}
+	viper.Set("Output", om)
 }
 
 func bail(format string, args ...interface{}) {

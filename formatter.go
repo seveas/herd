@@ -1,9 +1,8 @@
 package herd
 
 import (
-	"bytes"
 	"fmt"
-	"io"
+	"strings"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -21,9 +20,10 @@ var Formatters = map[string]Formatter{
 }
 
 type Formatter interface {
-	FormatCommand(c string, w io.Writer)
-	FormatResult(r *Result, w io.Writer)
-	FormatStatus(r *Result, w io.Writer)
+	FormatCommand(c string) string
+	FormatResult(r *Result) string
+	FormatStatus(r *Result, l int) string
+	FormatOutput(r *Result, l int) string
 	Format(e *logrus.Entry) ([]byte, error)
 }
 
@@ -31,42 +31,47 @@ type PrettyFormatter struct {
 	Colors map[logrus.Level]string
 }
 
-func (f PrettyFormatter) FormatCommand(command string, w io.Writer) {
-	fmt.Fprintln(w, ansi.Color(command, "cyan"))
+func (f PrettyFormatter) FormatCommand(command string) string {
+	return ansi.Color(command, "cyan") + "\n"
 }
 
-func (f PrettyFormatter) FormatResult(r *Result, w io.Writer) {
-	if r.Err != nil {
-		fmt.Fprintf(w, ansi.Color(r.Host.Name, "red")+" ")
-		f.FormatStatus(r, w)
-	} else {
-		fmt.Fprintf(w, ansi.Color(r.Host.Name, "green")+" ")
-		f.FormatStatus(r, w)
-	}
+func (f PrettyFormatter) FormatResult(r *Result) string {
+	out := f.FormatStatus(r, 0)
 	if len(r.Stdout) > 0 {
-		f.WriteIndented(w, r.Stdout)
+		out += f.indent(string(r.Stdout), "    ", "    ")
 	}
 	if len(r.Stderr) != 0 {
-		fmt.Fprintln(w, ansi.Color("----", "black+h"))
-		f.WriteIndented(w, r.Stderr)
+		out += ansi.Color("----", "black+h") + "\n" + f.indent(string(r.Stderr), "    ", "    ")
 	}
+	return out
 }
 
-func (f PrettyFormatter) FormatStatus(r *Result, w io.Writer) {
+func (f PrettyFormatter) FormatOutput(r *Result, l int) string {
+	prefix := fmt.Sprintf("%-*s  ", l, r.Host.Name)
+	indent := fmt.Sprintf("%-*s  ", l, "")
+	out := ""
+	if len(r.Stdout) > 0 {
+		out += f.indent(string(r.Stdout), prefix, indent)
+	}
+	if len(r.Stderr) > 0 {
+		out += f.indent(string(r.Stderr), ansi.Color(prefix, "red"), indent)
+	}
+	if out == "" || r.Err != nil {
+		out += f.FormatStatus(r, l)
+	}
+	return out
+}
+
+func (f PrettyFormatter) FormatStatus(r *Result, l int) string {
 	if r.Err != nil {
-		fmt.Fprintln(w, ansi.Color(fmt.Sprintf("%s after %s", r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red"))
+		return ansi.Color(fmt.Sprintf("%-*s  %s after %s", l, r.Host.Name, r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red") + "\n"
 	} else {
-		fmt.Fprintln(w, ansi.Color(fmt.Sprintf("completed successfully after %s", r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "green"))
+		return ansi.Color(fmt.Sprintf("%-*s  completed successfully after %s", l, r.Host.Name, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "green") + "\n"
 	}
 }
 
-func (f PrettyFormatter) WriteIndented(w io.Writer, msg []byte) {
-	w.Write([]byte{0x20, 0x20, 0x20, 0x20})
-	if msg[len(msg)-1] == 0x0a {
-		msg = msg[:len(msg)-1]
-	}
-	w.Write(bytes.ReplaceAll(msg, []byte{0x0a}, []byte{0x0a, 0x20, 0x20, 0x20, 0x20}))
-	w.Write([]byte{0x0a})
+func (f PrettyFormatter) indent(msg, prefix, indent string) string {
+	return prefix + strings.ReplaceAll(strings.TrimSuffix(msg, "\n"), "\n", "\n"+indent) + "\n"
 }
 
 func (f PrettyFormatter) Format(e *logrus.Entry) ([]byte, error) {
