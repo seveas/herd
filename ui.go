@@ -36,131 +36,131 @@ type UI interface {
 }
 
 type SimpleUI struct {
-	Output       *os.File
-	AtStart      bool
-	LastProgress string
-	Pchan        chan string
-	Dchan        chan interface{}
-	Formatter    Formatter
-	OutputMode   OutputMode
-	PagerEnabled bool
-	Width        int
-	Height       int
-	LineBuf      string
+	output       *os.File
+	atStart      bool
+	lastProgress string
+	pchan        chan string
+	dchan        chan interface{}
+	formatter    Formatter
+	outputMode   OutputMode
+	pagerEnabled bool
+	width        int
+	height       int
+	lineBuf      string
 }
 
 func NewSimpleUI(f Formatter) *SimpleUI {
 	ui := &SimpleUI{
-		Output:       os.Stdout,
-		OutputMode:   OutputAll,
-		AtStart:      true,
-		LastProgress: "",
-		Pchan:        make(chan string),
-		Dchan:        make(chan interface{}),
-		Formatter:    f,
+		output:       os.Stdout,
+		outputMode:   OutputAll,
+		atStart:      true,
+		lastProgress: "",
+		pchan:        make(chan string),
+		dchan:        make(chan interface{}),
+		formatter:    f,
 	}
-	ui.GetSize()
+	ui.getSize()
 	readline.DefaultOnWidthChanged(func() {
-		ui.GetSize()
+		ui.getSize()
 	})
-	go ui.Printer()
+	go ui.printer()
 	return ui
 }
 
-func (ui *SimpleUI) GetSize() {
-	w, h, err := readline.GetSize(int(ui.Output.Fd()))
+func (ui *SimpleUI) getSize() {
+	w, h, err := readline.GetSize(int(ui.output.Fd()))
 	if err == nil {
-		ui.Width, ui.Height = w, h
+		ui.width, ui.height = w, h
 		if w < 40 {
-			ui.Width = 40
+			ui.width = 40
 		}
 	} else {
-		ui.PagerEnabled = false
-		ui.Width = 80
+		ui.pagerEnabled = false
+		ui.width = 80
 	}
 }
 
 func (ui *SimpleUI) SetOutputMode(o OutputMode) {
-	ui.OutputMode = o
+	ui.outputMode = o
 }
 
 func (ui *SimpleUI) SetPagerEnabled(e bool) {
-	ui.PagerEnabled = e
+	ui.pagerEnabled = e
 }
 
-func (ui *SimpleUI) Printer() {
-	for msg := range ui.Pchan {
+func (ui *SimpleUI) printer() {
+	for msg := range ui.pchan {
 		// If we're getting a normal message in the middle of printing
 		// progress, wipe the progress message and reprint it after this
 		// message
-		if !ui.AtStart && msg[0] != '\r' && msg[0] != '\n' {
-			ui.Output.WriteString("\r\033[2K" + msg + ui.LastProgress)
+		if !ui.atStart && msg[0] != '\r' && msg[0] != '\n' {
+			ui.output.WriteString("\r\033[2K" + msg + ui.lastProgress)
 		} else {
-			ui.Output.WriteString(msg)
+			ui.output.WriteString(msg)
 			if msg[len(msg)-1] == '\n' || msg == "\r\033[2K" {
-				ui.AtStart = true
+				ui.atStart = true
 			} else {
-				ui.AtStart = false
-				ui.LastProgress = msg
+				ui.atStart = false
+				ui.lastProgress = msg
 			}
 		}
-		ui.Output.Sync()
+		ui.output.Sync()
 	}
-	close(ui.Dchan)
+	close(ui.dchan)
 }
 
 func (ui *SimpleUI) Write(msg []byte) (int, error) {
-	ui.LineBuf += string(msg)
-	if strings.HasSuffix(ui.LineBuf, "\n") {
-		ui.Pchan <- ui.LineBuf
-		ui.LineBuf = ""
+	ui.lineBuf += string(msg)
+	if strings.HasSuffix(ui.lineBuf, "\n") {
+		ui.pchan <- ui.lineBuf
+		ui.lineBuf = ""
 	}
 	return len(msg), nil
 }
 
 func (ui *SimpleUI) Wait() {
-	close(ui.Pchan)
-	ui.Pchan = make(chan string)
-	<-ui.Dchan
-	ui.Dchan = make(chan interface{})
-	go ui.Printer()
+	close(ui.pchan)
+	ui.pchan = make(chan string)
+	<-ui.dchan
+	ui.dchan = make(chan interface{})
+	go ui.printer()
 }
 
 func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
-	if ui.OutputMode != OutputAll && ui.OutputMode != OutputInline {
+	if ui.outputMode != OutputAll && ui.outputMode != OutputInline {
 		return
 	}
-	usePager := ui.PagerEnabled
+	usePager := ui.pagerEnabled
 	hlen := hi.Hosts.MaxLen()
 	linecount := 0
 	buffer := ""
 	var pager *Pager
 	if usePager {
-		buffer = ui.Formatter.FormatCommand(hi.Command)
+		buffer = ui.formatter.FormatCommand(hi.Command)
 		linecount = 1
 	} else {
-		ui.Pchan <- ui.Formatter.FormatCommand(hi.Command)
+		ui.pchan <- ui.formatter.FormatCommand(hi.Command)
 	}
 
 	for _, h := range hi.Hosts {
 		var txt string
-		if ui.OutputMode == OutputAll {
-			txt = ui.Formatter.FormatResult(hi.Results[h.Name])
+		if ui.outputMode == OutputAll {
+			txt = ui.formatter.FormatResult(hi.Results[h.Name])
 		} else {
-			txt = ui.Formatter.FormatOutput(hi.Results[h.Name], hlen)
+			txt = ui.formatter.FormatOutput(hi.Results[h.Name], hlen)
 		}
 		if !usePager {
-			ui.Pchan <- txt
+			ui.pchan <- txt
 		} else if pager != nil {
 			pager.WriteString(txt)
 		} else {
 			buffer += txt
 			linecount += strings.Count(txt, "\n")
-			if linecount > ui.Height {
+			if linecount > ui.height {
 				pager = &Pager{}
 				if err := pager.Start(); err != nil {
 					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-					ui.Pchan <- buffer
+					ui.pchan <- buffer
 					usePager = false
 				} else {
 					pager.WriteString(buffer)
@@ -170,7 +170,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		}
 	}
 	if buffer != "" {
-		ui.Pchan <- buffer
+		ui.pchan <- buffer
 	}
 	if pager != nil {
 		pager.Wait()
@@ -183,7 +183,7 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 		for i, host := range hosts {
 			names[i] = host.Name
 		}
-		ui.Pchan <- strings.Join(names, ",")
+		ui.pchan <- strings.Join(names, ",")
 		return
 	}
 	if allAttributes || len(attributes) > 0 {
@@ -225,7 +225,7 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 		writer.Flush()
 	} else {
 		for _, host := range hosts {
-			ui.Pchan <- host.Name + "\n"
+			ui.pchan <- host.Name + "\n"
 		}
 	}
 }
@@ -242,7 +242,7 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 			case msg, ok := <-mc:
 				// Cache message channel closed, we're done caching
 				if !ok {
-					ui.Pchan <- fmt.Sprintf("\r\033[2K")
+					ui.pchan <- fmt.Sprintf("\r\033[2K")
 					return
 				}
 				if msg.err != nil {
@@ -264,10 +264,10 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 			if len(caches) > 0 {
 				since := time.Since(start).Truncate(time.Second)
 				cs := strings.Join(caches, ", ")
-				if len(cs) > ui.Width-25 {
-					cs = cs[:ui.Width-30] + "..."
+				if len(cs) > ui.width-25 {
+					cs = cs[:ui.width-30] + "..."
 				}
-				ui.Pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
+				ui.pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
 			}
 		}
 	}()
@@ -275,7 +275,7 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 }
 
 func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
-	if ui.OutputMode != OutputTail {
+	if ui.outputMode != OutputTail {
 		return nil
 	}
 	oc := make(chan OutputLine)
@@ -286,7 +286,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 			if msg.Stderr {
 				name = ansi.Color(name, "red")
 			}
-			ui.Pchan <- fmt.Sprintf("%s  %s", name, msg.Data)
+			ui.pchan <- fmt.Sprintf("%s  %s", name, msg.Data)
 		}
 	}()
 	return oc
@@ -320,21 +320,21 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				} else {
 					nfail++
 				}
-				if ui.OutputMode == OutputPerhost {
-					ui.Pchan <- ui.Formatter.FormatResult(msg.Result)
-				} else if ui.OutputMode == OutputTail {
-					ui.Pchan <- ui.Formatter.FormatStatus(msg.Result, hlen)
+				if ui.outputMode == OutputPerhost {
+					ui.pchan <- ui.formatter.FormatResult(msg.Result)
+				} else if ui.outputMode == OutputTail {
+					ui.pchan <- ui.formatter.FormatStatus(msg.Result, hlen)
 				}
 				todo--
 			}
 			since := time.Since(start).Truncate(time.Second)
 			togo := viper.GetDuration("Timeout") - since
 			if todo == 0 {
-				ui.Pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
+				ui.pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
 			} else if queued >= 0 {
-				ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, nok, nfail, nerr)
+				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, nok, nfail, nerr)
 			} else {
-				ui.Pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, nok, nfail, nerr)
+				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d ok, %d fail, %d error", since, togo, total-todo, total, nok, nfail, nerr)
 			}
 		}
 	}()

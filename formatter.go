@@ -11,7 +11,7 @@ import (
 
 var Formatters = map[string]Formatter{
 	"pretty": PrettyFormatter{
-		Colors: map[logrus.Level]string{
+		colors: map[logrus.Level]string{
 			logrus.WarnLevel:  "yellow",
 			logrus.ErrorLevel: "red+b",
 			logrus.DebugLevel: "black+h",
@@ -28,7 +28,7 @@ type Formatter interface {
 }
 
 type PrettyFormatter struct {
-	Colors map[logrus.Level]string
+	colors map[logrus.Level]string
 }
 
 func (f PrettyFormatter) FormatCommand(command string) string {
@@ -76,7 +76,7 @@ func (f PrettyFormatter) indent(msg, prefix, indent string) string {
 
 func (f PrettyFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	msg := e.Message
-	if color, ok := f.Colors[e.Level]; ok {
+	if color, ok := f.colors[e.Level]; ok {
 		msg = ansi.Color(msg, color)
 	}
 	return []byte(msg + "\n"), nil
