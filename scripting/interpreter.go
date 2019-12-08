@@ -13,10 +13,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type configSetter struct {
-	tokenType int
-}
-
 var typeNames = map[int]string{
 	parser.HerdParserNUMBER:   "number",
 	parser.HerdParserSTRING:   "string",
@@ -44,36 +40,64 @@ var tokenConverters = map[int]func(string) (interface{}, error){
 	},
 }
 
-var tokenTypes = map[string]int{
-	"Timeout":        parser.HerdParserDURATION,
-	"HostTimeout":    parser.HerdParserDURATION,
-	"ConnectTimeout": parser.HerdParserDURATION,
-	"Parallel":       parser.HerdParserNUMBER,
-	"Output":         parser.HerdParserSTRING,
-	"LogLevel":       parser.HerdParserSTRING,
+type variable struct {
+	tokenType int
+	validator func(interface{}) (interface{}, error)
 }
 
-var validators = map[string]func(interface{}) (interface{}, error){
-	"Output": func(i interface{}) (interface{}, error) {
-		s := i.(string)
-		if s == "all" || s == "host" || s == "line" || s == "pager" {
-			return s, nil
-		}
-		return nil, fmt.Errorf("Unknown output mode: %s. Known modes: all, host, line, pager", s)
+var variables map[string]variable = map[string]variable{
+	"Timeout": {
+		tokenType: parser.HerdParserDURATION,
 	},
-	"LogLevel": func(i interface{}) (interface{}, error) {
-		s := i.(string)
-		if level, err := logrus.ParseLevel(s); err == nil {
-			return level, nil
-		}
-		return nil, fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
+	"HostTimeout": {
+		tokenType: parser.HerdParserDURATION,
+	},
+	"ConnectTimeout": {
+		tokenType: parser.HerdParserDURATION,
+	},
+	"Parallel": {
+		tokenType: parser.HerdParserDURATION,
+	},
+	"Output": {
+		tokenType: parser.HerdParserSTRING,
+		validator: func(i interface{}) (interface{}, error) {
+			s := i.(string)
+			outputModes := map[string]herd.OutputMode{
+				"all":      herd.OutputAll,
+				"inline":   herd.OutputInline,
+				"per-host": herd.OutputPerhost,
+				"tail":     herd.OutputTail,
+			}
+			if s == "all" || s == "per-host" || s == "inline" || s == "tail" {
+				return outputModes[s], nil
+			}
+			return nil, fmt.Errorf("Unknown output mode: %s. Known modes: all, per-host, inline, tail", s)
+		},
+	},
+	"NoPager": {
+		tokenType: parser.HerdParserIDENTIFIER,
+		validator: func(i interface{}) (interface{}, error) {
+			if _, ok := i.(bool); ok {
+				return i, nil
+			}
+			return nil, fmt.Errorf("Expected a boolean value, not %v", i)
+		},
+	},
+	"LogLevel": {
+		tokenType: parser.HerdParserSTRING,
+		validator: func(i interface{}) (interface{}, error) {
+			s := i.(string)
+			if level, err := logrus.ParseLevel(s); err == nil {
+				return level, nil
+			}
+			return nil, fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
+		},
 	},
 }
 
 type herdListener struct {
 	*parser.BaseHerdListener
 	commands      []command
-	configSetters map[string]configSetter
 	errorListener *herdErrorListener
 }
 
@@ -82,7 +106,7 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 		return
 	}
 	varName := c.GetVarname().GetText()
-	tokenType, ok := tokenTypes[varName]
+	variable, ok := variables[varName]
 	if !ok {
 		err := fmt.Sprintf("unknown setting: %s", varName)
 		c.GetParser().NotifyErrorListeners(err, c.GetVarname(), nil)
@@ -93,9 +117,9 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 	valueToken := valueCtx.GetStart()
 	valueType := valueToken.GetTokenType()
 
-	if valueType != tokenType {
+	if valueType != variable.tokenType {
 		p := valueCtx.GetParser()
-		err := fmt.Sprintf("%s value should be a %s, not a %s", varName, typeNames[tokenType], typeNames[valueType])
+		err := fmt.Sprintf("%s value should be a %s, not a %s", varName, typeNames[variable.tokenType], typeNames[valueType])
 		p.NotifyErrorListeners(err, valueToken, nil)
 		return
 	}
@@ -106,9 +130,8 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 		p.NotifyErrorListeners(err.Error(), valueToken, nil)
 		return
 	}
-	validator, ok := validators[varName]
-	if ok {
-		val, err = validator(val)
+	if variable.validator != nil {
+		val, err = variable.validator(val)
 		if err != nil {
 			p := valueCtx.GetParser()
 			p.NotifyErrorListeners(err.Error(), valueToken, nil)
