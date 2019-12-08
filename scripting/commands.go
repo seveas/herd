@@ -18,7 +18,13 @@ type setCommand struct {
 }
 
 func (c setCommand) execute(e *ScriptEngine) error {
-	viper.Set(c.variable, c.value)
+	if c.variable == "Output" {
+		e.ui.SetOutputMode(c.value.(katyusha.OutputMode))
+	} else if c.variable == "NoPager" {
+		e.ui.SetPagerEnabled(!c.value.(bool))
+	} else {
+		viper.Set(c.variable, c.value)
+	}
 	return nil
 }
 
