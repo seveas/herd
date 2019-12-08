@@ -18,6 +18,15 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+var localUser string
+
+func init() {
+	u, err := user.Current()
+	if err == nil {
+		localUser = u.Username
+	}
+}
+
 type HostAttributes map[string]interface{}
 
 type MatchAttribute struct {
@@ -107,31 +116,30 @@ type Host struct {
 func NewHost(name string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
-		PublicKeys: make([]ssh.PublicKey, 0),
 		Attributes: attributes,
-		SshConfig: &ssh.ClientConfig{
-			ClientVersion: "SSH-2.0-Herd-0.1",
-			Auth:          []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
-			Timeout:       3 * time.Second,
-		},
-		Connection: nil,
-		LastResult: nil,
-		Csum:       crc32.ChecksumIEEE([]byte(name)),
 	}
-	h.SshConfig.HostKeyCallback = h.HostKeyCallback
-	h.SshConfig.BannerCallback = h.BannerCallback
-	u, err := user.Current()
-	if err == nil {
-		h.SshConfig.User = u.Username
+	h.init()
+	return h
+}
+
+func (h *Host) init() {
+	h.PublicKeys = make([]ssh.PublicKey, 0)
+	h.SshConfig = &ssh.ClientConfig{
+		ClientVersion:   "SSH-2.0-Herd-0.1",
+		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
+		User:            localUser,
+		Timeout:         3 * time.Second,
+		HostKeyCallback: h.HostKeyCallback,
+		BannerCallback:  h.BannerCallback,
 	}
-	parts := strings.SplitN(name, ".", 2)
+	h.Csum = crc32.ChecksumIEEE([]byte(h.Name))
+	parts := strings.SplitN(h.Name, ".", 2)
 	h.Attributes["hostname"] = parts[0]
 	if len(parts) == 2 {
 		h.Attributes["domainname"] = parts[1]
 	} else {
 		h.Attributes["domainname"] = ""
 	}
-	return h
 }
 
 func (host Host) String() string {
