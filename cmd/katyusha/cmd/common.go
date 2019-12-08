@@ -10,6 +10,8 @@ import (
 func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	formatter := katyusha.Formatters[viper.GetString("Formatter")]
 	ui := katyusha.NewSimpleUI(formatter)
+	ui.SetOutputMode(viper.Get("Output").(katyusha.OutputMode))
+	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
 	logrus.SetFormatter(formatter)
 	logrus.SetOutput(ui)
 

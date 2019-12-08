@@ -3,7 +3,6 @@ package katyusha
 import (
 	"encoding/csv"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strings"
@@ -15,17 +14,25 @@ import (
 	"github.com/spf13/viper"
 )
 
+type OutputMode int
+
+const (
+	OutputTail OutputMode = iota
+	OutputPerhost
+	OutputInline
+	OutputAll
+)
+
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
-	PrintHistoryItemWithPager(hi *HistoryItem)
-	PrintCommand(command string)
-	PrintResult(r *Result)
 	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
+	SetOutputMode(OutputMode)
+	SetPagerEnabled(bool)
 	Write([]byte) (int, error)
 	Wait()
 	CacheUpdateChannel() chan CacheMessage
 	OutputChannel(r *Runner) chan OutputLine
-	ProgressChannel(r *Runner, printPerHost bool) chan ProgressMessage
+	ProgressChannel(r *Runner) chan ProgressMessage
 }
 
 type SimpleUI struct {
@@ -35,34 +42,50 @@ type SimpleUI struct {
 	Pchan        chan string
 	Dchan        chan interface{}
 	Formatter    Formatter
+	OutputMode   OutputMode
+	PagerEnabled bool
 	Width        int
+	Height       int
 	LineBuf      string
 }
 
 func NewSimpleUI(f Formatter) *SimpleUI {
 	ui := &SimpleUI{
 		Output:       os.Stdout,
+		OutputMode:   OutputAll,
 		AtStart:      true,
 		LastProgress: "",
 		Pchan:        make(chan string),
 		Dchan:        make(chan interface{}),
 		Formatter:    f,
-		Width:        readline.GetScreenWidth(),
 	}
-	if ui.Width == -1 {
-		ui.Width = 80
-	}
-	if ui.Width < 40 {
-		ui.Width = 40
-	}
+	ui.GetSize()
 	readline.DefaultOnWidthChanged(func() {
-		w := readline.GetScreenWidth()
-		if w >= 40 {
-			ui.Width = w
-		}
+		ui.GetSize()
 	})
 	go ui.Printer()
 	return ui
+}
+
+func (ui *SimpleUI) GetSize() {
+	w, h, err := readline.GetSize(int(ui.Output.Fd()))
+	if err == nil {
+		ui.Width, ui.Height = w, h
+		if w < 40 {
+			ui.Width = 40
+		}
+	} else {
+		ui.PagerEnabled = false
+		ui.Width = 80
+	}
+}
+
+func (ui *SimpleUI) SetOutputMode(o OutputMode) {
+	ui.OutputMode = o
+}
+
+func (ui *SimpleUI) SetPagerEnabled(e bool) {
+	ui.PagerEnabled = e
 }
 
 func (ui *SimpleUI) Printer() {
@@ -103,44 +126,55 @@ func (ui *SimpleUI) Wait() {
 	go ui.Printer()
 }
 
-func (ui *SimpleUI) PrintCommand(command string) {
-	buf := strings.Builder{}
-	ui.Formatter.FormatCommand(command, &buf)
-	ui.Pchan <- buf.String()
-}
-
 func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
-	buf := strings.Builder{}
-	ui.printHistoryItem(hi, &buf)
-	ui.Pchan <- buf.String()
-}
-
-func (ui *SimpleUI) PrintHistoryItemWithPager(hi *HistoryItem) {
-	p := Pager{}
-	if err := p.Start(); err != nil {
-		logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-		ui.PrintHistoryItem(hi)
+	if ui.OutputMode != OutputAll && ui.OutputMode != OutputInline {
+		return
+	}
+	usePager := ui.PagerEnabled
+	hlen := hi.Hosts.MaxLen()
+	linecount := 0
+	buffer := ""
+	var pager *Pager
+	if usePager {
+		buffer = ui.Formatter.FormatCommand(hi.Command)
+		linecount = 1
 	} else {
-		ui.printHistoryItem(hi, &p)
-		p.Wait()
+		ui.Pchan <- ui.Formatter.FormatCommand(hi.Command)
 	}
-}
 
-func (ui *SimpleUI) printHistoryItem(hi *HistoryItem, w io.Writer) {
-	ui.Formatter.FormatCommand(hi.Command, w)
 	for _, h := range hi.Hosts {
-		ui.Formatter.FormatResult(hi.Results[h.Name], w)
+		var txt string
+		if ui.OutputMode == OutputAll {
+			txt = ui.Formatter.FormatResult(hi.Results[h.Name])
+		} else {
+			txt = ui.Formatter.FormatOutput(hi.Results[h.Name], hlen)
+		}
+		if !usePager {
+			ui.Pchan <- txt
+		} else if pager != nil {
+			pager.WriteString(txt)
+		} else {
+			buffer += txt
+			linecount += strings.Count(txt, "\n")
+			if linecount > ui.Height {
+				pager = &Pager{}
+				if err := pager.Start(); err != nil {
+					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
+					ui.Pchan <- buffer
+					usePager = false
+				} else {
+					pager.WriteString(buffer)
+				}
+				buffer = ""
+			}
+		}
 	}
-}
-
-func (ui *SimpleUI) PrintResult(r *Result) {
-	buf := strings.Builder{}
-	ui.Formatter.FormatResult(r, &buf)
-	ui.Pchan <- buf.String()
-}
-
-func (ui *SimpleUI) Printf(format string, v ...interface{}) {
-	ui.Pchan <- fmt.Sprintf(format, v...)
+	if buffer != "" {
+		ui.Pchan <- buffer
+	}
+	if pager != nil {
+		pager.Wait()
+	}
 }
 
 func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string) {
@@ -241,13 +275,11 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 }
 
 func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
-	oc := make(chan OutputLine)
-	hlen := 0
-	for _, host := range r.Hosts {
-		if len(host.Name) > hlen {
-			hlen = len(host.Name)
-		}
+	if ui.OutputMode != OutputTail {
+		return nil
 	}
+	oc := make(chan OutputLine)
+	hlen := r.Hosts.MaxLen()
 	go func() {
 		for msg := range oc {
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
@@ -260,7 +292,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 	return oc
 }
 
-func (ui *SimpleUI) ProgressChannel(r *Runner, printPerHost bool) chan ProgressMessage {
+func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 	pc := make(chan ProgressMessage)
 	go func() {
 		start := time.Now()
@@ -269,6 +301,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner, printPerHost bool) chan ProgressM
 		total := len(r.Hosts)
 		queued, todo := total, total
 		nok, nfail, nerr := 0, 0, 0
+		hlen := r.Hosts.MaxLen()
 		for {
 			select {
 			case <-ticker.C:
@@ -287,8 +320,10 @@ func (ui *SimpleUI) ProgressChannel(r *Runner, printPerHost bool) chan ProgressM
 				} else {
 					nfail++
 				}
-				if printPerHost {
-					ui.PrintResult(msg.Result)
+				if ui.OutputMode == OutputPerhost {
+					ui.Pchan <- ui.Formatter.FormatResult(msg.Result)
+				} else if ui.OutputMode == OutputTail {
+					ui.Pchan <- ui.Formatter.FormatStatus(msg.Result, hlen)
 				}
 				todo--
 			}

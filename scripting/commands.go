@@ -85,18 +85,10 @@ type runCommand struct {
 }
 
 func (c runCommand) execute(e *ScriptEngine) error {
-	output := viper.GetString("output")
-	var oc chan katyusha.OutputLine
-	if output == "line" {
-		oc = e.ui.OutputChannel(e.runner)
-	}
-	pc := e.ui.ProgressChannel(e.runner, output == "host")
+	oc := e.ui.OutputChannel(e.runner)
+	pc := e.ui.ProgressChannel(e.runner)
 	hi := e.runner.Run(c.command, pc, oc)
-	if output == "all" {
-		e.ui.PrintHistoryItem(hi)
-	} else if output == "pager" {
-		e.ui.PrintHistoryItemWithPager(hi)
-	}
+	e.ui.PrintHistoryItem(hi)
 	return nil
 }
 
