@@ -27,7 +27,7 @@ func NewScriptEngine(ui katyusha.UI, runner *katyusha.Runner) *ScriptEngine {
 }
 
 func (e *ScriptEngine) ActiveHosts() katyusha.Hosts {
-	return e.runner.Hosts
+	return e.runner.GetHosts()
 }
 
 func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {

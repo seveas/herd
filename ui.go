@@ -11,7 +11,6 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type OutputMode int
@@ -279,7 +278,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 		return nil
 	}
 	oc := make(chan OutputLine)
-	hlen := r.Hosts.MaxLen()
+	hlen := r.hosts.MaxLen()
 	go func() {
 		for msg := range oc {
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
@@ -298,10 +297,10 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 		start := time.Now()
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
-		total := len(r.Hosts)
+		total := len(r.hosts)
 		queued, todo := total, total
 		nok, nfail, nerr := 0, 0, 0
-		hlen := r.Hosts.MaxLen()
+		hlen := r.hosts.MaxLen()
 		for {
 			select {
 			case <-ticker.C:
@@ -328,7 +327,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				todo--
 			}
 			since := time.Since(start).Truncate(time.Second)
-			togo := viper.GetDuration("Timeout") - since
+			togo := r.timeout - since
 			if todo == 0 {
 				ui.pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
 			} else if queued >= 0 {
