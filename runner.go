@@ -23,33 +23,60 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	Registry *Registry
-	Hosts    Hosts
-	History  History
+	registry       *Registry
+	hosts          Hosts
+	history        History
+	parallel       int
+	timeout        time.Duration
+	hostTimeout    time.Duration
+	connectTimeout time.Duration
 }
 
 func NewRunner(registry *Registry) *Runner {
 	return &Runner{
-		Hosts:    make(Hosts, 0),
-		Registry: registry,
-		History:  make(History, 0),
+		hosts:          make(Hosts, 0),
+		registry:       registry,
+		history:        make(History, 0),
+		timeout:        60 * time.Second,
+		hostTimeout:    10 * time.Second,
+		connectTimeout: 3 * time.Second,
 	}
 }
 
+func (r *Runner) GetHosts() Hosts {
+	return r.hosts[:]
+}
+
+func (r *Runner) SetParallel(p int) {
+	r.parallel = p
+}
+
+func (r *Runner) SetTimeout(t time.Duration) {
+	r.timeout = t
+}
+
+func (r *Runner) SetHostTimeout(t time.Duration) {
+	r.hostTimeout = t
+}
+
+func (r *Runner) SetConnectTimeout(t time.Duration) {
+	r.connectTimeout = t
+}
+
 func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
-	hosts := append(r.Hosts, r.Registry.GetHosts(glob, attrs)...)
+	hosts := append(r.hosts, r.registry.GetHosts(glob, attrs)...)
 	hosts.Sort()
-	r.Hosts = hosts.Uniq()
+	r.hosts = hosts.Uniq()
 }
 
 func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 	newHosts := make(Hosts, 0)
-	for _, host := range r.Hosts {
+	for _, host := range r.hosts {
 		if !host.Match(glob, attrs) {
 			newHosts = append(newHosts, host)
 		}
 	}
-	r.Hosts = newHosts
+	r.hosts = newHosts
 }
 
 func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) *HistoryItem {
@@ -64,12 +91,12 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	if oc != nil {
 		defer close(oc)
 	}
-	hi := NewHistoryItem(command, r.Hosts)
+	hi := NewHistoryItem(command, r.hosts)
 	c := make(chan *Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	if viper.GetInt("Parallel") > 0 {
+	if r.parallel > 0 {
 		hqueue := make(chan *Host)
 		go func() {
 			for _, host := range hi.Hosts {
@@ -77,12 +104,12 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			}
 			close(hqueue)
 		}()
-		for i := 0; i < viper.GetInt("Parallel"); i++ {
-			logrus.Debugf("Starting worker %d/%d", i+1, viper.GetInt("Parallel"))
+		for i := 0; i < r.parallel; i++ {
+			logrus.Debugf("Starting worker %d/%d", i+1, r.parallel)
 			go func() {
 				for host := range hqueue {
-					host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
-					hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
+					host.SshConfig.Timeout = r.connectTimeout
+					hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
 					pc <- ProgressMessage{Host: host}
 					c <- host.Run(hctx, command, oc)
 					hcancel()
@@ -91,8 +118,8 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		}
 	} else {
 		for _, host := range hi.Hosts {
-			hctx, hcancel := context.WithTimeout(ctx, viper.GetDuration("HostTimeout"))
-			host.SshConfig.Timeout = viper.GetDuration("ConnectTimeout")
+			hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
+			host.SshConfig.Timeout = r.connectTimeout
 			go func(ctx context.Context, h *Host) {
 				pc <- ProgressMessage{Host: h}
 				c <- h.Run(hctx, command, oc)
@@ -100,11 +127,11 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			}(hctx, host)
 		}
 	}
-	timeout := time.After(viper.GetDuration("Timeout"))
+	timeout := time.After(r.timeout)
 	signals := make(chan os.Signal)
 	signal.Notify(signals, os.Interrupt)
 	defer signal.Reset(os.Interrupt)
-	todo := len(r.Hosts)
+	todo := len(r.hosts)
 	for todo > 0 {
 		select {
 		case <-timeout:
@@ -120,23 +147,23 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		}
 	}
 	hi.End()
-	r.History = append(r.History, hi)
+	r.history = append(r.history, hi)
 	return hi
 }
 
 func (r *Runner) End() error {
-	for _, host := range r.Hosts {
+	for _, host := range r.hosts {
 		host.Disconnect()
 	}
 
 	// Save history, if there is any
 	var err error
-	if len(r.History) > 0 {
+	if len(r.history) > 0 {
 		if err = os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
 			logrus.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
 		} else {
-			fn := path.Join(viper.GetString("HistoryDir"), r.History[0].StartTime.Format("2006-01-02T15:04:05.json"))
-			err = r.History.Save(fn)
+			fn := path.Join(viper.GetString("HistoryDir"), r.history[0].StartTime.Format("2006-01-02T15:04:05.json"))
+			err = r.history.Save(fn)
 			if err == nil {
 				logrus.Infof("History saved to %s", fn)
 			}

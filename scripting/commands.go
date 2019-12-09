@@ -3,9 +3,9 @@ package scripting
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/seveas/herd"
-	"github.com/spf13/viper"
 )
 
 type command interface {
@@ -18,12 +18,19 @@ type setCommand struct {
 }
 
 func (c setCommand) execute(e *ScriptEngine) error {
-	if c.variable == "Output" {
+	switch c.variable {
+	case "Output":
 		e.ui.SetOutputMode(c.value.(herd.OutputMode))
-	} else if c.variable == "NoPager" {
+	case "NoPager":
 		e.ui.SetPagerEnabled(!c.value.(bool))
-	} else {
-		viper.Set(c.variable, c.value)
+	case "Timeout":
+		e.runner.SetTimeout(c.value.(time.Duration))
+	case "HostTimeout":
+		e.runner.SetHostTimeout(c.value.(time.Duration))
+	case "ConnectTimeout":
+		e.runner.SetConnectTimeout(c.value.(time.Duration))
+	case "Parallel":
+		e.runner.SetParallel(c.value.(int))
 	}
 	return nil
 }
@@ -68,7 +75,7 @@ type listHostsCommand struct {
 }
 
 func (c listHostsCommand) execute(e *ScriptEngine) error {
-	e.ui.PrintHostList(e.runner.Hosts, c.oneLine, c.csv, c.allAttributes, c.attributes)
+	e.ui.PrintHostList(e.runner.GetHosts(), c.oneLine, c.csv, c.allAttributes, c.attributes)
 	return nil
 }
 

@@ -25,5 +25,10 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 		// Do not log this error, registry.Load() does its own error logging
 		return nil, err
 	}
-	return scripting.NewScriptEngine(ui, herd.NewRunner(registry)), nil
+	runner := herd.NewRunner(registry)
+	runner.SetParallel(viper.GetInt("Parallel"))
+	runner.SetTimeout(viper.GetDuration("Timeout"))
+	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
+	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
+	return scripting.NewScriptEngine(ui, runner), nil
 }

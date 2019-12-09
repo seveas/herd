@@ -27,7 +27,7 @@ func NewScriptEngine(ui herd.UI, runner *herd.Runner) *ScriptEngine {
 }
 
 func (e *ScriptEngine) ActiveHosts() herd.Hosts {
-	return e.runner.Hosts
+	return e.runner.GetHosts()
 }
 
 func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {
