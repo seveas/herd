@@ -2,11 +2,9 @@ package katyusha
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	consul "github.com/hashicorp/consul/api"
@@ -47,60 +45,6 @@ func init() {
 		}
 		return []HostProvider{&Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}}
 	}
-}
-
-type ConsulService struct {
-	Name string
-	Tags []string
-}
-
-type ConsulServices []ConsulService
-
-func (s ConsulService) String() string {
-	if len(s.Tags) > 0 {
-		return fmt.Sprintf("%s=%s", s.Name, strings.Join(s.Tags, ","))
-	}
-	return s.Name
-}
-
-func (s ConsulServices) String() string {
-	data := make([]string, len(s))
-	for i, service := range s {
-		data[i] = service.String()
-	}
-	return strings.Join(data, ";")
-}
-
-func (s ConsulServices) Match(m MatchAttribute) bool {
-	// FIXME support regexes
-	v, ok := m.Value.(string)
-	var tags []string
-	if !ok {
-		return false
-	}
-	if strings.ContainsRune(v, ':') {
-		parts := strings.SplitN(v, ":", 2)
-		v = parts[0]
-		tags = strings.Split(parts[1], ",")
-	}
-	for _, s := range s {
-		if s.Name == v {
-			for _, t := range tags {
-				found := false
-				for _, t2 := range s.Tags {
-					if t == t2 || t == "" {
-						found = true
-						break
-					}
-				}
-				if !found {
-					return false
-				}
-			}
-			return true
-		}
-	}
-	return false
 }
 
 func (p *ConsulProvider) String() string {
@@ -174,25 +118,15 @@ func (p *ConsulProvider) LoadDatacenter(conf *consul.Config, dc string) (Hosts, 
 			return hosts, err
 		}
 		for _, service := range servicenodes {
-			s := ConsulServices{}
-			si, ok := hosts[nodePositions[service.Node]].Attributes["service"]
+			h := hosts[nodePositions[service.Node]]
+			s := []string{}
+			si, ok := h.Attributes["service"]
 			if ok {
-				s = si.(ConsulServices)
+				s = si.([]string)
 			}
-			svc := ConsulService{Name: service.ServiceName, Tags: service.ServiceTags}
-			hosts[nodePositions[service.Node]].Attributes["service"] = append(s, svc)
+			h.Attributes["service"] = append(s, service.ServiceName)
+			h.Attributes[fmt.Sprintf("service:%s", service.ServiceName)] = service.ServiceTags
 		}
 	}
 	return hosts, nil
-}
-
-func (p *ConsulProvider) PostProcess(h Hosts) {
-	for i, host := range h {
-		if services, ok := host.Attributes["service"]; ok {
-			data, _ := json.Marshal(services)
-			svc := ConsulServices{}
-			json.Unmarshal(data, &svc)
-			h[i].Attributes["service"] = svc
-		}
-	}
 }
