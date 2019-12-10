@@ -28,9 +28,6 @@ func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 		if err != nil {
 			return hosts, err
 		}
-		if p, ok := c.Provider.(PostProcessor); ok {
-			p.PostProcess(hosts)
-		}
 		return hosts, err
 	}
 	mc <- CacheMessage{name: c.Provider.String(), finished: false, err: nil}

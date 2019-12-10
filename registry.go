@@ -23,10 +23,6 @@ type HostProvider interface {
 	String() string
 }
 
-type PostProcessor interface {
-	PostProcess(Hosts)
-}
-
 type CacheMessage struct {
 	name     string
 	finished bool
