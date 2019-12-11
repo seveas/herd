@@ -46,5 +46,6 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 	engine.AddListHostsCommand(viper.GetBool("OneLine"), viper.GetBool("csv"), viper.GetBool("AllAttributes"), viper.GetStringSlice("Attributes"))
 	engine.Execute()
-	return engine.End()
+	engine.End()
+	return nil
 }

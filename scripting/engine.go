@@ -15,6 +15,7 @@ type ScriptEngine struct {
 	ui       herd.UI
 	runner   *herd.Runner
 	position int
+	history  herd.History
 }
 
 func NewScriptEngine(ui herd.UI, runner *herd.Runner) *ScriptEngine {
@@ -23,6 +24,7 @@ func NewScriptEngine(ui herd.UI, runner *herd.Runner) *ScriptEngine {
 		ui:       ui,
 		runner:   runner,
 		position: 0,
+		history:  make(herd.History, 0),
 	}
 }
 
@@ -137,8 +139,11 @@ func (e *ScriptEngine) Execute() {
 	}
 }
 
-func (e *ScriptEngine) End() error {
-	err := e.runner.End()
+func (e *ScriptEngine) SaveHistory(fn string) error {
+	return e.history.Save(fn)
+}
+
+func (e *ScriptEngine) End() {
+	e.runner.End()
 	e.ui.Wait()
-	return err
 }
