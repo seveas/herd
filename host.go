@@ -70,6 +70,9 @@ func (h *Host) init() {
 	}
 	h.Csum = crc32.ChecksumIEEE([]byte(h.Name))
 	parts := strings.SplitN(h.Name, ".", 2)
+	if h.Attributes == nil {
+		h.Attributes = make(HostAttributes)
+	}
 	h.Attributes["hostname"] = parts[0]
 	if len(parts) == 2 {
 		h.Attributes["domainname"] = parts[1]
