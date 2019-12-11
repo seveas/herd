@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -84,14 +86,22 @@ func (r Result) String() string {
 }
 
 func (h History) Save(path string) error {
+	if len(h) == 0 {
+		return nil
+	}
 	data, err := json.Marshal(h)
 	if err != nil {
 		logrus.Warnf("Unable to export history: %s", err)
 		return err
 	}
-	err = ioutil.WriteFile(path, data, 0600)
-	if err != nil {
+	if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		logrus.Warnf("Unable to create history path %s: %s", filepath.Dir(path), err)
+		return err
+	}
+	if err = ioutil.WriteFile(path, data, 0600); err != nil {
 		logrus.Warnf("Unable to save history to %s: %s", path, err)
+	} else {
+		logrus.Infof("History saved to %s", path)
 	}
 	return err
 }

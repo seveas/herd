@@ -15,6 +15,7 @@ type ScriptEngine struct {
 	ui       katyusha.UI
 	runner   *katyusha.Runner
 	position int
+	history  katyusha.History
 }
 
 func NewScriptEngine(ui katyusha.UI, runner *katyusha.Runner) *ScriptEngine {
@@ -23,6 +24,7 @@ func NewScriptEngine(ui katyusha.UI, runner *katyusha.Runner) *ScriptEngine {
 		ui:       ui,
 		runner:   runner,
 		position: 0,
+		history:  make(katyusha.History, 0),
 	}
 }
 
@@ -137,8 +139,11 @@ func (e *ScriptEngine) Execute() {
 	}
 }
 
-func (e *ScriptEngine) End() error {
-	err := e.runner.End()
+func (e *ScriptEngine) SaveHistory(fn string) error {
+	return e.history.Save(fn)
+}
+
+func (e *ScriptEngine) End() {
+	e.runner.End()
 	e.ui.Wait()
-	return err
 }

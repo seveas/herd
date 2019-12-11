@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"path"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var runCmd = &cobra.Command{
@@ -35,6 +38,8 @@ func runCommand(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
+	fn := path.Join(viper.GetString("HistoryDir"), time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
-	return engine.End()
+	engine.End()
+	return engine.SaveHistory(fn)
 }

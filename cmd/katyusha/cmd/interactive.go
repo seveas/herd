@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"path"
+	"time"
 
 	"github.com/seveas/katyusha/scripting"
 	"github.com/seveas/readline"
@@ -42,12 +43,14 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
+	fn := path.Join(viper.GetString("HistoryDir"), time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
 
 	// Enter interactive mode
 	il := &interactiveLoop{engine: engine}
 	il.run()
-	return engine.End()
+	engine.End()
+	return engine.SaveHistory(fn)
 }
 
 type interactiveLoop struct {

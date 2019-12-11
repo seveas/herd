@@ -4,11 +4,9 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"path"
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 type OutputLine struct {
@@ -25,7 +23,6 @@ type ProgressMessage struct {
 type Runner struct {
 	registry       *Registry
 	hosts          Hosts
-	history        History
 	parallel       int
 	timeout        time.Duration
 	hostTimeout    time.Duration
@@ -36,7 +33,6 @@ func NewRunner(registry *Registry) *Runner {
 	return &Runner{
 		hosts:          make(Hosts, 0),
 		registry:       registry,
-		history:        make(History, 0),
 		timeout:        60 * time.Second,
 		hostTimeout:    10 * time.Second,
 		connectTimeout: 3 * time.Second,
@@ -147,27 +143,11 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		}
 	}
 	hi.End()
-	r.history = append(r.history, hi)
 	return hi
 }
 
-func (r *Runner) End() error {
+func (r *Runner) End() {
 	for _, host := range r.hosts {
 		host.disconnect()
 	}
-
-	// Save history, if there is any
-	var err error
-	if len(r.history) > 0 {
-		if err = os.MkdirAll(viper.GetString("HistoryDir"), 0700); err != nil {
-			logrus.Warnf("Unable to create history path %s: %s", viper.GetString("HistoryDir"), err)
-		} else {
-			fn := path.Join(viper.GetString("HistoryDir"), r.history[0].StartTime.Format("2006-01-02T15:04:05.json"))
-			err = r.history.Save(fn)
-			if err == nil {
-				logrus.Infof("History saved to %s", fn)
-			}
-		}
-	}
-	return err
 }
