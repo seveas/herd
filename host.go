@@ -7,22 +7,30 @@ import (
 	"hash/crc32"
 	"net"
 	"os/user"
+	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
 var localUser string
+var extConfig *sshConfig
 
 func init() {
 	u, err := user.Current()
 	if err == nil {
 		localUser = u.Username
+	}
+	home, err := homedir.Dir()
+	if err == nil {
+		extConfig, _ = parseSshConfig(path.Join(home, ".ssh", "config"))
 	}
 }
 
@@ -30,6 +38,7 @@ type HostAttributes map[string]interface{}
 
 type Host struct {
 	Name       string
+	Port       int
 	Attributes HostAttributes
 	PublicKeys []ssh.PublicKey   `json:"-"`
 	SshBanner  string            `json:"-"`
@@ -42,6 +51,7 @@ type Host struct {
 func NewHost(name string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
+		Port:       22,
 		Attributes: attributes,
 	}
 	h.init()
@@ -66,6 +76,18 @@ func (h *Host) init() {
 	} else {
 		h.Attributes["domainname"] = ""
 	}
+	if h.Port == 0 {
+		h.Port = 22
+	}
+	cfg := extConfig.configForHost(h.Name)
+	if user, ok := cfg["user"]; ok {
+		h.SshConfig.User = user
+	}
+	if port, ok := cfg["port"]; ok {
+		if p, err := strconv.Atoi(port); err == nil {
+			h.Port = p
+		}
+	}
 }
 
 func (host Host) String() string {
@@ -77,7 +99,7 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 }
 
 func (h *Host) Address() string {
-	return fmt.Sprintf("%s:22", h.Name)
+	return fmt.Sprintf("%s:%d", h.Name, h.Port)
 }
 
 var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
