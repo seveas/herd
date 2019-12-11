@@ -97,16 +97,17 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 		value, ok := h.Attributes[name]
 		if !ok {
 			if h.LastResult != nil {
-				if name == "stdout" {
+				switch name {
+				case "stdout":
 					ok = true
 					value = string(h.LastResult.Stdout)
-				} else if name == "stderr" {
+				case "stderr":
 					ok = true
 					value = string(h.LastResult.Stderr)
-				} else if name == "exitstatus" {
+				case "exitstatus":
 					ok = true
 					value = h.LastResult.ExitStatus
-				} else if name == "err" {
+				case "err":
 					ok = true
 					value = h.LastResult.Err
 				}
