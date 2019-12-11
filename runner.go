@@ -108,7 +108,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			logrus.Debugf("Starting worker %d/%d", i+1, r.parallel)
 			go func() {
 				for host := range hqueue {
-					host.SshConfig.Timeout = r.connectTimeout
+					host.sshConfig.Timeout = r.connectTimeout
 					hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
 					pc <- ProgressMessage{Host: host}
 					c <- host.Run(hctx, command, oc)
@@ -119,7 +119,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	} else {
 		for _, host := range hi.Hosts {
 			hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
-			host.SshConfig.Timeout = r.connectTimeout
+			host.sshConfig.Timeout = r.connectTimeout
 			go func(ctx context.Context, h *Host) {
 				pc <- ProgressMessage{Host: h}
 				c <- h.Run(hctx, command, oc)
@@ -153,7 +153,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 
 func (r *Runner) End() error {
 	for _, host := range r.hosts {
-		host.Disconnect()
+		host.disconnect()
 	}
 
 	// Save history, if there is any
