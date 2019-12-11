@@ -172,7 +172,7 @@ func (h Hosts) Sort() {
 			return v1 < v2
 		})
 	} else if field == "random" {
-		sort.Slice(h, func(i, j int) bool { return h[i].Csum < h[j].Csum })
+		sort.Slice(h, func(i, j int) bool { return h[i].csum < h[j].csum })
 	} else {
 		sort.Slice(h, func(i, j int) bool {
 			v1, ok1 := h[i].Attributes[field]

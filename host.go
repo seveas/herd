@@ -40,12 +40,12 @@ type Host struct {
 	Name       string
 	Port       int
 	Attributes HostAttributes
-	PublicKeys []ssh.PublicKey   `json:"-"`
-	SshBanner  string            `json:"-"`
-	SshConfig  *ssh.ClientConfig `json:"-"`
-	Connection *ssh.Client       `json:"-"`
-	LastResult *Result           `json:"-"`
-	Csum       uint32            `json:"-"`
+	publicKeys []ssh.PublicKey
+	sshBanner  string
+	sshConfig  *ssh.ClientConfig
+	connection *ssh.Client
+	lastResult *Result
+	csum       uint32
 }
 
 func NewHost(name string, attributes HostAttributes) *Host {
@@ -59,16 +59,16 @@ func NewHost(name string, attributes HostAttributes) *Host {
 }
 
 func (h *Host) init() {
-	h.PublicKeys = make([]ssh.PublicKey, 0)
-	h.SshConfig = &ssh.ClientConfig{
+	h.publicKeys = make([]ssh.PublicKey, 0)
+	h.sshConfig = &ssh.ClientConfig{
 		ClientVersion:   "SSH-2.0-Herd-0.1",
 		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
 		User:            localUser,
 		Timeout:         3 * time.Second,
-		HostKeyCallback: h.HostKeyCallback,
-		BannerCallback:  h.BannerCallback,
+		HostKeyCallback: h.hostKeyCallback,
+		BannerCallback:  h.bannerCallback,
 	}
-	h.Csum = crc32.ChecksumIEEE([]byte(h.Name))
+	h.csum = crc32.ChecksumIEEE([]byte(h.Name))
 	parts := strings.SplitN(h.Name, ".", 2)
 	if h.Attributes == nil {
 		h.Attributes = make(HostAttributes)
@@ -84,7 +84,7 @@ func (h *Host) init() {
 	}
 	cfg := extConfig.configForHost(h.Name)
 	if user, ok := cfg["user"]; ok {
-		h.SshConfig.User = user
+		h.sshConfig.User = user
 	}
 	if port, ok := cfg["port"]; ok {
 		if p, err := strconv.Atoi(port); err == nil {
@@ -94,14 +94,14 @@ func (h *Host) init() {
 }
 
 func (host Host) String() string {
-	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s, Config: %v}", host.Name, len(host.PublicKeys), host.Attributes, host.SshConfig)
+	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s, Config: %v}", host.Name, len(host.publicKeys), host.Attributes, host.sshConfig)
 }
 
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
-	h.PublicKeys = append(h.PublicKeys, k)
+	h.publicKeys = append(h.publicKeys, k)
 }
 
-func (h *Host) Address() string {
+func (h *Host) address() string {
 	return fmt.Sprintf("%s:%d", h.Name, h.Port)
 }
 
@@ -121,20 +121,20 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 		name := attribute.Name
 		value, ok := h.Attributes[name]
 		if !ok {
-			if h.LastResult != nil {
+			if h.lastResult != nil {
 				switch name {
 				case "stdout":
 					ok = true
-					value = string(h.LastResult.Stdout)
+					value = string(h.lastResult.Stdout)
 				case "stderr":
 					ok = true
-					value = string(h.LastResult.Stderr)
+					value = string(h.lastResult.Stderr)
 				case "exitstatus":
 					ok = true
-					value = h.LastResult.ExitStatus
+					value = h.lastResult.ExitStatus
 				case "err":
 					ok = true
-					value = h.LastResult.Err
+					value = h.lastResult.Err
 				}
 			}
 		}
@@ -152,18 +152,18 @@ func (h *Host) Amend(h2 *Host) {
 	for attr, value := range h2.Attributes {
 		h.Attributes[attr] = value
 	}
-	for _, k := range h2.PublicKeys {
+	for _, k := range h2.publicKeys {
 		h.AddPublicKey(k)
 	}
 }
 
-func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
-	if len(h.PublicKeys) == 0 {
+func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	if len(h.publicKeys) == 0 {
 		logrus.Warnf("Warning: no known host key for %s, accepting any key", h.Name)
 		return nil
 	}
 	bkey := key.Marshal()
-	for _, pkey := range h.PublicKeys {
+	for _, pkey := range h.publicKeys {
 		if bytes.Equal(bkey, pkey.Marshal()) {
 			return nil
 		}
@@ -171,8 +171,8 @@ func (h *Host) HostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 	return fmt.Errorf("ssh: no matching host key")
 }
 
-func (h *Host) BannerCallback(message string) error {
-	h.SshBanner = message
+func (h *Host) bannerCallback(message string) error {
+	h.sshBanner = message
 	return nil
 }
 
@@ -184,35 +184,35 @@ func (e TimeoutError) Error() string {
 	return e.message
 }
 
-func (host *Host) Connect(ctx context.Context) (*ssh.Client, error) {
-	if host.Connection != nil {
-		return host.Connection, nil
+func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
+	if host.connection != nil {
+		return host.connection, nil
 	}
-	logrus.Debugf("Connecting to %s", host.Address())
-	ctx, cancel := context.WithTimeout(ctx, host.SshConfig.Timeout)
+	logrus.Debugf("Connecting to %s", host.address())
+	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
 	ec := make(chan error)
 	go func() {
 		var err error
-		client, err = ssh.Dial("tcp", host.Address(), host.SshConfig)
+		client, err = ssh.Dial("tcp", host.address(), host.sshConfig)
 		ec <- err
 	}()
 	select {
 	case <-ctx.Done():
-		host.Connection = nil
+		host.connection = nil
 		return nil, TimeoutError{"Timed out while connecting to server"}
 	case err := <-ec:
-		host.Connection = client
+		host.connection = client
 		return client, err
 	}
 }
 
-func (host *Host) Disconnect() {
-	if host.Connection != nil {
-		logrus.Debugf("Disconnecting from %s", host.Address())
-		host.Connection.Close()
-		host.Connection = nil
+func (host *Host) disconnect() {
+	if host.connection != nil {
+		logrus.Debugf("Disconnecting from %s", host.address())
+		host.connection.Close()
+		host.connection = nil
 	}
 }
 
@@ -273,7 +273,7 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 		r.Err = err
 		return r
 	}
-	client, err := host.Connect(ctx)
+	client, err := host.connect(ctx)
 	if err != nil {
 		r.Err = err
 		return r
@@ -315,6 +315,6 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
-	host.LastResult = r
+	host.lastResult = r
 	return r
 }
