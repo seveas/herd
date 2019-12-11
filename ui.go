@@ -3,6 +3,7 @@ package herd
 import (
 	"encoding/csv"
 	"fmt"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -162,6 +163,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 					ui.pchan <- buffer
 					usePager = false
 				} else {
+					defer pager.Wait()
 					pager.WriteString(buffer)
 				}
 				buffer = ""
@@ -170,9 +172,6 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	}
 	if buffer != "" {
 		ui.pchan <- buffer
-	}
-	if pager != nil {
-		pager.Wait()
 	}
 }
 
@@ -187,10 +186,20 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 	}
 	if allAttributes || len(attributes) > 0 {
 		var writer datawriter
+		var out io.Writer = ui
+		if ui.pagerEnabled && len(hosts) > ui.height {
+			pager := &Pager{}
+			if err := pager.Start(); err != nil {
+				logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
+			} else {
+				out = pager
+				defer pager.Wait()
+			}
+		}
 		if csvOutput {
-			writer = csv.NewWriter(ui)
+			writer = csv.NewWriter(out)
 		} else {
-			writer = NewColumnizer(ui, "   ")
+			writer = NewColumnizer(out, "   ")
 		}
 		if allAttributes {
 			attrs := make(map[string]bool)
