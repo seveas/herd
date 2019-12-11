@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -28,80 +27,6 @@ func init() {
 }
 
 type HostAttributes map[string]interface{}
-
-type MatchAttribute struct {
-	Name        string
-	FuzzyTyping bool
-	Negate      bool
-	Regex       bool
-	Value       interface{}
-}
-
-func (m MatchAttribute) String() string {
-	c1, c2 := '=', '='
-	if m.Negate {
-		c1 = '!'
-	}
-	if m.Regex {
-		c2 = '~'
-	}
-	return fmt.Sprintf("%s %c%c %s", m.Name, c1, c2, m.Value)
-}
-
-func (m MatchAttribute) Match(value interface{}) (matches bool) {
-	defer func() {
-		if m.Negate {
-			matches = !matches
-		}
-	}()
-	if svalue, ok := value.([]interface{}); ok {
-		for _, v := range svalue {
-			if m.Match(v) {
-				return true
-			}
-		}
-		return false
-	}
-	if m.Value == value {
-		return true
-	}
-	if m.Regex {
-		svalue, ok := value.(string)
-		return ok && m.Value.(*regexp.Regexp).MatchString(svalue)
-	}
-	if m.FuzzyTyping {
-		if bvalue, ok := value.(bool); ok && (m.Value == "true" || m.Value == "false") {
-			return bvalue == (m.Value == "true")
-		}
-		if m.Value == "nil" {
-			return value == nil
-		}
-		myival, err := strconv.ParseInt(m.Value.(string), 0, 64)
-		if err != nil {
-			return false
-		}
-		v := reflect.ValueOf(value)
-		switch v.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return v.Int() == myival
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return int64(v.Uint()) == myival
-		}
-	}
-	// Let's be gentle on all the int types in attributes
-	if myival, ok := m.Value.(int64); ok {
-		v := reflect.ValueOf(value)
-		switch v.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			return v.Int() == myival
-		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return int64(v.Uint()) == myival
-		}
-	}
-	return false
-}
-
-type MatchAttributes []MatchAttribute
 
 type Host struct {
 	Name       string
