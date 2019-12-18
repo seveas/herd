@@ -145,5 +145,5 @@ func (e *ScriptEngine) SaveHistory(fn string) error {
 
 func (e *ScriptEngine) End() {
 	e.runner.End()
-	e.ui.Wait()
+	e.ui.End()
 }

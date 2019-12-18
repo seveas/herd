@@ -40,12 +40,12 @@ func runList(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer engine.End()
 	if err = engine.ParseCommandLine(args, splitAt); err != nil {
 		logrus.Error(err.Error())
 		return err
 	}
 	engine.AddListHostsCommand(viper.GetBool("OneLine"), viper.GetBool("csv"), viper.GetBool("AllAttributes"), viper.GetStringSlice("Attributes"))
 	engine.Execute()
-	engine.End()
 	return nil
 }
