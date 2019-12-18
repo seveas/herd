@@ -29,7 +29,7 @@ type UI interface {
 	SetOutputMode(OutputMode)
 	SetPagerEnabled(bool)
 	Write([]byte) (int, error)
-	Wait()
+	End()
 	CacheUpdateChannel() chan CacheMessage
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
@@ -118,12 +118,9 @@ func (ui *SimpleUI) Write(msg []byte) (int, error) {
 	return len(msg), nil
 }
 
-func (ui *SimpleUI) Wait() {
+func (ui *SimpleUI) End() {
 	close(ui.pchan)
-	ui.pchan = make(chan string)
 	<-ui.dchan
-	ui.dchan = make(chan interface{})
-	go ui.printer()
 }
 
 func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {

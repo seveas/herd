@@ -48,6 +48,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer engine.End()
 	if err = engine.ParseCommandLine(filters, -1); err != nil {
 		logrus.Error(err.Error())
 		return err
@@ -58,6 +59,5 @@ func runScript(cmd *cobra.Command, args []string) error {
 	}
 	fn := path.Join(viper.GetString("HistoryDir"), time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
-	engine.End()
 	return engine.SaveHistory(fn)
 }

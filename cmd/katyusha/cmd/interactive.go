@@ -39,6 +39,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	defer engine.End()
 	if err = engine.ParseCommandLine(args, splitAt); err != nil {
 		logrus.Error(err.Error())
 		return err
@@ -49,7 +50,6 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	// Enter interactive mode
 	il := &interactiveLoop{engine: engine}
 	il.run()
-	engine.End()
 	return engine.SaveHistory(fn)
 }
 

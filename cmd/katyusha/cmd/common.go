@@ -18,11 +18,13 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	registry, err := katyusha.NewRegistry()
 	if err != nil {
 		logrus.Error(err.Error())
+		ui.End()
 		return nil, err
 	}
 	err = registry.Load(ui.CacheUpdateChannel())
 	if err != nil {
 		// Do not log this error, registry.Load() does its own error logging
+		ui.End()
 		return nil, err
 	}
 	runner := katyusha.NewRunner(registry)
