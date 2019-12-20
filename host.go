@@ -318,3 +318,40 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	host.lastResult = r
 	return r
 }
+
+func (h1 *Host) less(h2 *Host, attributes []string) bool {
+	for _, attr := range attributes {
+		switch attr {
+		case "name":
+			return h1.Name < h2.Name
+		case "random":
+			return h1.csum < h2.csum
+		default:
+			v1, ok1 := h1.Attributes[attr]
+			v2, ok2 := h2.Attributes[attr]
+			// Sort nodes that are missing the attribute last
+			if ok1 && !ok2 {
+				return true
+			}
+			if !ok1 && ok2 {
+				return false
+			}
+			if !ok1 && !ok2 {
+				continue
+			}
+			// FIXME need to support more types
+			if _, ok := v1.(string); !ok {
+				continue
+			}
+			if _, ok := v2.(string); !ok {
+				continue
+			}
+			// When equal, continue to the next field
+			if v1.(string) == v2.(string) {
+				continue
+			}
+			return v1.(string) < v2.(string)
+		}
+	}
+	return h1.Name < h2.Name
+}
