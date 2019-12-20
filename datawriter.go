@@ -10,18 +10,18 @@ type datawriter interface {
 	Flush()
 }
 
-type Columnizer struct {
+type columnizer struct {
 	rows    [][]string
 	lengths []int
 	output  io.Writer
 	sep     string
 }
 
-func NewColumnizer(w io.Writer, sep string) *Columnizer {
-	return &Columnizer{rows: make([][]string, 0), output: w, sep: sep}
+func newColumnizer(w io.Writer, sep string) *columnizer {
+	return &columnizer{rows: make([][]string, 0), output: w, sep: sep}
 }
 
-func (c *Columnizer) Write(r []string) error {
+func (c *columnizer) Write(r []string) error {
 	if c.lengths == nil {
 		c.lengths = make([]int, len(r))
 	}
@@ -34,7 +34,7 @@ func (c *Columnizer) Write(r []string) error {
 	return nil
 }
 
-func (c *Columnizer) Flush() {
+func (c *columnizer) Flush() {
 	for _, r := range c.rows {
 		for i, v := range r {
 			if i > 0 {

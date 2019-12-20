@@ -200,7 +200,7 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 		if csvOutput {
 			writer = csv.NewWriter(out)
 		} else {
-			writer = NewColumnizer(out, "   ")
+			writer = newColumnizer(out, "   ")
 		}
 		if allAttributes {
 			attrs := make(map[string]bool)
