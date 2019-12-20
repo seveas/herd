@@ -71,7 +71,7 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 		name := fmt.Sprintf("%s@%s", p.Name, dc)
 		mc <- CacheMessage{name: name, finished: false, err: nil}
 		go func(dc, name string) {
-			hosts, err := p.LoadDatacenter(conf, dc)
+			hosts, err := p.loadDatacenter(conf, dc)
 			mc <- CacheMessage{name: name, finished: true, err: err}
 			rc <- loadresult{hosts: hosts, err: err}
 		}(dc, name)
@@ -92,7 +92,7 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 	return hosts, errs
 }
 
-func (p *ConsulProvider) LoadDatacenter(conf *consul.Config, dc string) (Hosts, error) {
+func (p *ConsulProvider) loadDatacenter(conf *consul.Config, dc string) (Hosts, error) {
 	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(conf)
 	catalog := client.Catalog()
