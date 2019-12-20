@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"sort"
 	"time"
 
 	consul "github.com/hashicorp/consul/api"
@@ -126,6 +127,14 @@ func (p *ConsulProvider) LoadDatacenter(conf *consul.Config, dc string) (Hosts, 
 			}
 			h.Attributes["service"] = append(s, service.ServiceName)
 			h.Attributes[fmt.Sprintf("service:%s", service.ServiceName)] = service.ServiceTags
+		}
+	}
+
+	for _, h := range hosts {
+		if s, ok := h.Attributes["service"]; ok {
+			ss := s.([]string)
+			sort.Strings(ss)
+			h.Attributes["service"] = ss
 		}
 	}
 	return hosts, nil
