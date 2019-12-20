@@ -7,6 +7,7 @@ require (
 	github.com/armon/go-metrics v0.3.0 // indirect
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-test/deep v1.0.1
 	github.com/hashicorp/consul/api v1.3.0

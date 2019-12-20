@@ -59,10 +59,11 @@ func NewHost(name string, attributes HostAttributes) *Host {
 }
 
 func (h *Host) init() {
+	cfg := extConfig.configForHost(h.Name)
 	h.publicKeys = make([]ssh.PublicKey, 0)
 	h.sshConfig = &ssh.ClientConfig{
 		ClientVersion:   "SSH-2.0-Katyusha-0.1",
-		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(SshAgentKeys)},
+		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return sshAgentKeys(cfg["identityfile"]) })},
 		User:            localUser,
 		Timeout:         3 * time.Second,
 		HostKeyCallback: h.hostKeyCallback,
@@ -82,7 +83,6 @@ func (h *Host) init() {
 	if h.Port == 0 {
 		h.Port = 22
 	}
-	cfg := extConfig.configForHost(h.Name)
 	if user, ok := cfg["user"]; ok {
 		h.sshConfig.User = user
 	}
