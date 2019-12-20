@@ -16,6 +16,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	logrus.SetOutput(ui)
 
 	registry := katyusha.NewRegistry()
+	registry.SetSortFields(viper.GetStringSlice("Sort"))
 	registry.LoadMagicProviders()
 	conf := viper.Sub("Providers")
 	if conf != nil {

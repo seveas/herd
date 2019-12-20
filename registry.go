@@ -14,6 +14,7 @@ import (
 type Registry struct {
 	providers []HostProvider
 	hosts     Hosts
+	sort      []string
 }
 
 type Hosts []*Host
@@ -37,6 +38,7 @@ func NewRegistry() *Registry {
 	return &Registry{
 		providers: []HostProvider{},
 		hosts:     Hosts{},
+		sort:      []string{"name"},
 	}
 }
 
@@ -129,7 +131,7 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 		todo -= 1
 	}
 	r.hosts = hosts
-	r.hosts.Sort()
+	r.hosts.Sort(r.sort)
 	if !rerr.HasErrors() {
 		return nil
 	}
@@ -151,6 +153,10 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hos
 	return ret
 }
 
+func (r *Registry) SetSortFields(s []string) {
+	r.sort = s
+}
+
 func (hosts Hosts) String() string {
 	var ret strings.Builder
 	for i, h := range hosts {
@@ -162,46 +168,16 @@ func (hosts Hosts) String() string {
 	return ret.String()
 }
 
-func (h Hosts) Sort() {
-	if len(h) < 2 {
+func (h Hosts) Sort(fields []string) {
+	if len(h) < 2 || len(fields) < 1 {
 		return
 	}
-	field := viper.GetString("Sort")
-	if field == "name" {
+	// Most common and default case
+	if len(fields) == 1 && fields[0] == "name" {
 		sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
-	} else if field == "domainname" {
-		// Special-case domainname, as it's common and known to exist and be a string
-		sort.Slice(h, func(i, j int) bool {
-			v1, v2 := h[i].Attributes["domainname"].(string), h[j].Attributes["domainname"].(string)
-			if v1 == v2 {
-				return h[i].Name < h[j].Name
-			}
-			return v1 < v2
-		})
-	} else if field == "random" {
-		sort.Slice(h, func(i, j int) bool { return h[i].csum < h[j].csum })
 	} else {
 		sort.Slice(h, func(i, j int) bool {
-			v1, ok1 := h[i].Attributes[field]
-			v2, ok2 := h[j].Attributes[field]
-			// Sort nodes that are missing the attribute last
-			if ok1 && !ok2 {
-				return true
-			}
-			if !ok1 && ok2 {
-				return false
-			}
-			if !ok1 && !ok2 {
-				return h[i].Name < h[j].Name
-			}
-			// FIXME need to support more types
-			if _, ok := v1.(string); !ok {
-				return h[i].Name < h[j].Name
-			}
-			if v1.(string) == v2.(string) {
-				return h[i].Name < h[j].Name
-			}
-			return v1.(string) < v2.(string)
+			return h[i].less(h[j], fields)
 		})
 	}
 }
