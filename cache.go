@@ -16,13 +16,13 @@ type Cache struct {
 	Provider HostProvider
 }
 
-func (c *Cache) MustRefresh() bool {
+func (c *Cache) mustRefresh() bool {
 	info, err := os.Stat(c.File)
 	return err != nil || time.Since(info.ModTime()) > c.Lifetime
 }
 
 func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	if !c.MustRefresh() {
+	if !c.mustRefresh() {
 		jp := &JsonProvider{Name: c.Provider.String(), File: c.File}
 		hosts, err := jp.Load(ctx, mc)
 		if err != nil {

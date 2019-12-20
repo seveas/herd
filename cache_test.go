@@ -41,7 +41,7 @@ func TestCache(t *testing.T) {
 	if c.Provider.(*fakeProvider).loaded != 1 {
 		t.Errorf("First cache load did not appear to happen")
 	}
-	if c.MustRefresh() {
+	if c.mustRefresh() {
 		t.Errorf("We must immediately refresh the cache")
 	}
 	hosts, _ = c.Load(nil, mc)
