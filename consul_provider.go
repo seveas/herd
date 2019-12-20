@@ -20,7 +20,7 @@ type ConsulProvider struct {
 }
 
 func init() {
-	ProviderMakers["consul"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["consul"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		p := &ConsulProvider{
 			Name:          name,
 			File:          path.Join(viper.GetString("CacheDir"), name+".cache"),
@@ -32,7 +32,7 @@ func init() {
 		}
 		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
 	}
-	ProviderMagic["consul"] = func() []HostProvider {
+	providerMagic["consul"] = func() []HostProvider {
 		addr, ok := os.LookupEnv("CONSUL_HTTP_ADDR")
 		if !ok {
 			return []HostProvider{}

@@ -12,7 +12,7 @@ import (
 )
 
 func init() {
-	ProviderMagic["ssh"] = func() []HostProvider {
+	providerMagic["ssh"] = func() []HostProvider {
 		files := []string{"/etc/ssh/ssh_known_hosts"}
 		home, err := homedir.Dir()
 		if err == nil {

@@ -24,7 +24,7 @@ type HttpProvider struct {
 }
 
 func init() {
-	ProviderMakers["http"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["http"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		p := &HttpProvider{
 			Name:          name,
 			File:          path.Join(viper.GetString("CacheDir"), name+".cache"),

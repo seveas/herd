@@ -15,15 +15,18 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	logrus.SetFormatter(formatter)
 	logrus.SetOutput(ui)
 
-	registry, err := katyusha.NewRegistry()
-	if err != nil {
-		logrus.Error(err.Error())
-		ui.End()
-		return nil, err
+	registry := katyusha.NewRegistry()
+	registry.LoadMagicProviders()
+	conf := viper.Sub("Providers")
+	if conf != nil {
+		if err := registry.LoadProviders(conf); err != nil {
+			logrus.Error(err.Error())
+			ui.End()
+			return nil, err
+		}
 	}
-	err = registry.Load(ui.CacheUpdateChannel())
-	if err != nil {
-		// Do not log this error, registry.Load() does its own error logging
+	if err := registry.LoadHosts(ui.CacheUpdateChannel()); err != nil {
+		// Do not log this error, registry.LoadHosts() does its own error logging
 		ui.End()
 		return nil, err
 	}
