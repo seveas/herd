@@ -8,12 +8,12 @@ import (
 	"strings"
 )
 
-type Pager struct {
-	Process *exec.Cmd
-	Stdin   io.WriteCloser
+type pager struct {
+	process *exec.Cmd
+	stdin   io.WriteCloser
 }
 
-func (p *Pager) Start() error {
+func (p *pager) start() error {
 	pager, ok := os.LookupEnv("PAGER")
 	if !ok {
 		pager = "less"
@@ -29,29 +29,29 @@ func (p *Pager) Start() error {
 	if err != nil {
 		return err
 	}
-	p.Process = cmd
-	p.Stdin = fd
+	p.process = cmd
+	p.stdin = fd
 	return cmd.Start()
 }
 
-func (p *Pager) WriteString(msg string) (int, error) {
-	if p.Stdin == nil {
+func (p *pager) WriteString(msg string) (int, error) {
+	if p.stdin == nil {
 		return 0, fmt.Errorf("trying to write to a process that hasn't started")
 	}
-	return p.Stdin.Write([]byte(msg))
+	return p.stdin.Write([]byte(msg))
 }
 
-func (p *Pager) Write(msg []byte) (int, error) {
-	if p.Stdin == nil {
+func (p *pager) Write(msg []byte) (int, error) {
+	if p.stdin == nil {
 		return 0, fmt.Errorf("trying to write to a process that hasn't started")
 	}
-	return p.Stdin.Write(msg)
+	return p.stdin.Write(msg)
 }
 
-func (p *Pager) Wait() error {
-	if p.Process == nil {
+func (p *pager) Wait() error {
+	if p.process == nil {
 		return fmt.Errorf("trying to wait for a process that hasn't started")
 	}
-	p.Stdin.Close()
-	return p.Process.Wait()
+	p.stdin.Close()
+	return p.process.Wait()
 }

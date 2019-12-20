@@ -131,7 +131,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	hlen := hi.Hosts.MaxLen()
 	linecount := 0
 	buffer := ""
-	var pager *Pager
+	var pgr *pager
 	if usePager {
 		buffer = ui.formatter.FormatCommand(hi.Command)
 		linecount = 1
@@ -148,20 +148,20 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		}
 		if !usePager {
 			ui.pchan <- txt
-		} else if pager != nil {
-			pager.WriteString(txt)
+		} else if pgr != nil {
+			pgr.WriteString(txt)
 		} else {
 			buffer += txt
 			linecount += strings.Count(txt, "\n")
 			if linecount > ui.height {
-				pager = &Pager{}
-				if err := pager.Start(); err != nil {
+				pgr = &pager{}
+				if err := pgr.start(); err != nil {
 					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
 					ui.pchan <- buffer
 					usePager = false
 				} else {
-					defer pager.Wait()
-					pager.WriteString(buffer)
+					defer pgr.Wait()
+					pgr.WriteString(buffer)
 				}
 				buffer = ""
 			}
@@ -181,17 +181,21 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 		ui.pchan <- strings.Join(names, ",")
 		return
 	}
+	var pgr *pager
+	if ui.pagerEnabled && len(hosts) > ui.height {
+		pgr = &pager{}
+		if err := pgr.start(); err != nil {
+			logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
+			pgr = nil
+		} else {
+			defer pgr.Wait()
+		}
+	}
 	if allAttributes || len(attributes) > 0 {
 		var writer datawriter
 		var out io.Writer = ui
-		if ui.pagerEnabled && len(hosts) > ui.height {
-			pager := &Pager{}
-			if err := pager.Start(); err != nil {
-				logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-			} else {
-				out = pager
-				defer pager.Wait()
-			}
+		if pgr != nil {
+			out = pgr
 		}
 		if csvOutput {
 			writer = csv.NewWriter(out)
@@ -230,7 +234,11 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 		writer.Flush()
 	} else {
 		for _, host := range hosts {
-			ui.pchan <- host.Name + "\n"
+			if pgr != nil {
+				pgr.WriteString(host.Name + "\n")
+			} else {
+				ui.pchan <- host.Name + "\n"
+			}
 		}
 	}
 }
