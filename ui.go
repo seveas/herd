@@ -128,7 +128,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		return
 	}
 	usePager := ui.pagerEnabled
-	hlen := hi.Hosts.MaxLen()
+	hlen := hi.Hosts.maxLen()
 	linecount := 0
 	buffer := ""
 	var pgr *pager
@@ -292,7 +292,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 		return nil
 	}
 	oc := make(chan OutputLine)
-	hlen := r.hosts.MaxLen()
+	hlen := r.hosts.maxLen()
 	go func() {
 		for msg := range oc {
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
@@ -314,7 +314,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 		total := len(r.hosts)
 		queued, todo := total, total
 		nok, nfail, nerr := 0, 0, 0
-		hlen := r.hosts.MaxLen()
+		hlen := r.hosts.maxLen()
 		for {
 			select {
 			case <-ticker.C:

@@ -201,7 +201,7 @@ func (h Hosts) Uniq() Hosts {
 	return h[:dst+1]
 }
 
-func (h Hosts) MaxLen() int {
+func (h Hosts) maxLen() int {
 	hlen := 0
 	for _, host := range h {
 		if len(host.Name) > hlen {
