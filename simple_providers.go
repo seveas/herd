@@ -12,14 +12,14 @@ import (
 )
 
 func init() {
-	ProviderMagic["plain"] = func() []HostProvider {
+	providerMagic["plain"] = func() []HostProvider {
 		fn := path.Join(viper.GetString("RootDir"), "inventory")
 		if _, err := os.Stat(fn); err != nil {
 			return []HostProvider{}
 		}
 		return []HostProvider{&PlainTextProvider{Name: "inventory", File: fn}}
 	}
-	ProviderMakers["plain"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["plain"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		return &PlainTextProvider{Name: name, File: viper.GetString("File")}, nil
 	}
 }

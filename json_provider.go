@@ -17,14 +17,14 @@ type JsonProvider struct {
 }
 
 func init() {
-	ProviderMagic["json"] = func() []HostProvider {
+	providerMagic["json"] = func() []HostProvider {
 		fn := path.Join(viper.GetString("RootDir"), "inventory.json")
 		if _, err := os.Stat(fn); err != nil {
 			return []HostProvider{}
 		}
 		return []HostProvider{&JsonProvider{Name: "inventory", File: fn}}
 	}
-	ProviderMakers["json"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["json"] = func(name string, v *viper.Viper) (HostProvider, error) {
 		return &JsonProvider{Name: name, File: viper.GetString("File")}, nil
 	}
 }

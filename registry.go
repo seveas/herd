@@ -12,8 +12,8 @@ import (
 )
 
 type Registry struct {
-	Providers []HostProvider
-	Hosts     Hosts
+	providers []HostProvider
+	hosts     Hosts
 }
 
 type Hosts []*Host
@@ -30,45 +30,52 @@ type CacheMessage struct {
 }
 
 // These are populated by init() functions in the providers' files
-var ProviderMakers = make(map[string]func(string, *viper.Viper) (HostProvider, error))
-var ProviderMagic = make(map[string]func() []HostProvider)
+var providerMakers = make(map[string]func(string, *viper.Viper) (HostProvider, error))
+var providerMagic = make(map[string]func() []HostProvider)
 
-func NewRegistry() (*Registry, error) {
-	ret := &Registry{
-		Providers: []HostProvider{},
-		Hosts:     Hosts{},
+func NewRegistry() *Registry {
+	return &Registry{
+		providers: []HostProvider{},
+		hosts:     Hosts{},
 	}
+}
+
+func (r *Registry) LoadMagicProviders() {
+	// Initialize all the magic providers
+	for name, callable := range providerMagic {
+		for _, p := range callable() {
+			r.AddProvider(p)
+		}
+	}
+}
+
+func (r *Registry) LoadProviders(c *viper.Viper) error {
 	rerr := &MultiError{Subject: "Errors loading providers"}
 
-	// Initialize all the magic providers
-	for _, callable := range ProviderMagic {
-		p := callable()
-		ret.Providers = append(ret.Providers, p...)
-	}
-
 	// And now all the explicitely configured ones
-	providers := viper.Sub("Providers")
-	if providers != nil {
-		for key, _ := range providers.AllSettings() {
-			ps := providers.Sub(key)
-			pname := ps.GetString("Provider")
-			maker, ok := ProviderMakers[strings.ToLower(pname)]
-			if !ok {
-				rerr.Add(fmt.Errorf("No such provider: %s", pname))
-				continue
-			}
-			p, err := maker(pname, ps)
-			if err != nil {
-				rerr.Add(err)
-				continue
-			}
-			ret.Providers = append(ret.Providers, p)
+	for key, _ := range c.AllSettings() {
+		ps := c.Sub(key)
+		pname := ps.GetString("Provider")
+		maker, ok := providerMakers[strings.ToLower(pname)]
+		if !ok {
+			rerr.Add(fmt.Errorf("No such provider: %s", pname))
+			continue
+		}
+		p, err := maker(pname, ps)
+		if err != nil {
+			rerr.Add(err)
+		} else {
+			r.AddProvider(p)
 		}
 	}
 	if rerr.HasErrors() {
-		return nil, rerr
+		return rerr
 	}
-	return ret, nil
+	return nil
+}
+
+func (r *Registry) AddProvider(p HostProvider) {
+	r.providers = append(r.providers, p)
 }
 
 type loadresult struct {
@@ -77,8 +84,8 @@ type loadresult struct {
 	err      error
 }
 
-func (r *Registry) Load(mc chan CacheMessage) error {
-	if len(r.Hosts) > 0 {
+func (r *Registry) LoadHosts(mc chan CacheMessage) error {
+	if len(r.hosts) > 0 {
 		return nil
 	}
 	ctx := context.Background()
@@ -93,7 +100,7 @@ func (r *Registry) Load(mc chan CacheMessage) error {
 	defer close(mc)
 	defer close(rc)
 
-	for _, p := range r.Providers {
+	for _, p := range r.providers {
 		go func(pr HostProvider) {
 			hosts, err := pr.Load(ctx, mc)
 			rc <- loadresult{provider: pr.String(), hosts: hosts, err: err}
@@ -101,7 +108,7 @@ func (r *Registry) Load(mc chan CacheMessage) error {
 	}
 
 	rerr := &MultiError{Subject: "Errors querying providers"}
-	todo := len(r.Providers)
+	todo := len(r.providers)
 	seen := make(map[string]int)
 	hosts := make(Hosts, 0)
 
@@ -121,8 +128,8 @@ func (r *Registry) Load(mc chan CacheMessage) error {
 		}
 		todo -= 1
 	}
-	r.Hosts = hosts
-	r.Hosts.Sort()
+	r.hosts = hosts
+	r.hosts.Sort()
 	if !rerr.HasErrors() {
 		return nil
 	}
@@ -131,7 +138,7 @@ func (r *Registry) Load(mc chan CacheMessage) error {
 
 func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
 	ret := make(Hosts, 0)
-	for _, host := range r.Hosts {
+	for _, host := range r.hosts {
 		if host.Match(hostnameGlob, attributes) {
 			ret = append(ret, host)
 		}
