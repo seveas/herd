@@ -5,7 +5,7 @@ else
 	antlr_sources := scripting/parser/herd_base_listener.go scripting/parser/herd_lexer.go scripting/parser/herd_listener.go scripting/parser/herd_parser.go
 endif
 
-herd: go.mod *.go cmd/herd/*.go cmd/herd/cmd/*.go scripting/*.go $(antlr_sources)
+herd: go.mod *.go cmd/herd/*.go scripting/*.go $(antlr_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/herd
 
 $(antlr_sources): scripting/Herd.g4
