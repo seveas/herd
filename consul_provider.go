@@ -21,10 +21,10 @@ type ConsulProvider struct {
 }
 
 func init() {
-	providerMakers["consul"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["consul"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
 		p := &ConsulProvider{
 			Name:          name,
-			File:          path.Join(viper.GetString("CacheDir"), name+".cache"),
+			File:          path.Join(dataDir, "cache", name+".cache"),
 			CacheLifetime: 1 * time.Hour,
 		}
 		err := v.Unmarshal(p)
@@ -33,14 +33,14 @@ func init() {
 		}
 		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
 	}
-	providerMagic["consul"] = func() []HostProvider {
+	providerMagic["consul"] = func(dataDir string) []HostProvider {
 		addr, ok := os.LookupEnv("CONSUL_HTTP_ADDR")
 		if !ok {
 			return []HostProvider{}
 		}
 		p := &ConsulProvider{
 			Name:          "consul",
-			File:          path.Join(viper.GetString("CacheDir"), "consul.cache"),
+			File:          path.Join(dataDir, "cache", "consul.cache"),
 			Address:       addr,
 			CacheLifetime: 1 * time.Hour,
 		}

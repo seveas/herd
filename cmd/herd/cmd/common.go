@@ -15,7 +15,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	logrus.SetFormatter(formatter)
 	logrus.SetOutput(ui)
 
-	registry := herd.NewRegistry()
+	registry := herd.NewRegistry(viper.GetString("RootDir"))
 	registry.SetSortFields(viper.GetStringSlice("Sort"))
 	registry.LoadMagicProviders()
 	conf := viper.Sub("Providers")
