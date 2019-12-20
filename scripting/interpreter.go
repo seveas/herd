@@ -239,7 +239,7 @@ func (l *katyushaListener) ExitRun(c *parser.RunContext) {
 	l.commands = append(l.commands, runCommand{command: command})
 }
 
-func ParseCode(code string) ([]command, error) {
+func parseCode(code string) ([]command, error) {
 	is := antlr.NewInputStream(code)
 	lexer := parser.NewKatyushaLexer(is)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)

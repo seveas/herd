@@ -107,7 +107,7 @@ func (e *ScriptEngine) ParseScriptFile(fn string) error {
 	if err != nil {
 		return err
 	}
-	commands, err := ParseCode(string(code))
+	commands, err := parseCode(string(code))
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (e *ScriptEngine) ParseScriptFile(fn string) error {
 }
 
 func (e *ScriptEngine) ParseCodeLine(code string) error {
-	commands, err := ParseCode(code)
+	commands, err := parseCode(code)
 	if err != nil {
 		return err
 	}

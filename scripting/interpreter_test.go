@@ -61,7 +61,7 @@ func TestScripts(t *testing.T) {
 			}
 			tc.err = err
 		}
-		commands, err := ParseCode(tc.program)
+		commands, err := parseCode(tc.program)
 		if diff := deep.Equal(tc.commands, commands); diff != nil {
 			t.Errorf("(%d) Unexpected diff in commands:\n%s", i, diff)
 		}
