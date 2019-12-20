@@ -61,8 +61,6 @@ func initConfig() {
 	// We only need to set defaults for things that don't have a flag bound to them
 	root := path.Join(home, ".katyusha")
 	viper.Set("RootDir", root)
-	viper.SetDefault("HistoryDir", path.Join(root, "history"))
-	viper.SetDefault("CacheDir", path.Join(root, "cache"))
 	viper.SetDefault("Formatter", "pretty")
 
 	viper.AddConfigPath(root)

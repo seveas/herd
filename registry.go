@@ -15,6 +15,7 @@ type Registry struct {
 	providers []HostProvider
 	hosts     Hosts
 	sort      []string
+	dataDir   string
 }
 
 type Hosts []*Host
@@ -31,21 +32,22 @@ type CacheMessage struct {
 }
 
 // These are populated by init() functions in the providers' files
-var providerMakers = make(map[string]func(string, *viper.Viper) (HostProvider, error))
-var providerMagic = make(map[string]func() []HostProvider)
+var providerMakers = make(map[string]func(string, string, *viper.Viper) (HostProvider, error))
+var providerMagic = make(map[string]func(string) []HostProvider)
 
-func NewRegistry() *Registry {
+func NewRegistry(dataDir string) *Registry {
 	return &Registry{
 		providers: []HostProvider{},
 		hosts:     Hosts{},
 		sort:      []string{"name"},
+		dataDir:   dataDir,
 	}
 }
 
 func (r *Registry) LoadMagicProviders() {
 	// Initialize all the magic providers
 	for name, callable := range providerMagic {
-		for _, p := range callable() {
+		for _, p := range callable(r.dataDir) {
 			r.AddProvider(p)
 		}
 	}
@@ -63,7 +65,7 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 			rerr.Add(fmt.Errorf("No such provider: %s", pname))
 			continue
 		}
-		p, err := maker(pname, ps)
+		p, err := maker(r.dataDir, pname, ps)
 		if err != nil {
 			rerr.Add(err)
 		} else {

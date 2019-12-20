@@ -24,10 +24,10 @@ type HttpProvider struct {
 }
 
 func init() {
-	providerMakers["http"] = func(name string, v *viper.Viper) (HostProvider, error) {
+	providerMakers["http"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
 		p := &HttpProvider{
 			Name:          name,
-			File:          path.Join(viper.GetString("CacheDir"), name+".cache"),
+			File:          path.Join(dataDir, "cache", name+".cache"),
 			CacheLifetime: 1 * time.Hour,
 			Timeout:       30 * time.Second,
 		}

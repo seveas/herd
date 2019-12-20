@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry()
+	r := NewRegistry(filepath.Join("testdataRoot", "homes", "0"))
 	if len(r.providers) > 0 {
 		t.Errorf("got %d providers, expected none", len(r.providers))
 		return
@@ -20,7 +20,7 @@ func TestMagicProviders(t *testing.T) {
 	defer os.Setenv("HOME", realUserHome)
 
 	os.Setenv("HOME", filepath.Join(testDataRoot, "homes", "1"))
-	r := NewRegistry()
+	r := NewRegistry(filepath.Join(testDataRoot, "homes", "1", ".katyusha"))
 	r.LoadMagicProviders()
 	if len(r.providers) != 1 {
 		t.Errorf("Got %d providers, expected 1", len(r.providers))
@@ -30,6 +30,14 @@ func TestMagicProviders(t *testing.T) {
 	}
 
 	os.Setenv("HOME", filepath.Join(testDataRoot, "homes", "2"))
+	r = NewRegistry(filepath.Join(testDataRoot, "homes", "2", ".katyusha"))
+	r.LoadMagicProviders()
+	if len(r.providers) != 2 {
+		t.Errorf("Got %d providers, expected 2", len(r.providers))
+	}
+	if _, ok := r.providers[0].(*KnownHostsProvider); !ok {
+		t.Errorf("expected the first provider to be the known hosts provider, not %s", reflect.TypeOf(r.providers[0]))
+	}
 }
 
 type FakeProvider struct {

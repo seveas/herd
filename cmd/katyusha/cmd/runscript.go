@@ -57,7 +57,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 		logrus.Errorf("Unable to parse script %s: %s", args[0], err)
 		return err
 	}
-	fn := path.Join(viper.GetString("HistoryDir"), time.Now().Format("2006-01-02T15:04:05.json"))
+	fn := path.Join(viper.GetString("RootDir"), "history", time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
 	return engine.SaveHistory(fn)
 }
