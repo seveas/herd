@@ -5,7 +5,7 @@ else
 	antlr_sources := scripting/parser/katyusha_base_listener.go scripting/parser/katyusha_lexer.go scripting/parser/katyusha_listener.go scripting/parser/katyusha_parser.go
 endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go cmd/katyusha/cmd/*.go scripting/*.go $(antlr_sources)
+katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 $(antlr_sources): scripting/Katyusha.g4
