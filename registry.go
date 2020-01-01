@@ -26,9 +26,9 @@ type HostProvider interface {
 }
 
 type CacheMessage struct {
-	name     string
-	finished bool
-	err      error
+	Name     string
+	Finished bool
+	Err      error
 }
 
 // These are populated by init() functions in the providers' files
