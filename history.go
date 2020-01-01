@@ -33,7 +33,7 @@ type Result struct {
 	ElapsedTime float64
 }
 
-func NewHistoryItem(command string, hosts Hosts) *HistoryItem {
+func newHistoryItem(command string, hosts Hosts) *HistoryItem {
 	return &HistoryItem{
 		Hosts:     hosts,
 		Command:   command,
@@ -58,7 +58,7 @@ func (h *HistoryItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r)
 }
 
-func (h *HistoryItem) End() {
+func (h *HistoryItem) end() {
 	h.EndTime = time.Now()
 	h.ElapsedTime = h.EndTime.Sub(h.StartTime).Seconds()
 }

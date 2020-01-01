@@ -87,7 +87,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	if oc != nil {
 		defer close(oc)
 	}
-	hi := NewHistoryItem(command, r.hosts)
+	hi := newHistoryItem(command, r.hosts)
 	c := make(chan *Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -142,7 +142,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			todo--
 		}
 	}
-	hi.End()
+	hi.end()
 	return hi
 }
 
