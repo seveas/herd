@@ -258,19 +258,19 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 					ui.pchan <- fmt.Sprintf("\r\033[2K")
 					return
 				}
-				if msg.err != nil {
-					logrus.Errorf("Error contacting %s: %s", msg.name, msg.err)
+				if msg.Err != nil {
+					logrus.Errorf("Error contacting %s: %s", msg.Name, msg.Err)
 				}
-				if msg.finished {
-					logrus.Debugf("Cache updated for %s", msg.name)
+				if msg.Finished {
+					logrus.Debugf("Cache updated for %s", msg.Name)
 					for i, v := range caches {
-						if v == msg.name {
+						if v == msg.Name {
 							caches = append(caches[:i], caches[i+1:]...)
 							break
 						}
 					}
 				} else {
-					caches = append(caches, msg.name)
+					caches = append(caches, msg.Name)
 				}
 			case <-ticker.C:
 			}

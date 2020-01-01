@@ -69,10 +69,10 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 	rc := make(chan loadresult)
 	for _, dc := range datacenters {
 		name := fmt.Sprintf("%s@%s", p.Name, dc)
-		mc <- CacheMessage{name: name, finished: false, err: nil}
+		mc <- CacheMessage{Name: name, Finished: false, Err: nil}
 		go func(dc, name string) {
 			hosts, err := p.loadDatacenter(conf, dc)
-			mc <- CacheMessage{name: name, finished: true, err: err}
+			mc <- CacheMessage{Name: name, Finished: true, Err: err}
 			rc <- loadresult{hosts: hosts, err: err}
 		}(dc, name)
 	}

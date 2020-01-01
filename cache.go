@@ -30,9 +30,9 @@ func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 		}
 		return hosts, err
 	}
-	mc <- CacheMessage{name: c.Provider.String(), finished: false, err: nil}
+	mc <- CacheMessage{Name: c.Provider.String(), Finished: false, Err: nil}
 	hosts, err := c.Provider.Load(ctx, mc)
-	mc <- CacheMessage{name: c.Provider.String(), finished: true, err: err}
+	mc <- CacheMessage{Name: c.Provider.String(), Finished: true, Err: err}
 	if len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.File)
