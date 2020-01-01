@@ -10,7 +10,7 @@ HOSTS: 'hosts' ;
 ONELINE: '--oneline' ;
 DURATION: ( '-'? [0-9]+ ( '.' [0-9]+ )? [smh] )+ ;
 NUMBER: '0x'?[0-9]+ ;
-IDENTIFIER: [a-zA-Z_.][a-zA-Z_.0-9]+ ;
+IDENTIFIER: [a-zA-Z_][-a-zA-Z_.:0-9]+ ;
 GLOB: [-a-zA-Z.0-9*?]+ ;
 EQUALS: '==' ;
 MATCHES: '=~' ;
