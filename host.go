@@ -23,6 +23,8 @@ import (
 var localUser string
 var extConfig *sshConfig
 
+// Parse SSH configuration during startup, so the host initializer can access
+// it always.
 func init() {
 	u, err := user.Current()
 	if err == nil {
@@ -34,8 +36,13 @@ func init() {
 	}
 }
 
+// Hosts can have attributes of any types, but querying is limited to strings,
+// booleans, numbers, nil and slices of these values.
 type HostAttributes map[string]interface{}
 
+// A host represents a remote host. It can be instantiated manually, but is
+// usually fetched from one or more Providers, which can all contribute to the
+// hosts attributes.
 type Host struct {
 	Name       string
 	Port       int
@@ -48,6 +55,8 @@ type Host struct {
 	csum       uint32
 }
 
+// Hosts should be initialized with this function, which also initializes any
+// internal data, without which SSH connections will not be possible.
 func NewHost(name string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
@@ -58,6 +67,7 @@ func NewHost(name string, attributes HostAttributes) *Host {
 	return h
 }
 
+// Set all the defults and initialize ssh configuration for the host
 func (h *Host) init() {
 	cfg := extConfig.configForHost(h.Name)
 	h.publicKeys = make([]ssh.PublicKey, 0)
@@ -97,6 +107,8 @@ func (host Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s, Config: %v}", host.Name, len(host.publicKeys), host.Attributes, host.sshConfig)
 }
 
+// Adds a public key to a host. Used by the ssh know hosts provider, but can be
+// used by any other code as well.
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }
