@@ -56,7 +56,7 @@ var variables map[string]variable = map[string]variable{
 		tokenType: parser.KatyushaParserDURATION,
 	},
 	"Parallel": {
-		tokenType: parser.KatyushaParserDURATION,
+		tokenType: parser.KatyushaParserNUMBER,
 	},
 	"Output": {
 		tokenType: parser.KatyushaParserSTRING,
