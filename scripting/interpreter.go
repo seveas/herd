@@ -56,7 +56,7 @@ var variables map[string]variable = map[string]variable{
 		tokenType: parser.HerdParserDURATION,
 	},
 	"Parallel": {
-		tokenType: parser.HerdParserDURATION,
+		tokenType: parser.HerdParserNUMBER,
 	},
 	"Output": {
 		tokenType: parser.HerdParserSTRING,
