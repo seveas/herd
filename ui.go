@@ -1,10 +1,12 @@
 package herd
 
 import (
+	"bytes"
 	"encoding/csv"
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -319,13 +321,26 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 	}
 	oc := make(chan OutputLine)
 	hlen := r.hosts.maxLen()
+	lastcolor := []byte{}
+	reset := []byte("\033[0m")
+	cr := regexp.MustCompile("\033\\[[0-9;]+m")
 	go func() {
 		for msg := range oc {
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
 			if msg.Stderr {
 				name = ansi.Color(name, "red")
 			}
-			ui.pchan <- fmt.Sprintf("%s  %s", name, msg.Data)
+			line := msg.Data
+			suffix := []byte{}
+			colors := cr.FindAll(line, -1)
+			if colors != nil && !bytes.Equal(colors[len(colors)-1], reset) {
+				lastcolor = colors[len(colors)-1]
+				suffix = reset
+			}
+			if colors == nil && len(lastcolor) != 0 {
+				suffix = reset
+			}
+			ui.pchan <- fmt.Sprintf("%s  %s%s%s", name, lastcolor, line, suffix)
 		}
 	}()
 	return oc
