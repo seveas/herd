@@ -49,6 +49,7 @@ type Host struct {
 	publicKeys []ssh.PublicKey
 	sshBanner  string
 	sshConfig  *ssh.ClientConfig
+	extConfig  map[string]string
 	connection *ssh.Client
 	lastResult *Result
 	csum       uint32
@@ -68,11 +69,11 @@ func NewHost(name string, attributes HostAttributes) *Host {
 
 // Set all the defults and initialize ssh configuration for the host
 func (h *Host) init() {
-	cfg := extConfig.configForHost(h.Name)
+	h.extConfig = extConfig.configForHost(h.Name)
 	h.publicKeys = make([]ssh.PublicKey, 0)
 	h.sshConfig = &ssh.ClientConfig{
 		ClientVersion:   "SSH-2.0-Herd-0.1",
-		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return sshAgentKeys(cfg["identityfile"]) })},
+		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return sshAgentKeys(h.extConfig["identityfile"]) })},
 		User:            localUser,
 		Timeout:         3 * time.Second,
 		HostKeyCallback: h.hostKeyCallback,
@@ -92,10 +93,10 @@ func (h *Host) init() {
 	if h.Port == 0 {
 		h.Port = 22
 	}
-	if user, ok := cfg["user"]; ok {
+	if user, ok := h.extConfig["user"]; ok {
 		h.sshConfig.User = user
 	}
-	if port, ok := cfg["port"]; ok {
+	if port, ok := h.extConfig["port"]; ok {
 		if p, err := strconv.Atoi(port); err == nil {
 			h.Port = p
 		}
@@ -169,9 +170,20 @@ func (h *Host) Amend(h2 *Host) {
 }
 
 func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	check, ok := h.extConfig["stricthostkeychecking"]
+	if !ok || check == "" {
+		check = "ask"
+	}
 	if len(h.publicKeys) == 0 {
-		logrus.Warnf("Warning: no known host key for %s, accepting any key", h.Name)
-		return nil
+		switch strings.ToLower(check) {
+		case "no":
+			return nil
+		case "accept-new":
+			logrus.Warnf("ssh: no known host key for %s, accepting new key", h.Name)
+			return nil
+		default:
+			return fmt.Errorf("ssh: no host key found for %s", h.Name)
+		}
 	}
 	bkey := key.Marshal()
 	for _, pkey := range h.publicKeys {
@@ -179,7 +191,12 @@ func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 			return nil
 		}
 	}
-	return fmt.Errorf("ssh: no matching host key")
+	switch strings.ToLower(check) {
+	case "no":
+		return nil
+	default:
+		return fmt.Errorf("ssh: no matching host key found for %s", h.Name)
+	}
 }
 
 func (h *Host) bannerCallback(message string) error {
