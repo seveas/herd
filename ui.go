@@ -33,6 +33,7 @@ type UI interface {
 	CacheUpdateChannel() chan CacheMessage
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
+	BindLogrus()
 }
 
 type SimpleUI struct {
@@ -41,7 +42,7 @@ type SimpleUI struct {
 	lastProgress string
 	pchan        chan string
 	dchan        chan interface{}
-	formatter    Formatter
+	formatter    formatter
 	outputMode   OutputMode
 	pagerEnabled bool
 	width        int
@@ -49,7 +50,14 @@ type SimpleUI struct {
 	lineBuf      string
 }
 
-func NewSimpleUI(f Formatter) *SimpleUI {
+func NewSimpleUI() *SimpleUI {
+	f := prettyFormatter{
+		colors: map[logrus.Level]string{
+			logrus.WarnLevel:  "yellow",
+			logrus.ErrorLevel: "red+b",
+			logrus.DebugLevel: "black+h",
+		},
+	}
 	ui := &SimpleUI{
 		output:       os.Stdout,
 		outputMode:   OutputAll,
@@ -109,6 +117,11 @@ func (ui *SimpleUI) printer() {
 	close(ui.dchan)
 }
 
+func (ui *SimpleUI) BindLogrus() {
+	logrus.SetFormatter(ui.formatter)
+	logrus.SetOutput(ui)
+}
+
 func (ui *SimpleUI) Write(msg []byte) (int, error) {
 	ui.lineBuf += string(msg)
 	if strings.HasSuffix(ui.lineBuf, "\n") {
@@ -133,18 +146,18 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	buffer := ""
 	var pgr *pager
 	if usePager {
-		buffer = ui.formatter.FormatCommand(hi.Command)
+		buffer = ui.formatter.formatCommand(hi.Command)
 		linecount = 1
 	} else {
-		ui.pchan <- ui.formatter.FormatCommand(hi.Command)
+		ui.pchan <- ui.formatter.formatCommand(hi.Command)
 	}
 
 	for _, h := range hi.Hosts {
 		var txt string
 		if ui.outputMode == OutputAll {
-			txt = ui.formatter.FormatResult(hi.Results[h.Name])
+			txt = ui.formatter.formatResult(hi.Results[h.Name])
 		} else {
-			txt = ui.formatter.FormatOutput(hi.Results[h.Name], hlen)
+			txt = ui.formatter.formatOutput(hi.Results[h.Name], hlen)
 		}
 		if !usePager {
 			ui.pchan <- txt
@@ -334,9 +347,9 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 					nfail++
 				}
 				if ui.outputMode == OutputPerhost {
-					ui.pchan <- ui.formatter.FormatResult(msg.Result)
+					ui.pchan <- ui.formatter.formatResult(msg.Result)
 				} else if ui.outputMode == OutputTail {
-					ui.pchan <- ui.formatter.FormatStatus(msg.Result, hlen)
+					ui.pchan <- ui.formatter.formatStatus(msg.Result, hlen)
 				}
 				todo--
 			}

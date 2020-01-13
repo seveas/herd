@@ -5,9 +5,18 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var results []*Result
+var testformatter = prettyFormatter{
+	colors: map[logrus.Level]string{
+		logrus.WarnLevel:  "yellow",
+		logrus.ErrorLevel: "red+b",
+		logrus.DebugLevel: "black+h",
+	},
+}
 
 func init() {
 	i := 0
@@ -65,13 +74,12 @@ func init() {
 }
 
 func TestPrettyFormatterFormatCommand(t *testing.T) {
-	if x := Formatters["pretty"].FormatCommand("hello world"); x != "\033[36mhello world\033[0m\n" {
+	if x := testformatter.formatCommand("hello world"); x != "\033[36mhello world\033[0m\n" {
 		t.Errorf("Expected colored string, got %s", strconv.Quote(x))
 	}
 }
 
 func TestPrettyFormatterFormatStatus(t *testing.T) {
-	f := Formatters["pretty"]
 	expected := []string{
 		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"\033[32mtest-host-002.example.com  completed successfully after 12s\033[0m\n",
@@ -80,14 +88,13 @@ func TestPrettyFormatterFormatStatus(t *testing.T) {
 		"\033[32mtest-host-005.example.com  completed successfully after 12s\033[0m\n",
 	}
 	for i, r := range results {
-		if s := f.FormatStatus(r, 0); s != expected[i] {
+		if s := testformatter.formatStatus(r, 0); s != expected[i] {
 			t.Errorf("Result %d, expected status %s, got %s", i, strconv.Quote(expected[i]), strconv.Quote(s))
 		}
 	}
 }
 
 func TestPrettyFormatterFormatOutput(t *testing.T) {
-	f := Formatters["pretty"]
 	expected := []string{
 		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"test-host-002.example.com  May the forks be with you\n  And you\n",
@@ -96,14 +103,13 @@ func TestPrettyFormatterFormatOutput(t *testing.T) {
 		"test-host-005.example.com  Text on stdout without newline\n\x1b[31mtest-host-005.example.com  \x1b[0mText on stderr\n  More text\n",
 	}
 	for i, r := range results {
-		if s := f.FormatOutput(r, 0); s != expected[i] {
+		if s := testformatter.formatOutput(r, 0); s != expected[i] {
 			t.Errorf("Result %d, expected output %s, got %s", i, strconv.Quote(expected[i]), strconv.Quote(s))
 		}
 	}
 }
 
 func TestPrettyFormatterFormatResult(t *testing.T) {
-	f := Formatters["pretty"]
 	expected := []string{
 		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"\033[32mtest-host-002.example.com  completed successfully after 12s\033[0m\n    May the forks be with you\n    And you\n",
@@ -112,7 +118,7 @@ func TestPrettyFormatterFormatResult(t *testing.T) {
 		"\x1b[32mtest-host-005.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[90m----\x1b[0m\n    Text on stderr\n    More text\n",
 	}
 	for i, r := range results {
-		if s := f.FormatResult(r); s != expected[i] {
+		if s := testformatter.formatResult(r); s != expected[i] {
 			t.Errorf("Result %d, expected result %s, got %s", i, strconv.Quote(expected[i]), strconv.Quote(s))
 		}
 	}
