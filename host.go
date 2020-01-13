@@ -7,7 +7,6 @@ import (
 	"hash/crc32"
 	"net"
 	"os/user"
-	"path"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -32,7 +31,7 @@ func init() {
 	}
 	home, err := homedir.Dir()
 	if err == nil {
-		extConfig, _ = parseSshConfig(path.Join(home, ".ssh", "config"))
+		extConfig, _ = parseSshConfig(filepath.Join(home, ".ssh", "config"))
 	}
 }
 

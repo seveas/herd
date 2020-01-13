@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/seveas/katyusha/scripting"
@@ -44,7 +44,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
-	fn := path.Join(viper.GetString("RootDir"), "history", time.Now().Format("2006-01-02T15:04:05.json"))
+	fn := filepath.Join(viper.GetString("RootDir"), "history", time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
 
 	// Enter interactive mode
@@ -61,7 +61,7 @@ func (l *interactiveLoop) run() {
 	rl, err := readline.NewEx(&readline.Config{
 		Prompt:          l.prompt(),
 		AutoComplete:    l.autoComplete(),
-		HistoryFile:     path.Join(viper.GetString("RootDir"), "history", "interactive"),
+		HistoryFile:     filepath.Join(viper.GetString("RootDir"), "history", "interactive"),
 		InterruptPrompt: "^C",
 		EOFPrompt:       "exit",
 	})

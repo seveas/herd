@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"time"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -63,7 +63,7 @@ func initConfig() {
 	}
 
 	// We only need to set defaults for things that don't have a flag bound to them
-	root := path.Join(home, ".katyusha")
+	root := filepath.Join(home, ".katyusha")
 	viper.Set("RootDir", root)
 	viper.SetDefault("Formatter", "pretty")
 
