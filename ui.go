@@ -269,6 +269,7 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 	mc := make(chan CacheMessage)
 	go func() {
 		start := time.Now()
+		cached := false
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
 		caches := make([]string, 0)
@@ -277,7 +278,9 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 			case msg, ok := <-mc:
 				// Cache message channel closed, we're done caching
 				if !ok {
-					ui.pchan <- fmt.Sprintf("\r\033[2K")
+					if cached {
+						ui.pchan <- fmt.Sprintf("\r\033[2KAll caches updated\n")
+					}
 					return
 				}
 				if msg.Err != nil {
@@ -303,6 +306,7 @@ func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 					cs = cs[:ui.width-30] + "..."
 				}
 				ui.pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
+				cached = true
 			}
 		}
 	}()
