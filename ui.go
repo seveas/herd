@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
@@ -48,6 +49,7 @@ type SimpleUI struct {
 	width        int
 	height       int
 	lineBuf      string
+	isTerminal   bool
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -66,11 +68,18 @@ func NewSimpleUI() *SimpleUI {
 		pchan:        make(chan string),
 		dchan:        make(chan interface{}),
 		formatter:    f,
+		isTerminal:   isatty.IsTerminal(os.Stdout.Fd()),
 	}
-	ui.getSize()
-	readline.DefaultOnWidthChanged(func() {
+	if ui.isTerminal {
 		ui.getSize()
-	})
+		readline.DefaultOnWidthChanged(func() {
+			ui.getSize()
+		})
+	} else {
+		ansi.DisableColors(true)
+		ui.pagerEnabled = false
+		ui.width = 80
+	}
 	go ui.printer()
 	return ui
 }

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/mgutz/ansi"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
@@ -44,6 +45,7 @@ func init() {
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	rootCmd.PersistentFlags().Bool("no-pager", false, "Disable the use of the pager")
+	rootCmd.PersistentFlags().Bool("no-color", false, "Disable the use of the colors in the output")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
@@ -54,6 +56,7 @@ func init() {
 	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
 	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
 	viper.BindPFlag("NoPager", rootCmd.PersistentFlags().Lookup("no-pager"))
+	viper.BindPFlag("NoColor", rootCmd.PersistentFlags().Lookup("no-color"))
 }
 
 func initConfig() {
@@ -69,13 +72,14 @@ func initConfig() {
 	viper.AddConfigPath(root)
 	viper.AddConfigPath("/etc/katyusha")
 	viper.SetConfigName("config")
+	viper.SetEnvPrefix("katyusha")
+
+	// Read the configuration
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 			bail("Can't read configuration: %s", err)
 		}
 	}
-
-	viper.SetEnvPrefix("katyusha")
 	viper.AutomaticEnv()
 
 	// Check configuration variables
@@ -85,6 +89,9 @@ func initConfig() {
 	}
 	logrus.SetLevel(level)
 
+	if viper.GetBool("NoColor") {
+		ansi.DisableColors(true)
+	}
 	outputModes := map[string]katyusha.OutputMode{
 		"all":      katyusha.OutputAll,
 		"inline":   katyusha.OutputInline,
