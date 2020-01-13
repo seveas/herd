@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"sort"
 	"time"
 
@@ -14,38 +13,17 @@ import (
 )
 
 type ConsulProvider struct {
-	Name          string
-	Address       string
-	File          string
-	CacheLifetime time.Duration
+	Name    string
+	Address string
 }
 
-func init() {
-	providerMakers["consul"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
-		p := &ConsulProvider{
-			Name:          name,
-			File:          path.Join(dataDir, "cache", name+".cache"),
-			CacheLifetime: 1 * time.Hour,
-		}
-		err := v.Unmarshal(p)
-		if err != nil {
-			return nil, err
-		}
-		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
-	}
-	providerMagic["consul"] = func(dataDir string) []HostProvider {
-		addr, ok := os.LookupEnv("CONSUL_HTTP_ADDR")
-		if !ok {
-			return []HostProvider{}
-		}
-		p := &ConsulProvider{
-			Name:          "consul",
-			File:          path.Join(dataDir, "cache", "consul.cache"),
-			Address:       addr,
-			CacheLifetime: 1 * time.Hour,
-		}
-		return []HostProvider{&Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}}
-	}
+func NewConsulProvider(name string) HostProvider {
+	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
+	return &ConsulProvider{Name: name, Address: addr}
+}
+
+func (p *ConsulProvider) ParseViper(v *viper.Viper) error {
+	return v.Unmarshal(p)
 }
 
 func (p *ConsulProvider) String() string {

@@ -6,37 +6,26 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
 type HttpProvider struct {
-	Name          string
-	File          string
-	Url           string
-	Username      string
-	Password      string
-	Headers       map[string]string
-	Timeout       time.Duration
-	CacheLifetime time.Duration
+	Name     string
+	Url      string
+	Username string
+	Password string
+	Headers  map[string]string
+	Timeout  time.Duration
 }
 
-func init() {
-	providerMakers["http"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
-		p := &HttpProvider{
-			Name:          name,
-			File:          path.Join(dataDir, "cache", name+".cache"),
-			CacheLifetime: 1 * time.Hour,
-			Timeout:       30 * time.Second,
-		}
-		err := v.Unmarshal(p)
-		if err != nil {
-			return nil, err
-		}
-		return &Cache{File: p.File, Lifetime: p.CacheLifetime, Provider: p}, nil
-	}
+func NewHttpProvider(name string) HostProvider {
+	return &HttpProvider{Name: name, Timeout: 30 * time.Second}
+}
+
+func (p *HttpProvider) ParseViper(v *viper.Viper) error {
+	return v.Unmarshal(p)
 }
 
 func (p *HttpProvider) String() string {

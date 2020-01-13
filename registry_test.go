@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -24,6 +26,7 @@ func TestMagicProviders(t *testing.T) {
 	r.LoadMagicProviders()
 	if len(r.providers) != 1 {
 		t.Errorf("Got %d providers, expected 1", len(r.providers))
+		t.Errorf("%v", r.providers)
 	}
 	if _, ok := r.providers[0].(*KnownHostsProvider); !ok {
 		t.Errorf("expected the first provider to be the known hosts provider, not %s", reflect.TypeOf(r.providers[0]))
@@ -49,6 +52,10 @@ func (p *FakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 
 func (p *FakeProvider) String() string {
 	return "fake"
+}
+
+func (p *FakeProvider) ParseViper(v *viper.Viper) error {
+	return nil
 }
 
 func TestGetHosts(t *testing.T) {

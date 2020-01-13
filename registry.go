@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -21,6 +24,7 @@ type Registry struct {
 type Hosts []*Host
 
 type HostProvider interface {
+	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
 	String() string
 }
@@ -31,10 +35,6 @@ type CacheMessage struct {
 	Err      error
 }
 
-// These are populated by init() functions in the providers' files
-var providerMakers = make(map[string]func(string, string, *viper.Viper) (HostProvider, error))
-var providerMagic = make(map[string]func(string) []HostProvider)
-
 func NewRegistry(dataDir string) *Registry {
 	return &Registry{
 		providers: []HostProvider{},
@@ -44,12 +44,48 @@ func NewRegistry(dataDir string) *Registry {
 	}
 }
 
+func NewProvider(pname, name string) (HostProvider, error) {
+	switch pname {
+	case "cache":
+		return NewCache(name), nil
+	case "consul":
+		return NewConsulProvider(name), nil
+	case "http":
+		return NewHttpProvider(name), nil
+	case "json":
+		return NewJsonProvider(name), nil
+	case "plain":
+		return NewPlainTextProvider(name), nil
+	case "known_hosts":
+		return NewKnownHostsProvider(name), nil
+	case "":
+		return nil, fmt.Errorf("No provider specified")
+	default:
+		return nil, fmt.Errorf("No such provider: %s", pname)
+	}
+}
+
 func (r *Registry) LoadMagicProviders() {
-	// Initialize all the magic providers
-	for name, callable := range providerMagic {
-		for _, p := range callable(r.dataDir) {
-			r.AddProvider(p)
-		}
+	r.AddProvider(NewKnownHostsProvider("known_hosts"))
+	fn := filepath.Join(r.dataDir, "inventory")
+	if _, err := os.Stat(fn); err == nil {
+		r.AddProvider(&PlainTextProvider{Name: "inventory", File: fn})
+	}
+	fn += ".json"
+	if _, err := os.Stat(fn); err == nil {
+		r.AddProvider(&JsonProvider{Name: "inventory", File: fn})
+	}
+	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
+		r.AddProvider(r.Cache(NewConsulProvider("consul")))
+	}
+}
+
+func (r *Registry) Cache(p HostProvider) HostProvider {
+	return &Cache{
+		Name:     p.String(),
+		Lifetime: 1 * time.Hour,
+		File:     filepath.Join(r.dataDir, "cache", p.String()+".cache"),
+		Source:   p,
 	}
 }
 
@@ -60,16 +96,16 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 	for key, _ := range c.AllSettings() {
 		ps := c.Sub(key)
 		pname := ps.GetString("Provider")
-		maker, ok := providerMakers[strings.ToLower(pname)]
-		if !ok {
-			rerr.Add(fmt.Errorf("No such provider: %s", pname))
-			continue
-		}
-		p, err := maker(r.dataDir, pname, ps)
+		p, err := NewProvider(pname, key)
 		if err != nil {
-			rerr.Add(err)
+			rerr.Add(fmt.Errorf("Error parsing config for %s: %s", key, err))
 		} else {
-			r.AddProvider(p)
+			err = p.ParseViper(ps)
+			if err != nil {
+				rerr.Add(fmt.Errorf("Error parsing config for %s: %s", key, err))
+			} else {
+				r.AddProvider(p)
+			}
 		}
 	}
 	if rerr.HasErrors() {
@@ -79,6 +115,11 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 }
 
 func (r *Registry) AddProvider(p HostProvider) {
+	if c, ok := p.(*Cache); ok {
+		if c.File == "" {
+			c.File = filepath.Join(r.dataDir, "cache", c.Name+".cache")
+		}
+	}
 	r.providers = append(r.providers, p)
 }
 
