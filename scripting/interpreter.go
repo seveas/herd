@@ -83,6 +83,15 @@ var variables map[string]variable = map[string]variable{
 			return nil, fmt.Errorf("Expected a boolean value, not %v", i)
 		},
 	},
+	"NoColor": {
+		tokenType: parser.HerdParserIDENTIFIER,
+		validator: func(i interface{}) (interface{}, error) {
+			if _, ok := i.(bool); ok {
+				return i, nil
+			}
+			return nil, fmt.Errorf("Expected a boolean value, not %v", i)
+		},
+	},
 	"LogLevel": {
 		tokenType: parser.HerdParserSTRING,
 		validator: func(i interface{}) (interface{}, error) {

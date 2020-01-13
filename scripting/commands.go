@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
 )
 
@@ -23,6 +24,8 @@ func (c setCommand) execute(e *ScriptEngine) error {
 		e.ui.SetOutputMode(c.value.(herd.OutputMode))
 	case "NoPager":
 		e.ui.SetPagerEnabled(!c.value.(bool))
+	case "NoColor":
+		ansi.DisableColors(c.value.(bool))
 	case "Timeout":
 		e.runner.SetTimeout(c.value.(time.Duration))
 	case "HostTimeout":
