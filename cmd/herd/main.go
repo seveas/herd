@@ -65,7 +65,6 @@ func initConfig() {
 	// We only need to set defaults for things that don't have a flag bound to them
 	root := filepath.Join(home, ".herd")
 	viper.Set("RootDir", root)
-	viper.SetDefault("Formatter", "pretty")
 
 	viper.AddConfigPath(root)
 	viper.AddConfigPath("/etc/herd")
@@ -80,10 +79,6 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	// Check configuration variables
-	if _, ok := herd.Formatters[viper.GetString("Formatter")]; !ok {
-		bail("Unknown formatter: %s. Known formatters: pretty", viper.GetString("Formatter"))
-	}
-
 	level, err := logrus.ParseLevel(viper.GetString("LogLevel"))
 	if err != nil {
 		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
@@ -109,12 +104,10 @@ func bail(format string, args ...interface{}) {
 }
 
 func setupScriptEngine() (*scripting.ScriptEngine, error) {
-	formatter := herd.Formatters[viper.GetString("Formatter")]
-	ui := herd.NewSimpleUI(formatter)
+	ui := herd.NewSimpleUI()
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
-	logrus.SetFormatter(formatter)
-	logrus.SetOutput(ui)
+	ui.BindLogrus()
 
 	registry := herd.NewRegistry(viper.GetString("RootDir"))
 	registry.SetSortFields(viper.GetStringSlice("Sort"))
