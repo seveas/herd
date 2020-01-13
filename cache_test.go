@@ -4,9 +4,11 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type fakeProvider struct {
@@ -22,6 +24,10 @@ func (p *fakeProvider) String() string {
 	return "fake"
 }
 
+func (p *fakeProvider) ParseViper(v *viper.Viper) error {
+	return nil
+}
+
 func TestCache(t *testing.T) {
 	tmpdir, err := ioutil.TempDir("", "katyusha-test-cache-")
 	mc := make(chan CacheMessage, 20)
@@ -31,14 +37,14 @@ func TestCache(t *testing.T) {
 	defer os.RemoveAll(tmpdir)
 	c := Cache{
 		Lifetime: 1 * time.Hour,
-		File:     path.Join(tmpdir, "cache", "cache-test.cache"),
-		Provider: &fakeProvider{},
+		File:     filepath.Join(tmpdir, "cache", "cache-test.cache"),
+		Source:   &fakeProvider{},
 	}
 	hosts, _ := c.Load(nil, mc)
 	if len(hosts) != 1 {
 		t.Errorf("First cache load did not succeed")
 	}
-	if c.Provider.(*fakeProvider).loaded != 1 {
+	if c.Source.(*fakeProvider).loaded != 1 {
 		t.Errorf("First cache load did not appear to happen")
 	}
 	if c.mustRefresh() {
@@ -48,7 +54,7 @@ func TestCache(t *testing.T) {
 	if len(hosts) != 1 {
 		t.Errorf("Second cache load did not succeed")
 	}
-	if c.Provider.(*fakeProvider).loaded != 1 {
+	if c.Source.(*fakeProvider).loaded != 1 {
 		t.Errorf("Second cache load went to the backend provider")
 	}
 }

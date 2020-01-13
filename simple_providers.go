@@ -3,30 +3,23 @@ package katyusha
 import (
 	"context"
 	"io/ioutil"
-	"os"
-	"path"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
-func init() {
-	providerMagic["plain"] = func(dataDir string) []HostProvider {
-		fn := path.Join(dataDir, "inventory")
-		if _, err := os.Stat(fn); err != nil {
-			return []HostProvider{}
-		}
-		return []HostProvider{&PlainTextProvider{Name: "inventory", File: fn}}
-	}
-	providerMakers["plain"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
-		return &PlainTextProvider{Name: name, File: v.GetString("File")}, nil
-	}
-}
-
 type PlainTextProvider struct {
 	Name string
 	File string
+}
+
+func NewPlainTextProvider(name string) HostProvider {
+	return &PlainTextProvider{Name: name}
+}
+
+func (p *PlainTextProvider) ParseViper(v *viper.Viper) error {
+	return v.Unmarshal(p)
 }
 
 func (p *PlainTextProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {

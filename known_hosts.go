@@ -4,26 +4,30 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"path"
+	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
 
-func init() {
-	providerMagic["ssh"] = func(dataDir string) []HostProvider {
-		files := []string{"/etc/ssh/ssh_known_hosts"}
-		home, err := homedir.Dir()
-		if err == nil {
-			files = append(files, path.Join(home, ".ssh", "known_hosts"))
-		}
-		return []HostProvider{&KnownHostsProvider{Files: files}}
-	}
+type KnownHostsProvider struct {
+	Name  string
+	Files []string
 }
 
-type KnownHostsProvider struct {
-	Files []string
+func NewKnownHostsProvider(name string) HostProvider {
+	files := []string{"/etc/ssh/ssh_known_hosts"}
+	home, err := homedir.Dir()
+	if err == nil {
+		files = append(files, filepath.Join(home, ".ssh", "known_hosts"))
+	}
+	return &KnownHostsProvider{Name: name, Files: files}
+}
+
+func (p *KnownHostsProvider) ParseViper(v *viper.Viper) error {
+	return v.Unmarshal(p)
 }
 
 func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {

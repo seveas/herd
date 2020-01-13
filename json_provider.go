@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"os"
-	"path"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -16,17 +14,12 @@ type JsonProvider struct {
 	File string
 }
 
-func init() {
-	providerMagic["json"] = func(dataDir string) []HostProvider {
-		fn := path.Join(dataDir, "inventory.json")
-		if _, err := os.Stat(fn); err != nil {
-			return []HostProvider{}
-		}
-		return []HostProvider{&JsonProvider{Name: "inventory", File: fn}}
-	}
-	providerMakers["json"] = func(dataDir, name string, v *viper.Viper) (HostProvider, error) {
-		return &JsonProvider{Name: name, File: v.GetString("File")}, nil
-	}
+func NewJsonProvider(name string) HostProvider {
+	return &JsonProvider{Name: name}
+}
+
+func (p *JsonProvider) ParseViper(v *viper.Viper) error {
+	return v.Unmarshal(p)
 }
 
 func (p *JsonProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {

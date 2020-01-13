@@ -8,12 +8,33 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type Cache struct {
+	Name     string
 	Lifetime time.Duration
 	File     string
-	Provider HostProvider
+	Source   HostProvider
+}
+
+func NewCache(name string) HostProvider {
+	return &Cache{Lifetime: 1 * time.Hour, Name: name}
+}
+
+func (c *Cache) ParseViper(v *viper.Viper) error {
+	sv := v.Sub("Source")
+	if sv == nil {
+		return fmt.Errorf("No source specified")
+	}
+	s, err := NewProvider(sv.GetString("provider"), c.Name)
+	if err != nil {
+		return err
+	}
+	s.ParseViper(sv)
+	v.Set("Source", s)
+	return v.Unmarshal(c)
 }
 
 func (c *Cache) mustRefresh() bool {
@@ -23,16 +44,16 @@ func (c *Cache) mustRefresh() bool {
 
 func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	if !c.mustRefresh() {
-		jp := &JsonProvider{Name: c.Provider.String(), File: c.File}
+		jp := &JsonProvider{Name: c.Source.String(), File: c.File}
 		hosts, err := jp.Load(ctx, mc)
 		if err != nil {
 			return hosts, err
 		}
 		return hosts, err
 	}
-	mc <- CacheMessage{Name: c.Provider.String(), Finished: false, Err: nil}
-	hosts, err := c.Provider.Load(ctx, mc)
-	mc <- CacheMessage{Name: c.Provider.String(), Finished: true, Err: err}
+	mc <- CacheMessage{Name: c.Source.String(), Finished: false, Err: nil}
+	hosts, err := c.Source.Load(ctx, mc)
+	mc <- CacheMessage{Name: c.Source.String(), Finished: true, Err: err}
 	if len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.File)
@@ -48,5 +69,5 @@ func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 }
 
 func (c *Cache) String() string {
-	return fmt.Sprintf("%s (cached)", c.Provider.String())
+	return fmt.Sprintf("%s (cached)", c.Source.String())
 }
