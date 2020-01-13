@@ -172,7 +172,9 @@ func (h *Host) Amend(h2 *Host) {
 func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
 	check, ok := h.extConfig["stricthostkeychecking"]
 	if !ok || check == "" {
-		check = "ask"
+		// We default to accept-new instead of ask, as we cannot ask the user a
+		// question and thus treat ask the same as yes
+		check = "accept-new"
 	}
 	if len(h.publicKeys) == 0 {
 		switch strings.ToLower(check) {
