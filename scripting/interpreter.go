@@ -45,6 +45,13 @@ type variable struct {
 	validator func(interface{}) (interface{}, error)
 }
 
+func mustBeBool(i interface{}) (interface{}, error) {
+	if _, ok := i.(bool); ok {
+		return i, nil
+	}
+	return nil, fmt.Errorf("Expected a boolean value, not %v", i)
+}
+
 var variables map[string]variable = map[string]variable{
 	"Timeout": {
 		tokenType: parser.KatyushaParserDURATION,
@@ -74,23 +81,17 @@ var variables map[string]variable = map[string]variable{
 			return nil, fmt.Errorf("Unknown output mode: %s. Known modes: all, per-host, inline, tail", s)
 		},
 	},
+	"Timestamp": {
+		tokenType: parser.KatyushaParserIDENTIFIER,
+		validator: mustBeBool,
+	},
 	"NoPager": {
 		tokenType: parser.KatyushaParserIDENTIFIER,
-		validator: func(i interface{}) (interface{}, error) {
-			if _, ok := i.(bool); ok {
-				return i, nil
-			}
-			return nil, fmt.Errorf("Expected a boolean value, not %v", i)
-		},
+		validator: mustBeBool,
 	},
 	"NoColor": {
 		tokenType: parser.KatyushaParserIDENTIFIER,
-		validator: func(i interface{}) (interface{}, error) {
-			if _, ok := i.(bool); ok {
-				return i, nil
-			}
-			return nil, fmt.Errorf("Expected a boolean value, not %v", i)
-		},
+		validator: mustBeBool,
 	},
 	"LogLevel": {
 		tokenType: parser.KatyushaParserSTRING,

@@ -22,6 +22,8 @@ func (c setCommand) execute(e *ScriptEngine) error {
 	switch c.variable {
 	case "Output":
 		e.ui.SetOutputMode(c.value.(katyusha.OutputMode))
+	case "Timestamp":
+		e.ui.SetOutputTimestamp(c.value.(bool))
 	case "NoPager":
 		e.ui.SetPagerEnabled(!c.value.(bool))
 	case "NoColor":
