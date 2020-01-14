@@ -30,6 +30,7 @@ type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
 	SetOutputMode(OutputMode)
+	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
 	Write([]byte) (int, error)
 	End()
@@ -40,18 +41,19 @@ type UI interface {
 }
 
 type SimpleUI struct {
-	output       *os.File
-	atStart      bool
-	lastProgress string
-	pchan        chan string
-	dchan        chan interface{}
-	formatter    formatter
-	outputMode   OutputMode
-	pagerEnabled bool
-	width        int
-	height       int
-	lineBuf      string
-	isTerminal   bool
+	output          *os.File
+	atStart         bool
+	lastProgress    string
+	pchan           chan string
+	dchan           chan interface{}
+	formatter       formatter
+	outputMode      OutputMode
+	outputTimestamp bool
+	pagerEnabled    bool
+	width           int
+	height          int
+	lineBuf         string
+	isTerminal      bool
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -101,6 +103,10 @@ func (ui *SimpleUI) getSize() {
 
 func (ui *SimpleUI) SetOutputMode(o OutputMode) {
 	ui.outputMode = o
+}
+
+func (ui *SimpleUI) SetOutputTimestamp(e bool) {
+	ui.outputTimestamp = e
 }
 
 func (ui *SimpleUI) SetPagerEnabled(e bool) {
@@ -324,8 +330,12 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 	lastcolor := []byte{}
 	reset := []byte("\033[0m")
 	cr := regexp.MustCompile("\033\\[[0-9;]+m")
+	ts := ""
 	go func() {
 		for msg := range oc {
+			if ui.outputTimestamp {
+				ts = time.Now().Format("15:04:05.000 ")
+			}
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
 			if msg.Stderr {
 				name = ansi.Color(name, "red")
@@ -340,7 +350,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 			if colors == nil && len(lastcolor) != 0 {
 				suffix = reset
 			}
-			ui.pchan <- fmt.Sprintf("%s  %s%s%s", name, lastcolor, line, suffix)
+			ui.pchan <- fmt.Sprintf("%s%s  %s%s%s", ts, name, lastcolor, line, suffix)
 		}
 	}()
 	return oc
@@ -377,7 +387,11 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				if ui.outputMode == OutputPerhost {
 					ui.pchan <- ui.formatter.formatResult(msg.Result)
 				} else if ui.outputMode == OutputTail {
-					ui.pchan <- ui.formatter.formatStatus(msg.Result, hlen)
+					status := ui.formatter.formatStatus(msg.Result, hlen)
+					if ui.outputTimestamp {
+						status = msg.Result.EndTime.Format("15:04:05.000 ") + status
+					}
+					ui.pchan <- status
 				}
 				todo--
 			}

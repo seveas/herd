@@ -48,6 +48,7 @@ func init() {
 	rootCmd.PersistentFlags().Bool("no-color", false, "Disable the use of the colors in the output")
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
+	rootCmd.PersistentFlags().Bool("timestamp", false, "In tail mode, prefix each line with the current time")
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
@@ -57,6 +58,7 @@ func init() {
 	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
 	viper.BindPFlag("NoPager", rootCmd.PersistentFlags().Lookup("no-pager"))
 	viper.BindPFlag("NoColor", rootCmd.PersistentFlags().Lookup("no-color"))
+	viper.BindPFlag("Timestamp", rootCmd.PersistentFlags().Lookup("timestamp"))
 }
 
 func initConfig() {
@@ -113,6 +115,7 @@ func bail(format string, args ...interface{}) {
 func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	ui := herd.NewSimpleUI()
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
+	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
 	ui.BindLogrus()
 
