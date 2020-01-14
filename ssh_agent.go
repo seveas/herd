@@ -43,13 +43,16 @@ func sshAgentKeys(path string) ([]ssh.Signer, error) {
 		}
 		sockPath, ok := os.LookupEnv("SSH_AUTH_SOCK")
 		if !ok {
-			agentError = fmt.Errorf("No ssh agent found in environment")
+			agentError = fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running")
+			if _, ok = os.LookupEnv("SSH_CONNECTION"); ok {
+				agentError = fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running and forwarded")
+			}
 			return agentKeys, agentError
 		}
 
 		sock, err := net.Dial("unix", sockPath)
 		if err != nil {
-			agentError = fmt.Errorf("Unable to connect to SSH agent: %s\n", err)
+			agentError = fmt.Errorf("Unable to connect to SSH agent: %s", err)
 			return agentKeys, agentError
 		}
 
@@ -57,7 +60,7 @@ func sshAgentKeys(path string) ([]ssh.Signer, error) {
 
 		keys, err := globalAgent.List()
 		if err != nil {
-			agentError = fmt.Errorf("Unable to retrieve keys from SSH agent: %s\n", err)
+			agentError = fmt.Errorf("Unable to retrieve keys from SSH agent: %s", err)
 			return agentKeys, agentError
 		}
 
