@@ -114,3 +114,17 @@ func (c runCommand) execute(e *ScriptEngine) error {
 func (c runCommand) String() string {
 	return "run " + c.command
 }
+
+type keyScanCommand struct {
+}
+
+func (c keyScanCommand) execute(e *ScriptEngine) error {
+	pc := e.ui.ProgressChannel(e.runner)
+	e.runner.Run("", pc, nil)
+	e.ui.PrintKnownHosts(e.runner.GetHosts())
+	return nil
+}
+
+func (c keyScanCommand) String() string {
+	return "keyscan"
+}

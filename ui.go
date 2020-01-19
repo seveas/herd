@@ -2,6 +2,7 @@ package katyusha
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ const (
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
+	PrintKnownHosts(hosts Hosts)
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
@@ -269,6 +271,14 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 			} else {
 				ui.pchan <- host.Name + "\n"
 			}
+		}
+	}
+}
+
+func (ui *SimpleUI) PrintKnownHosts(hosts Hosts) {
+	for _, host := range hosts {
+		if host.sshKey != nil {
+			ui.pchan <- fmt.Sprintf("%s %s %s\n", host.Name, host.sshKey.Type(), base64.StdEncoding.EncodeToString(host.sshKey.Marshal()))
 		}
 	}
 }

@@ -128,6 +128,10 @@ func (e *ScriptEngine) AddListHostsCommand(oneLine, csv, allAttributes bool, att
 	e.commands = append(e.commands, listHostsCommand{oneLine: oneLine, csv: csv, allAttributes: allAttributes, attributes: attributes})
 }
 
+func (e *ScriptEngine) AddKeyScanCommand() {
+	e.commands = append(e.commands, keyScanCommand{})
+}
+
 func (e *ScriptEngine) Execute() {
 	if len(e.commands) < e.position {
 		return
