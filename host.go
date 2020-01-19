@@ -48,6 +48,7 @@ type Host struct {
 	Attributes HostAttributes
 	publicKeys []ssh.PublicKey
 	sshBanner  string
+	sshKey     ssh.PublicKey
 	sshConfig  *ssh.ClientConfig
 	extConfig  map[string]string
 	connection *ssh.Client
@@ -170,6 +171,7 @@ func (h *Host) Amend(h2 *Host) {
 }
 
 func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
+	h.sshKey = key
 	check, ok := h.extConfig["stricthostkeychecking"]
 	if !ok || check == "" {
 		// We default to accept-new instead of ask, as we cannot ask the user a
@@ -306,6 +308,12 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	client, err := host.connect(ctx)
 	if err != nil {
 		r.Err = err
+		return r
+	}
+	if command == "" {
+		r.EndTime = time.Now()
+		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
+		r.ExitStatus = 0
 		return r
 	}
 	sess, err := client.NewSession()
