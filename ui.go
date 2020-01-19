@@ -245,6 +245,8 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 				attributes = append(attributes, attr)
 			}
 			sort.Strings(attributes)
+		}
+		if len(hosts) > 0 {
 			attrline := make([]string, len(attributes)+1)
 			attrline[0] = "name"
 			copy(attrline[1:], attributes)
@@ -262,6 +264,23 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 				}
 			}
 			writer.Write(line)
+		}
+		// Start the pager after all if we are getting too wide
+		if w, ok := writer.(*columnizer); ok && ui.pagerEnabled && pgr == nil {
+			sum := 0
+			for i := 0; i < len(w.lengths); i++ {
+				sum += w.lengths[i]
+			}
+			if sum > ui.width {
+				pgr = &pager{}
+				if err := pgr.start(); err != nil {
+					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
+					pgr = nil
+				} else {
+					w.output = pgr
+					defer pgr.Wait()
+				}
+			}
 		}
 		writer.Flush()
 	} else {
