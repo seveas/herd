@@ -7,7 +7,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var runScriptCmd = &cobra.Command{
@@ -57,7 +56,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 		logrus.Errorf("Unable to parse script %s: %s", args[0], err)
 		return err
 	}
-	fn := filepath.Join(viper.GetString("RootDir"), "history", time.Now().Format("2006-01-02T15:04:05.json"))
+	fn := filepath.Join(currentUser.historyDir, time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
 	return engine.SaveHistory(fn)
 }

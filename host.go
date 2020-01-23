@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -26,12 +25,12 @@ var extConfig *sshConfig
 // it always.
 func init() {
 	u, err := user.Current()
+	extConfig = &sshConfig{}
 	if err == nil {
 		localUser = u.Username
-	}
-	home, err := homedir.Dir()
-	if err == nil {
-		extConfig, _ = parseSshConfig(filepath.Join(home, ".ssh", "config"))
+		if u.HomeDir != "" {
+			extConfig, _ = parseSshConfig(filepath.Join(u.HomeDir, ".ssh", "config"))
+		}
 	}
 }
 

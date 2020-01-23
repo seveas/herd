@@ -2,23 +2,40 @@ package herd
 
 import (
 	"os"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
-
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testDataRoot string
 var realUserHome string
 
+func homeDir(h string) string {
+	return filepath.Join(testDataRoot, "homes", h)
+}
+
+func dataDir(h string) string {
+	return filepath.Join(homeDir(h), ".local", "share", "herd")
+}
+
+func cacheDir(h string) string {
+	return filepath.Join(homeDir(h), ".cache", "herd")
+}
+
 func TestMain(m *testing.M) {
 	_, me, _, _ := runtime.Caller(0)
 	testDataRoot = filepath.Join(filepath.Dir(me), "testdata")
 	// Clean the environment
-	homedir.DisableCache = true
-	realUserHome, _ = homedir.Dir()
+	if home, ok := os.LookupEnv("HOME"); ok {
+		realUserHome = home
+	} else {
+		u, err := user.Current()
+		if err == nil && u.HomeDir != "" {
+			realUserHome = u.HomeDir
+		}
+	}
 	os.Unsetenv("CONSUL_HTTP_ADDR")
 	for _, envvar := range os.Environ() {
 		if strings.HasPrefix(envvar, "HERD") {

@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ type Registry struct {
 	hosts     Hosts
 	sort      []string
 	dataDir   string
+	cacheDir  string
 }
 
 type Hosts []*Host
@@ -35,12 +37,13 @@ type CacheMessage struct {
 	Err      error
 }
 
-func NewRegistry(dataDir string) *Registry {
+func NewRegistry(dataDir, cacheDir string) *Registry {
 	return &Registry{
 		providers: []HostProvider{},
 		hosts:     Hosts{},
 		sort:      []string{"name"},
 		dataDir:   dataDir,
+		cacheDir:  cacheDir,
 	}
 }
 
@@ -76,15 +79,15 @@ func (r *Registry) LoadMagicProviders() {
 		r.AddProvider(&JsonProvider{Name: "inventory", File: fn})
 	}
 	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
-		r.AddProvider(r.Cache(NewConsulProvider("consul")))
+		r.AddProvider(r.cache(NewConsulProvider("consul")))
 	}
 }
 
-func (r *Registry) Cache(p HostProvider) HostProvider {
+func (r *Registry) cache(p HostProvider) HostProvider {
 	return &Cache{
 		Name:     p.String(),
 		Lifetime: 1 * time.Hour,
-		File:     filepath.Join(r.dataDir, "cache", p.String()+".cache"),
+		File:     filepath.Join(r.cacheDir, p.String()+".cache"),
 		Source:   p,
 	}
 }
@@ -115,11 +118,27 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 }
 
 func (r *Registry) AddProvider(p HostProvider) {
+	// Always give a cache a file
 	if c, ok := p.(*Cache); ok {
 		if c.File == "" {
-			c.File = filepath.Join(r.dataDir, "cache", c.Name+".cache")
+			c.File = filepath.Join(r.cacheDir, c.Name+".cache")
+		}
+		if !filepath.IsAbs(c.File) {
+			c.File = filepath.Join(r.cacheDir, c.File)
 		}
 	}
+	// Interpret relative paths as relative to the dataDir
+	v := reflect.Indirect(reflect.ValueOf(p))
+	if v.Kind() == reflect.Struct {
+		fv := v.FieldByName("File")
+		if fv != *new(reflect.Value) && !fv.IsZero() {
+			p := fv.String()
+			if !filepath.IsAbs(p) {
+				fv.SetString(filepath.Join(r.dataDir, p))
+			}
+		}
+	}
+
 	r.providers = append(r.providers, p)
 }
 

@@ -3,17 +3,37 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"time"
 
 	"github.com/mgutz/ansi"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+var currentUser *userData
+
+type userData struct {
+	user            *user.User
+	cacheDir        string
+	configDir       string
+	systemConfigDir string
+	dataDir         string
+	historyDir      string
+}
+
+func (u *userData) makeDirectories() {
+	// We ignore errors, as we should function fine without these
+	os.MkdirAll(u.configDir, 0700)
+	os.MkdirAll(u.systemConfigDir, 0755)
+	os.MkdirAll(u.dataDir, 0700)
+	os.MkdirAll(u.cacheDir, 0700)
+	os.MkdirAll(u.historyDir, 0700)
+}
 
 var rootCmd = &cobra.Command{
 	Use: "herd",
@@ -38,6 +58,25 @@ func main() {
 }
 
 func init() {
+	var err error
+	currentUser, err = getCurrentUser()
+	if err != nil {
+		bail("%s", err)
+	}
+	currentUser.makeDirectories()
+	rootCmd.SetHelpTemplate(fmt.Sprintf(`%s
+
+Configuration: %s, %s
+Datadir: %s
+History: %s
+Cache: %s
+`,
+		rootCmd.HelpTemplate(),
+		filepath.Join(currentUser.configDir, "config.yaml"),
+		filepath.Join(currentUser.systemConfigDir, "config.yaml"),
+		currentUser.dataDir,
+		currentUser.historyDir,
+		currentUser.cacheDir))
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
 	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
@@ -62,16 +101,7 @@ func init() {
 }
 
 func initConfig() {
-	home, err := homedir.Dir()
-	if err != nil {
-		bail("%s", err)
-	}
-
-	// We only need to set defaults for things that don't have a flag bound to them
-	root := filepath.Join(home, ".herd")
-	viper.Set("RootDir", root)
-
-	viper.AddConfigPath(root)
+	viper.AddConfigPath(currentUser.configDir)
 	viper.AddConfigPath("/etc/herd")
 	viper.SetConfigName("config")
 	viper.SetEnvPrefix("herd")
@@ -119,7 +149,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
 	ui.BindLogrus()
 
-	registry := herd.NewRegistry(viper.GetString("RootDir"))
+	registry := herd.NewRegistry(currentUser.dataDir, currentUser.cacheDir)
 	registry.SetSortFields(viper.GetStringSlice("Sort"))
 	registry.LoadMagicProviders()
 	conf := viper.Sub("Providers")

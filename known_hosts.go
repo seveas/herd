@@ -4,9 +4,10 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"os"
+	"os/user"
 	"path/filepath"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
@@ -19,9 +20,13 @@ type KnownHostsProvider struct {
 
 func NewKnownHostsProvider(name string) HostProvider {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
-	home, err := homedir.Dir()
-	if err == nil {
+	if home, ok := os.LookupEnv("HOME"); ok {
 		files = append(files, filepath.Join(home, ".ssh", "known_hosts"))
+	} else {
+		u, err := user.Current()
+		if err == nil && u.HomeDir != "" {
+			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
+		}
 	}
 	return &KnownHostsProvider{Name: name, Files: files}
 }
