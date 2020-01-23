@@ -11,7 +11,7 @@ import (
 )
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry(filepath.Join("testdataRoot", "homes", "0"))
+	r := NewRegistry(dataDir("0"), cacheDir("0"))
 	if len(r.providers) > 0 {
 		t.Errorf("got %d providers, expected none", len(r.providers))
 		return
@@ -21,8 +21,8 @@ func TestNewRegistry(t *testing.T) {
 func TestMagicProviders(t *testing.T) {
 	defer os.Setenv("HOME", realUserHome)
 
-	os.Setenv("HOME", filepath.Join(testDataRoot, "homes", "1"))
-	r := NewRegistry(filepath.Join(testDataRoot, "homes", "1", ".katyusha"))
+	os.Setenv("HOME", homeDir("1"))
+	r := NewRegistry(dataDir("1"), cacheDir("1"))
 	r.LoadMagicProviders()
 	if len(r.providers) != 1 {
 		t.Errorf("Got %d providers, expected 1", len(r.providers))
@@ -32,8 +32,8 @@ func TestMagicProviders(t *testing.T) {
 		t.Errorf("expected the first provider to be the known hosts provider, not %s", reflect.TypeOf(r.providers[0]))
 	}
 
-	os.Setenv("HOME", filepath.Join(testDataRoot, "homes", "2"))
-	r = NewRegistry(filepath.Join(testDataRoot, "homes", "2", ".katyusha"))
+	os.Setenv("HOME", homeDir("2"))
+	r = NewRegistry(dataDir("2"), cacheDir("2"))
 	r.LoadMagicProviders()
 	if len(r.providers) != 2 {
 		t.Errorf("Got %d providers, expected 2", len(r.providers))
@@ -67,5 +67,24 @@ func TestGetHosts(t *testing.T) {
 	}
 	if len(r.hosts) != 1 {
 		t.Errorf("Hosts returned by multiple providers are not merged, got %d hosts instead of 1", len(r.hosts))
+	}
+}
+
+func TestRelativeFiles(t *testing.T) {
+	r := NewRegistry(dataDir("2"), cacheDir("2"))
+	p := &PlainTextProvider{File: "inventory", Name: "ittest"}
+	r.AddProvider(p)
+	if p.File != filepath.Join(dataDir("2"), "inventory") {
+		t.Errorf("Filepath did not get interpreted relative to dataDir")
+	}
+	c := &Cache{Name: "itcache", Source: p}
+	r.AddProvider(c)
+	if c.File != filepath.Join(cacheDir("2"), "itcache.cache") {
+		t.Errorf("Proper cache path not set, found %s", c.File)
+	}
+	c2 := &Cache{Name: "itcache", Source: p, File: "it-cache.cache"}
+	r.AddProvider(c2)
+	if c2.File != filepath.Join(cacheDir("2"), "it-cache.cache") {
+		t.Errorf("Proper cache path not set, found %s", c2.File)
 	}
 }

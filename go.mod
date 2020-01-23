@@ -29,7 +29,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.5.0
 	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
-	golang.org/x/sys v0.0.0-20191115151921-52ab43148777 // indirect
+	golang.org/x/sys v0.0.0-20191115151921-52ab43148777
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/yaml.v2 v2.2.5 // indirect
 )

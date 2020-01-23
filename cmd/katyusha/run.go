@@ -7,7 +7,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var runCmd = &cobra.Command{
@@ -39,7 +38,7 @@ func runCommand(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
-	fn := filepath.Join(viper.GetString("RootDir"), "history", time.Now().Format("2006-01-02T15:04:05.json"))
+	fn := filepath.Join(currentUser.historyDir, time.Now().Format("2006-01-02T15:04:05.json"))
 	engine.Execute()
 	return engine.SaveHistory(fn)
 }

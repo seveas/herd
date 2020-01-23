@@ -19,7 +19,7 @@ type sshConfigBlock struct {
 func parseSshConfig(file string) (*sshConfig, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return &sshConfig{}, err
+		return nil, err
 	}
 	// Anything before the first Host section is global
 	ret := sshConfig{}
