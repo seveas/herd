@@ -106,6 +106,7 @@ func (c runCommand) execute(e *ScriptEngine) error {
 	oc := e.ui.OutputChannel(e.runner)
 	pc := e.ui.ProgressChannel(e.runner)
 	hi := e.runner.Run(c.command, pc, oc)
+	e.ui.Sync()
 	e.history = append(e.history, hi)
 	e.ui.PrintHistoryItem(hi)
 	return nil

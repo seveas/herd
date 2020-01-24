@@ -165,6 +165,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 		ui.End()
 		return nil, err
 	}
+	ui.Sync()
 	runner := herd.NewRunner(registry)
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
