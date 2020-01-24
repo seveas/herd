@@ -65,6 +65,9 @@ func parseSshConfig(file string) (*sshConfig, error) {
 // Find all variables relevant for a host, first match wins
 func (s *sshConfig) configForHost(name string) map[string]string {
 	ret := make(map[string]string)
+	if s == nil {
+		return ret
+	}
 	for _, b := range *s {
 		if ok, err := filepath.Match(b.glob, name); ok && err == nil {
 			for k, v := range b.config {

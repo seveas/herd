@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"hash/crc32"
 	"net"
+	"os"
 	"os/user"
 	"path/filepath"
 	"reflect"
@@ -24,14 +25,17 @@ var extConfig *sshConfig
 // Parse SSH configuration during startup, so the host initializer can access
 // it always.
 func init() {
-	u, err := user.Current()
-	extConfig = &sshConfig{}
-	if err == nil {
+	var fn string
+	if home, ok := os.LookupEnv("HOME"); ok {
+		fn = filepath.Join(home, ".ssh", "config")
+	}
+	if u, err := user.Current(); err == nil {
 		localUser = u.Username
-		if u.HomeDir != "" {
-			extConfig, _ = parseSshConfig(filepath.Join(u.HomeDir, ".ssh", "config"))
+		if fn == "" && u.HomeDir != "" {
+			fn = filepath.Join(u.HomeDir, ".ssh", "config")
 		}
 	}
+	extConfig, _ = parseSshConfig(fn)
 }
 
 // Hosts can have attributes of any types, but querying is limited to strings,
