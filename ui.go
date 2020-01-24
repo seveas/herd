@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -35,6 +36,7 @@ type UI interface {
 	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
 	Write([]byte) (int, error)
+	Sync()
 	End()
 	CacheUpdateChannel() chan CacheMessage
 	OutputChannel(r *Runner) chan OutputLine
@@ -56,6 +58,7 @@ type SimpleUI struct {
 	height          int
 	lineBuf         string
 	isTerminal      bool
+	wg              *sync.WaitGroup
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -75,6 +78,7 @@ func NewSimpleUI() *SimpleUI {
 		dchan:        make(chan interface{}),
 		formatter:    f,
 		isTerminal:   isatty.IsTerminal(os.Stdout.Fd()),
+		wg:           &sync.WaitGroup{},
 	}
 	if ui.isTerminal {
 		ui.getSize()
@@ -150,7 +154,13 @@ func (ui *SimpleUI) Write(msg []byte) (int, error) {
 	return len(msg), nil
 }
 
+func (ui *SimpleUI) Sync() {
+	ui.wg.Wait()
+}
+
 func (ui *SimpleUI) End() {
+	ui.wg.Wait()
+	ui.wg = &sync.WaitGroup{}
 	close(ui.pchan)
 	<-ui.dchan
 }
@@ -304,7 +314,9 @@ func (ui *SimpleUI) PrintKnownHosts(hosts Hosts) {
 
 func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
 	mc := make(chan CacheMessage)
+	ui.wg.Add(1)
 	go func() {
+		defer ui.wg.Done()
 		start := time.Now()
 		cached := false
 		ticker := time.NewTicker(time.Second / 2)
@@ -355,12 +367,14 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 		return nil
 	}
 	oc := make(chan OutputLine)
+	ui.wg.Add(1)
 	hlen := r.hosts.maxLen()
 	lastcolor := []byte{}
 	reset := []byte("\033[0m")
 	cr := regexp.MustCompile("\033\\[[0-9;]+m")
 	ts := ""
 	go func() {
+		defer ui.wg.Done()
 		for msg := range oc {
 			if ui.outputTimestamp {
 				ts = time.Now().Format("15:04:05.000 ")
@@ -387,7 +401,9 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 
 func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 	pc := make(chan ProgressMessage)
+	ui.wg.Add(1)
 	go func() {
+		defer ui.wg.Done()
 		start := time.Now()
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
