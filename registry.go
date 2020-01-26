@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -70,6 +71,9 @@ func NewProvider(pname, name string) (HostProvider, error) {
 
 func (r *Registry) LoadMagicProviders() {
 	r.AddProvider(NewKnownHostsProvider("known_hosts"))
+	if runtime.GOOS == "windows" {
+		r.AddProvider(&PuttyProvider{Name: "putty"})
+	}
 	fn := filepath.Join(r.dataDir, "inventory")
 	if _, err := os.Stat(fn); err == nil {
 		r.AddProvider(&PlainTextProvider{Name: "inventory", File: fn})

@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hashicorp/serf v0.8.5 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/lxn/win v0.0.0-20191128105842-2da648fda5b4
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
