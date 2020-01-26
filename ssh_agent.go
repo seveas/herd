@@ -42,7 +42,11 @@ func sshAgentKeys(path string) ([]ssh.Signer, error) {
 			return agentKeys, agentError
 		}
 		sockPath, ok := os.LookupEnv("SSH_AUTH_SOCK")
-		if !ok {
+		var sock io.ReadWriter
+		var err error
+		if ok {
+			sock, err = net.Dial("unix", sockPath)
+		} else if sock = findPageant(); sock == nil {
 			agentError = fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running")
 			if _, ok = os.LookupEnv("SSH_CONNECTION"); ok {
 				agentError = fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running and forwarded")
@@ -50,7 +54,6 @@ func sshAgentKeys(path string) ([]ssh.Signer, error) {
 			return agentKeys, agentError
 		}
 
-		sock, err := net.Dial("unix", sockPath)
 		if err != nil {
 			agentError = fmt.Errorf("Unable to connect to SSH agent: %s", err)
 			return agentKeys, agentError

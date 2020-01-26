@@ -65,6 +65,9 @@ func parseSshConfig(file string) (*sshConfig, error) {
 // Find all variables relevant for a host, first match wins
 func (s *sshConfig) configForHost(name string) map[string]string {
 	ret := make(map[string]string)
+	for k, v := range puttyConfig(name) {
+		ret[k] = v
+	}
 	if s == nil {
 		return ret
 	}
@@ -76,6 +79,9 @@ func (s *sshConfig) configForHost(name string) map[string]string {
 				}
 			}
 		}
+	}
+	for k, v := range puttyConfig(name) {
+		ret[k] = v
 	}
 	return ret
 }
