@@ -4,8 +4,8 @@ package katyusha
 
 import (
 	"context"
-	"io"
 	"github.com/spf13/viper"
+	"io"
 )
 
 func findPageant() io.ReadWriter {

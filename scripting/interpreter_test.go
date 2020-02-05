@@ -45,9 +45,9 @@ var testcases = []testcase{
 			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: int64(1)}}},
 			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: nil}}},
 			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
-			listHostsCommand{},
+			listHostsCommand{opts: katyusha.HostListOptions{Separator: ",", Header: true}},
 			runCommand{command: "find / -name 'whatever' -delete"},
-			listHostsCommand{oneLine: true},
+			listHostsCommand{opts: katyusha.HostListOptions{OneLine: true, Separator: ","}},
 		},
 	},
 }

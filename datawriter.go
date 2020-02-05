@@ -3,6 +3,7 @@ package katyusha
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 type datawriter interface {
@@ -44,4 +45,20 @@ func (c *columnizer) Flush() {
 		}
 		fmt.Fprint(c.output, "\n")
 	}
+}
+
+type passthrough struct {
+	output io.Writer
+}
+
+func newPassthrough(w io.Writer) *passthrough {
+	return &passthrough{output: w}
+}
+
+func (p *passthrough) Write(r []string) error {
+	_, err := p.output.Write([]byte(strings.Join(r, " ") + "\n"))
+	return err
+}
+
+func (p *passthrough) Flush() {
 }

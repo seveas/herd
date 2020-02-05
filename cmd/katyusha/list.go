@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/seveas/katyusha"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -45,7 +46,16 @@ func runList(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
-	engine.AddListHostsCommand(viper.GetBool("OneLine"), viper.GetBool("csv"), viper.GetBool("AllAttributes"), viper.GetStringSlice("Attributes"))
 	engine.Execute()
+	opts := katyusha.HostListOptions{
+		OneLine:       viper.GetBool("OneLine"),
+		Separator:     ",", // viper.GetString("Separator"),
+		Csv:           viper.GetBool("csv"),
+		Attributes:    viper.GetStringSlice("Attributes"),
+		AllAttributes: viper.GetBool("AllAttributes"),
+		Align:         true,
+		Header:        true,
+	}
+	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
 	return nil
 }

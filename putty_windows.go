@@ -5,17 +5,17 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"math/big"
 	"io"
+	"math/big"
 	"strings"
 	"unsafe"
 
 	"github.com/lxn/win"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
-	"github.com/spf13/viper"
-	"github.com/sirupsen/logrus"
 )
 
 var puttyNameMap = map[string]string{}
@@ -103,7 +103,7 @@ func (p *pageantWrapper) queryPageant(b []byte) error {
 	}
 
 	// Pageants results go in the buffer for the reader to read
-	l := binary.BigEndian.Uint32(sharedMemoryArray[:4])+4
+	l := binary.BigEndian.Uint32(sharedMemoryArray[:4]) + 4
 	p.inbuf.Write(sharedMemoryArray[:l])
 	return nil
 }
@@ -178,7 +178,7 @@ func (p *PuttyProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, 
 		for _, k := range hkeys {
 			h.AddPublicKey(k)
 		}
-		ret = append(ret, h )
+		ret = append(ret, h)
 	}
 	return ret, nil
 }
@@ -220,7 +220,7 @@ func (p *PuttyProvider) allKeys() map[string][]ssh.PublicKey {
 			b.Write([]byte("ssh-rsa"))
 			e := big.NewInt(0)
 			e.SetString(parts[0], 0)
-			b.Write(e.Bytes())	
+			b.Write(e.Bytes())
 			var b2 bytes.Buffer
 			// Extra padding required in the protocol
 			b2.Write([]byte{0})
