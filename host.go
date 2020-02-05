@@ -135,25 +135,7 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 
 	for _, attribute := range attributes {
 		name := attribute.Name
-		value, ok := h.Attributes[name]
-		if !ok {
-			if h.lastResult != nil {
-				switch name {
-				case "stdout":
-					ok = true
-					value = string(h.lastResult.Stdout)
-				case "stderr":
-					ok = true
-					value = string(h.lastResult.Stderr)
-				case "exitstatus":
-					ok = true
-					value = h.lastResult.ExitStatus
-				case "err":
-					ok = true
-					value = h.lastResult.Err
-				}
-			}
-		}
+		value, ok := h.GetAttribute(name)
 		if !ok && !attribute.Negate {
 			return false
 		}
@@ -162,6 +144,30 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 		}
 	}
 	return true
+}
+
+func (h *Host) GetAttribute(key string) (interface{}, bool) {
+	value, ok := h.Attributes[key]
+	if ok {
+		return value, ok
+	}
+	r := h.lastResult
+	if r == nil {
+		r = &Result{ExitStatus: -1}
+	}
+	switch key {
+	case "sshKey":
+		return h.sshKey, true
+	case "stdout":
+		return r.Stdout, true
+	case "stderr":
+		return r.Stderr, true
+	case "exitstatus":
+		return r.ExitStatus, true
+	case "err":
+		return r.Err, true
+	}
+	return nil, false
 }
 
 func (h *Host) Amend(h2 *Host) {
@@ -313,7 +319,8 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 		r.Err = err
 		return r
 	}
-	if command == "" {
+	// Special command that just connects
+	if command == "herd:connect" {
 		r.EndTime = time.Now()
 		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
 		r.ExitStatus = 0

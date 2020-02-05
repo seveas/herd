@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/seveas/herd"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -36,10 +37,12 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
-	if len(engine.ActiveHosts()) == 0 {
-		engine.ParseCodeLine("add hosts *\n")
-	}
-	engine.AddKeyScanCommand()
 	engine.Execute()
+	if len(args) == 0 {
+		engine.Runner.AddHosts("*", []herd.MatchAttribute{})
+	}
+	engine.Runner.Run("herd:connect", engine.Ui.ProgressChannel(engine.Runner), nil)
+	engine.Runner.RemoveHosts("*", []herd.MatchAttribute{{Name: "sshKey", Value: nil}})
+	engine.Ui.PrintHostList(engine.Runner.GetHosts(), herd.HostListOptions{Attributes: []string{"sshKey"}})
 	return nil
 }

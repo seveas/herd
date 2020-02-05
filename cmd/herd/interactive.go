@@ -49,7 +49,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	// Enter interactive mode
 	il := &interactiveLoop{engine: engine}
 	il.run()
-	return engine.SaveHistory(fn)
+	return engine.History.Save(fn)
 }
 
 type interactiveLoop struct {
@@ -92,7 +92,7 @@ func (l *interactiveLoop) run() {
 }
 
 func (l *interactiveLoop) prompt() string {
-	return fmt.Sprintf("herd [%d hosts] $ ", len(l.engine.ActiveHosts()))
+	return fmt.Sprintf("herd [%d hosts] $ ", len(l.engine.Runner.GetHosts()))
 }
 
 func (l *interactiveLoop) autoComplete() readline.AutoCompleter {

@@ -17,6 +17,7 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
 )
 
 type OutputMode int
@@ -30,7 +31,7 @@ const (
 
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
-	PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string)
+	PrintHostList(hosts Hosts, opts HostListOptions)
 	PrintKnownHosts(hosts Hosts)
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
@@ -42,6 +43,16 @@ type UI interface {
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
 	BindLogrus()
+}
+
+type HostListOptions struct {
+	OneLine       bool
+	Separator     string
+	Csv           bool
+	Attributes    []string
+	AllAttributes bool
+	Align         bool
+	Header        bool
 }
 
 type SimpleUI struct {
@@ -214,13 +225,17 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	}
 }
 
-func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes bool, attributes []string) {
-	if oneline {
+func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
+	if len(hosts) == 0 {
+		logrus.Error("No hosts to list")
+		return
+	}
+	if opts.OneLine {
 		names := make([]string, len(hosts))
 		for i, host := range hosts {
 			names[i] = host.Name
 		}
-		ui.pchan <- strings.Join(names, ",")
+		ui.pchan <- strings.Join(names, opts.Separator) + "\n"
 		return
 	}
 	var pgr *pager
@@ -233,18 +248,20 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 			defer pgr.Wait()
 		}
 	}
-	if allAttributes || len(attributes) > 0 {
+	if opts.AllAttributes || len(opts.Attributes) > 0 {
 		var writer datawriter
 		var out io.Writer = ui
 		if pgr != nil {
 			out = pgr
 		}
-		if csvOutput {
+		if opts.Csv {
 			writer = csv.NewWriter(out)
-		} else {
+		} else if opts.Align {
 			writer = newColumnizer(out, "   ")
+		} else {
+			writer = newPassthrough(out)
 		}
-		if allAttributes {
+		if opts.AllAttributes {
 			attrs := make(map[string]bool)
 			for _, host := range hosts {
 				for key, _ := range host.Attributes {
@@ -252,26 +269,29 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, oneline, csvOutput, allAttributes
 				}
 			}
 			for attr, _ := range attrs {
-				attributes = append(attributes, attr)
+				opts.Attributes = append(opts.Attributes, attr)
 			}
-			sort.Strings(attributes)
+			sort.Strings(opts.Attributes)
 		}
-		if len(hosts) > 0 {
-			attrline := make([]string, len(attributes)+1)
+		if opts.Header {
+			attrline := make([]string, len(opts.Attributes)+1)
 			attrline[0] = "name"
-			copy(attrline[1:], attributes)
+			copy(attrline[1:], opts.Attributes)
 			writer.Write(attrline)
 		}
 		for _, host := range hosts {
-			line := make([]string, len(attributes)+1)
+			line := make([]string, len(opts.Attributes)+1)
 			line[0] = host.Name
-			for i, attr := range attributes {
-				val, ok := host.Attributes[attr]
+			for i, attr := range opts.Attributes {
+				val, ok := host.GetAttribute(attr)
+				value := ""
 				if ok {
-					line[i+1] = fmt.Sprintf("%v", val)
-				} else {
-					line[i+1] = ""
+					if k, ok := val.(ssh.PublicKey); ok {
+						val = fmt.Sprintf("%s %s", k.Type(), base64.StdEncoding.EncodeToString(k.Marshal()))
+					}
+					value = fmt.Sprintf("%v", val)
 				}
+				line[i+1] = value
 			}
 			writer.Write(line)
 		}

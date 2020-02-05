@@ -11,25 +11,21 @@ import (
 )
 
 type ScriptEngine struct {
+	Ui       herd.UI
+	Runner   *herd.Runner
+	History  herd.History
 	commands []command
-	ui       herd.UI
-	runner   *herd.Runner
 	position int
-	history  herd.History
 }
 
 func NewScriptEngine(ui herd.UI, runner *herd.Runner) *ScriptEngine {
 	return &ScriptEngine{
+		Ui:       ui,
+		Runner:   runner,
+		History:  make(herd.History, 0),
 		commands: []command{},
-		ui:       ui,
-		runner:   runner,
 		position: 0,
-		history:  make(herd.History, 0),
 	}
-}
-
-func (e *ScriptEngine) ActiveHosts() herd.Hosts {
-	return e.runner.GetHosts()
 }
 
 func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {
@@ -124,14 +120,6 @@ func (e *ScriptEngine) ParseCodeLine(code string) error {
 	return nil
 }
 
-func (e *ScriptEngine) AddListHostsCommand(oneLine, csv, allAttributes bool, attributes []string) {
-	e.commands = append(e.commands, listHostsCommand{oneLine: oneLine, csv: csv, allAttributes: allAttributes, attributes: attributes})
-}
-
-func (e *ScriptEngine) AddKeyScanCommand() {
-	e.commands = append(e.commands, keyScanCommand{})
-}
-
 func (e *ScriptEngine) Execute() {
 	if len(e.commands) < e.position {
 		return
@@ -143,11 +131,7 @@ func (e *ScriptEngine) Execute() {
 	}
 }
 
-func (e *ScriptEngine) SaveHistory(fn string) error {
-	return e.history.Save(fn)
-}
-
 func (e *ScriptEngine) End() {
-	e.runner.End()
-	e.ui.End()
+	e.Runner.End()
+	e.Ui.End()
 }

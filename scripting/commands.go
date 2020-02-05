@@ -21,21 +21,21 @@ type setCommand struct {
 func (c setCommand) execute(e *ScriptEngine) error {
 	switch c.variable {
 	case "Output":
-		e.ui.SetOutputMode(c.value.(herd.OutputMode))
+		e.Ui.SetOutputMode(c.value.(herd.OutputMode))
 	case "Timestamp":
-		e.ui.SetOutputTimestamp(c.value.(bool))
+		e.Ui.SetOutputTimestamp(c.value.(bool))
 	case "NoPager":
-		e.ui.SetPagerEnabled(!c.value.(bool))
+		e.Ui.SetPagerEnabled(!c.value.(bool))
 	case "NoColor":
 		ansi.DisableColors(c.value.(bool))
 	case "Timeout":
-		e.runner.SetTimeout(c.value.(time.Duration))
+		e.Runner.SetTimeout(c.value.(time.Duration))
 	case "HostTimeout":
-		e.runner.SetHostTimeout(c.value.(time.Duration))
+		e.Runner.SetHostTimeout(c.value.(time.Duration))
 	case "ConnectTimeout":
-		e.runner.SetConnectTimeout(c.value.(time.Duration))
+		e.Runner.SetConnectTimeout(c.value.(time.Duration))
 	case "Parallel":
-		e.runner.SetParallel(c.value.(int))
+		e.Runner.SetParallel(c.value.(int))
 	}
 	return nil
 }
@@ -50,7 +50,7 @@ type addHostsCommand struct {
 }
 
 func (c addHostsCommand) execute(e *ScriptEngine) error {
-	e.runner.AddHosts(c.glob, c.attributes)
+	e.Runner.AddHosts(c.glob, c.attributes)
 	return nil
 }
 
@@ -64,7 +64,7 @@ type removeHostsCommand struct {
 }
 
 func (c removeHostsCommand) execute(e *ScriptEngine) error {
-	e.runner.RemoveHosts(c.glob, c.attributes)
+	e.Runner.RemoveHosts(c.glob, c.attributes)
 	return nil
 }
 
@@ -73,27 +73,23 @@ func (c removeHostsCommand) String() string {
 }
 
 type listHostsCommand struct {
-	oneLine       bool
-	csv           bool
-	allAttributes bool
-	attributes    []string
+	opts herd.HostListOptions
 }
 
 func (c listHostsCommand) execute(e *ScriptEngine) error {
-	e.ui.PrintHostList(e.runner.GetHosts(), c.oneLine, c.csv, c.allAttributes, c.attributes)
+	e.Ui.PrintHostList(e.Runner.GetHosts(), c.opts)
 	return nil
 }
 
 func (c listHostsCommand) String() string {
 	ret := "list hosts"
-	if c.oneLine {
+	if c.opts.OneLine {
 		ret += " --oneline"
 	}
-	if c.allAttributes {
+	if c.opts.AllAttributes {
 		ret += " --all-attributes"
-	}
-	if len(c.attributes) != 0 {
-		ret += " --attributes=" + strings.Join(c.attributes, ",")
+	} else if len(c.opts.Attributes) != 0 {
+		ret += " --attributes=" + strings.Join(c.opts.Attributes, ",")
 	}
 	return ret
 }
@@ -103,29 +99,17 @@ type runCommand struct {
 }
 
 func (c runCommand) execute(e *ScriptEngine) error {
-	oc := e.ui.OutputChannel(e.runner)
-	pc := e.ui.ProgressChannel(e.runner)
-	hi := e.runner.Run(c.command, pc, oc)
-	e.ui.Sync()
-	e.history = append(e.history, hi)
-	e.ui.PrintHistoryItem(hi)
+	oc := e.Ui.OutputChannel(e.Runner)
+	pc := e.Ui.ProgressChannel(e.Runner)
+	hi := e.Runner.Run(c.command, pc, oc)
+	e.Ui.Sync()
+	e.History = append(e.History, hi)
+	if !strings.HasPrefix(c.command, "herd:") {
+		e.Ui.PrintHistoryItem(hi)
+	}
 	return nil
 }
 
 func (c runCommand) String() string {
 	return "run " + c.command
-}
-
-type keyScanCommand struct {
-}
-
-func (c keyScanCommand) execute(e *ScriptEngine) error {
-	pc := e.ui.ProgressChannel(e.runner)
-	e.runner.Run("", pc, nil)
-	e.ui.PrintKnownHosts(e.runner.GetHosts())
-	return nil
-}
-
-func (c keyScanCommand) String() string {
-	return "keyscan"
 }

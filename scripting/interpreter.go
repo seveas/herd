@@ -231,8 +231,8 @@ func (l *herdListener) ExitList(c *parser.ListContext) {
 	if l.errorListener.hasErrors() {
 		return
 	}
-	oneline := c.GetOneline()
-	command := listHostsCommand{oneLine: oneline != nil}
+	oneline := c.GetOneline() != nil
+	command := listHostsCommand{opts: herd.HostListOptions{OneLine: oneline, Header: !oneline, Separator: ","}}
 	l.commands = append(l.commands, command)
 }
 

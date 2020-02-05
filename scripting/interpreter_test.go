@@ -45,9 +45,9 @@ var testcases = []testcase{
 			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: int64(1)}}},
 			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: nil}}},
 			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
-			listHostsCommand{},
+			listHostsCommand{opts: herd.HostListOptions{Separator: ",", Header: true}},
 			runCommand{command: "find / -name 'whatever' -delete"},
-			listHostsCommand{oneLine: true},
+			listHostsCommand{opts: herd.HostListOptions{OneLine: true, Separator: ","}},
 		},
 	},
 }
