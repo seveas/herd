@@ -69,8 +69,26 @@ func (s *BaseHerdListener) EnterFilter(ctx *FilterContext) {}
 // ExitFilter is called when production filter is exited.
 func (s *BaseHerdListener) ExitFilter(ctx *FilterContext) {}
 
+// EnterScalar is called when production scalar is entered.
+func (s *BaseHerdListener) EnterScalar(ctx *ScalarContext) {}
+
+// ExitScalar is called when production scalar is exited.
+func (s *BaseHerdListener) ExitScalar(ctx *ScalarContext) {}
+
 // EnterValue is called when production value is entered.
 func (s *BaseHerdListener) EnterValue(ctx *ValueContext) {}
 
 // ExitValue is called when production value is exited.
 func (s *BaseHerdListener) ExitValue(ctx *ValueContext) {}
+
+// EnterArray is called when production array is entered.
+func (s *BaseHerdListener) EnterArray(ctx *ArrayContext) {}
+
+// ExitArray is called when production array is exited.
+func (s *BaseHerdListener) ExitArray(ctx *ArrayContext) {}
+
+// EnterHash is called when production hash is entered.
+func (s *BaseHerdListener) EnterHash(ctx *HashContext) {}
+
+// ExitHash is called when production hash is exited.
+func (s *BaseHerdListener) ExitHash(ctx *HashContext) {}
