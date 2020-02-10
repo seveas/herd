@@ -82,16 +82,9 @@ func (c listHostsCommand) execute(e *ScriptEngine) error {
 }
 
 func (c listHostsCommand) String() string {
-	ret := "list hosts"
-	if c.opts.OneLine {
-		ret += " --oneline"
-	}
-	if c.opts.AllAttributes {
-		ret += " --all-attributes"
-	} else if len(c.opts.Attributes) != 0 {
-		ret += " --attributes=" + strings.Join(c.opts.Attributes, ",")
-	}
-	return ret
+	return fmt.Sprintf("list hosts {OneLine: %t, Separator: '%s', Csv: %t, Align: %t, Header: %t, AllAttributes: %t, Attributes: [%s]}",
+		c.opts.OneLine, c.opts.Separator, c.opts.Csv, c.opts.Align, c.opts.Header,
+		c.opts.AllAttributes, strings.Join(c.opts.Attributes, ", "))
 }
 
 type runCommand struct {

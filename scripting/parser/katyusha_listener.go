@@ -32,8 +32,17 @@ type KatyushaListener interface {
 	// EnterFilter is called when entering the filter production.
 	EnterFilter(c *FilterContext)
 
+	// EnterScalar is called when entering the scalar production.
+	EnterScalar(c *ScalarContext)
+
 	// EnterValue is called when entering the value production.
 	EnterValue(c *ValueContext)
+
+	// EnterArray is called when entering the array production.
+	EnterArray(c *ArrayContext)
+
+	// EnterHash is called when entering the hash production.
+	EnterHash(c *HashContext)
 
 	// ExitProg is called when exiting the prog production.
 	ExitProg(c *ProgContext)
@@ -59,6 +68,15 @@ type KatyushaListener interface {
 	// ExitFilter is called when exiting the filter production.
 	ExitFilter(c *FilterContext)
 
+	// ExitScalar is called when exiting the scalar production.
+	ExitScalar(c *ScalarContext)
+
 	// ExitValue is called when exiting the value production.
 	ExitValue(c *ValueContext)
+
+	// ExitArray is called when exiting the array production.
+	ExitArray(c *ArrayContext)
+
+	// ExitHash is called when exiting the hash production.
+	ExitHash(c *HashContext)
 }

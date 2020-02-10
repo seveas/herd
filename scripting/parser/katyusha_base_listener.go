@@ -69,8 +69,26 @@ func (s *BaseKatyushaListener) EnterFilter(ctx *FilterContext) {}
 // ExitFilter is called when production filter is exited.
 func (s *BaseKatyushaListener) ExitFilter(ctx *FilterContext) {}
 
+// EnterScalar is called when production scalar is entered.
+func (s *BaseKatyushaListener) EnterScalar(ctx *ScalarContext) {}
+
+// ExitScalar is called when production scalar is exited.
+func (s *BaseKatyushaListener) ExitScalar(ctx *ScalarContext) {}
+
 // EnterValue is called when production value is entered.
 func (s *BaseKatyushaListener) EnterValue(ctx *ValueContext) {}
 
 // ExitValue is called when production value is exited.
 func (s *BaseKatyushaListener) ExitValue(ctx *ValueContext) {}
+
+// EnterArray is called when production array is entered.
+func (s *BaseKatyushaListener) EnterArray(ctx *ArrayContext) {}
+
+// ExitArray is called when production array is exited.
+func (s *BaseKatyushaListener) ExitArray(ctx *ArrayContext) {}
+
+// EnterHash is called when production hash is entered.
+func (s *BaseKatyushaListener) EnterHash(ctx *HashContext) {}
+
+// ExitHash is called when production hash is exited.
+func (s *BaseKatyushaListener) ExitHash(ctx *HashContext) {}
