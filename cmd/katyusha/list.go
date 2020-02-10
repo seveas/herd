@@ -19,13 +19,17 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.Flags().Bool("oneline", false, "List all hosts on one line, separated by commas")
+	listCmd.Flags().String("separator", ",", "String separating hostnames in --oneline mode")
 	listCmd.Flags().StringSlice("attributes", []string{}, "Show not onlt the names, but also the specified attributes")
 	listCmd.Flags().Bool("all-attributes", false, "List hosts with all their attributes")
 	listCmd.Flags().Bool("csv", false, "Output in csv format")
+	listCmd.Flags().Bool("header", true, "Print attribute names in a header line before printing host data")
 	viper.BindPFlag("OneLine", listCmd.Flags().Lookup("oneline"))
+	viper.BindPFlag("Separator", listCmd.Flags().Lookup("separator"))
 	viper.BindPFlag("AllAttributes", listCmd.Flags().Lookup("all-attributes"))
 	viper.BindPFlag("Attributes", listCmd.Flags().Lookup("attributes"))
 	viper.BindPFlag("Csv", listCmd.Flags().Lookup("csv"))
+	viper.BindPFlag("Header", listCmd.Flags().Lookup("header"))
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -49,12 +53,12 @@ func runList(cmd *cobra.Command, args []string) error {
 	engine.Execute()
 	opts := katyusha.HostListOptions{
 		OneLine:       viper.GetBool("OneLine"),
-		Separator:     ",", // viper.GetString("Separator"),
+		Separator:     viper.GetString("Separator"),
 		Csv:           viper.GetBool("csv"),
 		Attributes:    viper.GetStringSlice("Attributes"),
 		AllAttributes: viper.GetBool("AllAttributes"),
+		Header:        viper.GetBool("Header"),
 		Align:         true,
-		Header:        true,
 	}
 	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
 	return nil
