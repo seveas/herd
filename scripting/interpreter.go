@@ -112,6 +112,8 @@ func (l *katyushaListener) ExitSet(c *parser.SetContext) {
 	}
 
 	switch varName {
+	case "Splay":
+		fallthrough
 	case "Timeout":
 		fallthrough
 	case "HostTimeout":

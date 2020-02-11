@@ -78,6 +78,7 @@ Cache: %s
 		currentUser.historyDir,
 		currentUser.cacheDir))
 	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
 	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
@@ -88,6 +89,7 @@ Cache: %s
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
 	rootCmd.PersistentFlags().Bool("timestamp", false, "In tail mode, prefix each line with the current time")
+	viper.BindPFlag("Splay", rootCmd.PersistentFlags().Lookup("splay"))
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
@@ -167,6 +169,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	}
 	ui.Sync()
 	runner := katyusha.NewRunner(registry)
+	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
 	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
