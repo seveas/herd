@@ -28,6 +28,8 @@ func (c setCommand) execute(e *ScriptEngine) error {
 		e.Ui.SetPagerEnabled(!c.value.(bool))
 	case "NoColor":
 		ansi.DisableColors(c.value.(bool))
+	case "Splay":
+		e.Runner.SetSplay(c.value.(time.Duration))
 	case "Timeout":
 		e.Runner.SetTimeout(c.value.(time.Duration))
 	case "HostTimeout":

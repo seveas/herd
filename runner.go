@@ -2,6 +2,7 @@ package herd
 
 import (
 	"context"
+	"math/rand"
 	"os"
 	"os/signal"
 	"time"
@@ -24,6 +25,7 @@ type Runner struct {
 	registry       *Registry
 	hosts          Hosts
 	parallel       int
+	splay          time.Duration
 	timeout        time.Duration
 	hostTimeout    time.Duration
 	connectTimeout time.Duration
@@ -45,6 +47,10 @@ func (r *Runner) GetHosts() Hosts {
 
 func (r *Runner) SetParallel(p int) {
 	r.parallel = p
+}
+
+func (r *Runner) SetSplay(t time.Duration) {
+	r.splay = t
 }
 
 func (r *Runner) SetTimeout(t time.Duration) {
@@ -104,9 +110,10 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			logrus.Debugf("Starting worker %d/%d", i+1, r.parallel)
 			go func() {
 				for host := range hqueue {
+					pc <- ProgressMessage{Host: host}
+					r.splayDelay(ctx)
 					host.sshConfig.Timeout = r.connectTimeout
 					hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
-					pc <- ProgressMessage{Host: host}
 					c <- host.Run(hctx, command, oc)
 					hcancel()
 				}
@@ -114,13 +121,14 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		}
 	} else {
 		for _, host := range hi.Hosts {
-			hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
-			host.sshConfig.Timeout = r.connectTimeout
 			go func(ctx context.Context, h *Host) {
 				pc <- ProgressMessage{Host: h}
-				c <- h.Run(hctx, command, oc)
+				r.splayDelay(ctx)
+				ctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
+				h.sshConfig.Timeout = r.connectTimeout
+				c <- h.Run(ctx, command, oc)
 				hcancel()
-			}(hctx, host)
+			}(ctx, host)
 		}
 	}
 	timeout := time.After(r.timeout)
@@ -149,5 +157,20 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 func (r *Runner) End() {
 	for _, host := range r.hosts {
 		host.disconnect()
+	}
+}
+
+func (r *Runner) splayDelay(ctx context.Context) {
+	if r.splay <= 0 {
+		return
+	}
+	d := time.Duration(rand.Int63n(int64(r.splay)))
+	tctx, cancel := context.WithTimeout(ctx, d)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		return
+	case <-tctx.Done():
+		return
 	}
 }

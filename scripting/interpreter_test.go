@@ -69,6 +69,7 @@ var testcases = []testcase{
 	},
 	{
 		program: strings.Join([]string{
+			"set Splay 5s",
 			"set Timeout 1m",
 			"set HostTimeout 10m",
 			"set ConnectTimeout 10s",
@@ -80,6 +81,7 @@ var testcases = []testcase{
 			"set Output \"inline\"",
 		}, "\n") + "\n",
 		commands: []command{
+			setCommand{variable: "Splay", value: 5 * time.Second},
 			setCommand{variable: "Timeout", value: 1 * time.Minute},
 			setCommand{variable: "HostTimeout", value: 10 * time.Minute},
 			setCommand{variable: "ConnectTimeout", value: 10 * time.Second},
@@ -90,6 +92,10 @@ var testcases = []testcase{
 			setCommand{variable: "LogLevel", value: logrus.DebugLevel},
 			setCommand{variable: "Output", value: herd.OutputInline},
 		},
+	},
+	{
+		program: "set Splay true\n",
+		errors:  []error{fmt.Errorf("line 1:10 Splay must be a duration")},
 	},
 	{
 		program: "set Timeout true\n",
