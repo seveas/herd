@@ -20,7 +20,7 @@ var listCmd = &cobra.Command{
 func init() {
 	listCmd.Flags().Bool("oneline", false, "List all hosts on one line, separated by commas")
 	listCmd.Flags().String("separator", ",", "String separating hostnames in --oneline mode")
-	listCmd.Flags().StringSlice("attributes", []string{}, "Show not onlt the names, but also the specified attributes")
+	listCmd.Flags().StringSlice("attributes", []string{}, "Show not only the names, but also the specified attributes")
 	listCmd.Flags().Bool("all-attributes", false, "List hosts with all their attributes")
 	listCmd.Flags().Bool("csv", false, "Output in csv format")
 	listCmd.Flags().Bool("header", true, "Print attribute names in a header line before printing host data")
