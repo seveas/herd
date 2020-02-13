@@ -162,7 +162,11 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 			return nil, err
 		}
 	}
-	if err := registry.LoadHosts(ui.CacheUpdateChannel()); err != nil {
+	var mc chan katyusha.CacheMessage
+	if logrus.IsLevelEnabled(logrus.InfoLevel) {
+		mc = ui.CacheUpdateChannel()
+	}
+	if err := registry.LoadHosts(mc); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
 		ui.End()
 		return nil, err
