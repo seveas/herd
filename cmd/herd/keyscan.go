@@ -18,6 +18,10 @@ var keyScanCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(keyScanCmd)
+	cobra.OnInitialize(func() {
+		rootCmd.PersistentFlags().Lookup("loglevel").Value.Set("warn")
+		rootCmd.PersistentFlags().Lookup("loglevel").DefValue = "warn"
+	})
 }
 
 func runKeyScan(cmd *cobra.Command, args []string) error {
@@ -41,7 +45,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		engine.Runner.AddHosts("*", []herd.MatchAttribute{})
 	}
-	engine.Runner.Run("herd:connect", engine.Ui.ProgressChannel(engine.Runner), nil)
+	engine.Runner.Run("herd:connect", nil, nil)
 	engine.Runner.RemoveHosts("*", []herd.MatchAttribute{{Name: "sshKey", Value: nil}})
 	engine.Ui.PrintHostList(engine.Runner.GetHosts(), herd.HostListOptions{Attributes: []string{"sshKey"}})
 	return nil
