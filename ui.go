@@ -32,7 +32,6 @@ const (
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHostList(hosts Hosts, opts HostListOptions)
-	PrintKnownHosts(hosts Hosts)
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
@@ -320,14 +319,6 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			} else {
 				ui.pchan <- host.Name + "\n"
 			}
-		}
-	}
-}
-
-func (ui *SimpleUI) PrintKnownHosts(hosts Hosts) {
-	for _, host := range hosts {
-		if host.sshKey != nil {
-			ui.pchan <- fmt.Sprintf("%s %s %s\n", host.Name, host.sshKey.Type(), base64.StdEncoding.EncodeToString(host.sshKey.Marshal()))
 		}
 	}
 }
