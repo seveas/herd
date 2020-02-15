@@ -118,7 +118,7 @@ func TestPrettyFormatterFormatResult(t *testing.T) {
 		"\x1b[32mtest-host-005.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[90m----\x1b[0m\n    Text on stderr\n    More text\n",
 	}
 	for i, r := range results {
-		if s := testformatter.formatResult(r); s != expected[i] {
+		if s := testformatter.formatResult(r, 0); s != expected[i] {
 			t.Errorf("Result %d, expected result %s, got %s", i, strconv.Quote(expected[i]), strconv.Quote(s))
 		}
 	}
