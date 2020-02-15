@@ -11,7 +11,7 @@ import (
 
 type formatter interface {
 	formatCommand(c string) string
-	formatResult(r *Result) string
+	formatResult(r *Result, l int) string
 	formatStatus(r *Result, l int) string
 	formatOutput(r *Result, l int) string
 	Format(e *logrus.Entry) ([]byte, error)
@@ -25,8 +25,8 @@ func (f prettyFormatter) formatCommand(command string) string {
 	return ansi.Color(command, "cyan") + "\n"
 }
 
-func (f prettyFormatter) formatResult(r *Result) string {
-	out := f.formatStatus(r, 0)
+func (f prettyFormatter) formatResult(r *Result, l int) string {
+	out := f.formatStatus(r, l)
 	if len(r.Stdout) > 0 {
 		out += f.indent(string(r.Stdout), "    ", "    ")
 	}

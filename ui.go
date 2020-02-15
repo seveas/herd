@@ -194,7 +194,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	for _, h := range hi.Hosts {
 		var txt string
 		if ui.outputMode == OutputAll {
-			txt = ui.formatter.formatResult(hi.Results[h.Name])
+			txt = ui.formatter.formatResult(hi.Results[h.Name], hlen)
 		} else {
 			txt = ui.formatter.formatOutput(hi.Results[h.Name], hlen)
 		}
@@ -441,7 +441,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 					nfail++
 				}
 				if ui.outputMode == OutputPerhost {
-					ui.pchan <- ui.formatter.formatResult(msg.Result)
+					ui.pchan <- ui.formatter.formatResult(msg.Result, hlen)
 				} else if ui.outputMode == OutputTail {
 					status := ui.formatter.formatStatus(msg.Result, hlen)
 					if ui.outputTimestamp {
