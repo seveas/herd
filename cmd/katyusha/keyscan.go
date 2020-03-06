@@ -14,14 +14,15 @@ var keyScanCmd = &cobra.Command{
 	Example:               "  katyusha keyscan *.site2.example.com os=Debian",
 	DisableFlagsInUseLine: true,
 	RunE:                  runKeyScan,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if !rootCmd.PersistentFlags().Lookup("loglevel").Changed {
+			logrus.SetLevel(logrus.WarnLevel)
+		}
+	},
 }
 
 func init() {
 	rootCmd.AddCommand(keyScanCmd)
-	cobra.OnInitialize(func() {
-		rootCmd.PersistentFlags().Lookup("loglevel").Value.Set("warn")
-		rootCmd.PersistentFlags().Lookup("loglevel").DefValue = "warn"
-	})
 }
 
 func runKeyScan(cmd *cobra.Command, args []string) error {
