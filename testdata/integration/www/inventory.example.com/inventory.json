@@ -1,0 +1,8 @@
+[
+  {
+    "Name": "http.example.net",
+    "Attributes": {
+      "provider": "http"
+    }
+  }
+]

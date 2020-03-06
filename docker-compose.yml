@@ -1,0 +1,32 @@
+version: '3.5'
+services:
+  nginx:
+    image: nginx:latest
+    networks:
+      default:
+        aliases:
+          - inventory.example.com
+    volumes:
+      - source: ./testdata/integration/etc/nginx/conf.d
+        target: /etc/nginx/conf.d
+        type: bind
+      - source: ./testdata/pki
+        target: /etc/ssl
+        type: bind
+      - source: ./testdata/integration/www
+        target: /www
+        type: bind
+  herd:
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    command: make test-integration
+    depends_on:
+      - nginx
+    volumes:
+      - source: ./testdata/pki/ca.crt
+        target: /etc/ssl/certs/ca.crt
+        type: bind
+      - source: ./testdata/homes
+        target: /home
+        type: bind
