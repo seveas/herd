@@ -1,0 +1,5 @@
+---
+Providers:
+  http:
+    provider: http
+    url: https://inventory.example.com/inventory.json

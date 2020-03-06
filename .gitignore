@@ -1,2 +1,7 @@
 /katyusha
 /*.exe
+*.crt
+*.key
+*.csr
+*.srl
+test-results
