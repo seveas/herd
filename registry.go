@@ -122,6 +122,7 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 }
 
 func (r *Registry) AddProvider(p HostProvider) {
+	logrus.Debugf("Adding provider %s", p.String())
 	// Always give a cache a file
 	if c, ok := p.(*Cache); ok {
 		if c.File == "" {
