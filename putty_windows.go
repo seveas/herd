@@ -18,6 +18,12 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
+func init() {
+	magicProviders["putty"] = func(r *Registry) {
+		r.AddProvider(&PuttyProvider{Name: "putty"})
+	}
+}
+
 var puttyNameMap = map[string]string{}
 
 const agentMsgMax = 8192

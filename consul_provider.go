@@ -1,3 +1,5 @@
+// +build !no_consul
+
 package katyusha
 
 import (
@@ -11,6 +13,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
+
+func init() {
+	availableProviders["consul"] = NewConsulProvider
+	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
+		magicProviders["consul"] = func(r *Registry) {
+			r.AddProvider(r.cache(NewConsulProvider("consul")))
+		}
+	}
+}
 
 type ConsulProvider struct {
 	Name    string
