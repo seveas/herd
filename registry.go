@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -15,6 +14,16 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
+
+var availableProviders = map[string]func(string) HostProvider{
+	"cache":       NewCache,
+	"http":        NewHttpProvider,
+	"json":        NewJsonProvider,
+	"plain":       NewPlainTextProvider,
+	"known_hosts": NewKnownHostsProvider,
+}
+
+var magicProviders = map[string]func(*Registry){}
 
 type Registry struct {
 	providers []HostProvider
@@ -49,31 +58,18 @@ func NewRegistry(dataDir, cacheDir string) *Registry {
 }
 
 func NewProvider(pname, name string) (HostProvider, error) {
-	switch pname {
-	case "cache":
-		return NewCache(name), nil
-	case "consul":
-		return NewConsulProvider(name), nil
-	case "http":
-		return NewHttpProvider(name), nil
-	case "json":
-		return NewJsonProvider(name), nil
-	case "plain":
-		return NewPlainTextProvider(name), nil
-	case "known_hosts":
-		return NewKnownHostsProvider(name), nil
-	case "":
+	if pname == "" {
 		return nil, fmt.Errorf("No provider specified")
-	default:
+	}
+	c, ok := availableProviders[pname]
+	if !ok {
 		return nil, fmt.Errorf("No such provider: %s", pname)
 	}
+	return c(name), nil
 }
 
 func (r *Registry) LoadMagicProviders() {
 	r.AddProvider(NewKnownHostsProvider("known_hosts"))
-	if runtime.GOOS == "windows" {
-		r.AddProvider(&PuttyProvider{Name: "putty"})
-	}
 	fn := filepath.Join(r.dataDir, "inventory")
 	if _, err := os.Stat(fn); err == nil {
 		r.AddProvider(&PlainTextProvider{Name: "inventory", File: fn})
@@ -82,8 +78,8 @@ func (r *Registry) LoadMagicProviders() {
 	if _, err := os.Stat(fn); err == nil {
 		r.AddProvider(&JsonProvider{Name: "inventory", File: fn})
 	}
-	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
-		r.AddProvider(r.cache(NewConsulProvider("consul")))
+	for _, fnc := range magicProviders {
+		fnc(r)
 	}
 }
 
