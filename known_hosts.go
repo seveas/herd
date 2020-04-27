@@ -14,8 +14,8 @@ import (
 )
 
 type KnownHostsProvider struct {
-	Name  string
-	Files []string
+	baseProvider `mapstructure:",squash"`
+	Files        []string
 }
 
 func NewKnownHostsProvider(name string) HostProvider {
@@ -28,7 +28,7 @@ func NewKnownHostsProvider(name string) HostProvider {
 			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
 		}
 	}
-	return &KnownHostsProvider{Name: name, Files: files}
+	return &KnownHostsProvider{baseProvider: baseProvider{Name: name}, Files: files}
 }
 
 func (p *KnownHostsProvider) ParseViper(v *viper.Viper) error {
@@ -70,8 +70,4 @@ func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 		}
 	}
 	return hosts, nil
-}
-
-func (p *KnownHostsProvider) String() string {
-	return "ssh_known_hosts"
 }

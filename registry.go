@@ -38,7 +38,18 @@ type Hosts []*Host
 type HostProvider interface {
 	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
-	String() string
+	base() *baseProvider
+}
+
+type baseProvider struct {
+	Name    string
+	Prefix  string
+	Timeout time.Duration
+	magic   bool
+}
+
+func (p *baseProvider) base() *baseProvider {
+	return p
 }
 
 type CacheMessage struct {
@@ -69,15 +80,17 @@ func NewProvider(pname, name string) (HostProvider, error) {
 }
 
 func (r *Registry) LoadMagicProviders() {
-	r.AddProvider(NewKnownHostsProvider("known_hosts"))
+	// We always want these to be done first, so they're not implementing magic providerness themselves
+	r.AddMagicProvider(NewKnownHostsProvider("known_hosts"))
 	fn := filepath.Join(r.dataDir, "inventory")
 	if _, err := os.Stat(fn); err == nil {
-		r.AddProvider(&PlainTextProvider{Name: "inventory", File: fn})
+		r.AddMagicProvider(&PlainTextProvider{baseProvider: baseProvider{Name: "inventory"}, File: fn})
 	}
 	fn += ".json"
 	if _, err := os.Stat(fn); err == nil {
-		r.AddProvider(&JsonProvider{Name: "inventory", File: fn})
+		r.AddMagicProvider(&JsonProvider{baseProvider: baseProvider{Name: "inventory"}, File: fn})
 	}
+	// And now we do the other magic ones
 	for _, fnc := range magicProviders {
 		fnc(r)
 	}
@@ -85,10 +98,10 @@ func (r *Registry) LoadMagicProviders() {
 
 func (r *Registry) cache(p HostProvider) HostProvider {
 	return &Cache{
-		Name:     p.String(),
-		Lifetime: 1 * time.Hour,
-		File:     filepath.Join(r.cacheDir, p.String()+".cache"),
-		Source:   p,
+		baseProvider: baseProvider{Name: p.base().Name},
+		Lifetime:     1 * time.Hour,
+		File:         filepath.Join(r.cacheDir, p.base().Name+".cache"),
+		Source:       p,
 	}
 }
 
@@ -118,7 +131,7 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 }
 
 func (r *Registry) AddProvider(p HostProvider) {
-	logrus.Debugf("Adding provider %s", p.String())
+	logrus.Debugf("Adding provider %s", p.base().Name)
 	// Always give a cache a file
 	if c, ok := p.(*Cache); ok {
 		if c.File == "" {
@@ -143,8 +156,13 @@ func (r *Registry) AddProvider(p HostProvider) {
 	r.providers = append(r.providers, p)
 }
 
+func (r *Registry) AddMagicProvider(p HostProvider) {
+	p.base().magic = true
+	r.AddProvider(p)
+}
+
 type loadresult struct {
-	provider string
+	provider *baseProvider
 	hosts    []*Host
 	err      error
 }
@@ -166,10 +184,16 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 	defer close(rc)
 
 	for _, p := range r.providers {
-		go func(pr HostProvider) {
+		go func(pr HostProvider, ctx context.Context) {
+			base := pr.base()
+			if base.Timeout != 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, base.Timeout)
+				defer cancel()
+			}
 			hosts, err := pr.Load(ctx, mc)
-			rc <- loadresult{provider: pr.String(), hosts: hosts, err: err}
-		}(p)
+			rc <- loadresult{provider: base, hosts: hosts, err: err}
+		}(p, ctx)
 	}
 
 	rerr := &MultiError{Subject: "Errors querying providers"}
@@ -179,11 +203,15 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 
 	for todo > 0 {
 		r := <-rc
-		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider)
+		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider.Name)
 		if r.err != nil {
 			rerr.Add(r.err)
 		}
 		for _, host := range r.hosts {
+			if r.provider.Prefix != "" {
+				host.Attributes = host.Attributes.prefix(r.provider.Prefix)
+			}
+			host.Attributes["herd_provider"] = []string{r.provider.Name}
 			if existing, ok := seen[host.Name]; ok {
 				hosts[existing].Amend(host)
 			} else {

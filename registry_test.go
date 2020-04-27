@@ -44,14 +44,11 @@ func TestMagicProviders(t *testing.T) {
 }
 
 type FakeProvider struct {
+	baseProvider `mapstructure:",squash"`
 }
 
 func (p *FakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	return Hosts{NewHost("hostname", HostAttributes{})}, nil
-}
-
-func (p *FakeProvider) String() string {
-	return "fake"
 }
 
 func (p *FakeProvider) ParseViper(v *viper.Viper) error {
@@ -72,17 +69,17 @@ func TestGetHosts(t *testing.T) {
 
 func TestRelativeFiles(t *testing.T) {
 	r := NewRegistry(dataDir("2"), cacheDir("2"))
-	p := &PlainTextProvider{File: "inventory", Name: "ittest"}
+	p := &PlainTextProvider{File: "inventory", baseProvider: baseProvider{Name: "ittest"}}
 	r.AddProvider(p)
 	if p.File != filepath.Join(dataDir("2"), "inventory") {
 		t.Errorf("Filepath did not get interpreted relative to dataDir")
 	}
-	c := &Cache{Name: "itcache", Source: p}
+	c := &Cache{baseProvider: baseProvider{Name: "itcache"}, Source: p}
 	r.AddProvider(c)
 	if c.File != filepath.Join(cacheDir("2"), "itcache.cache") {
 		t.Errorf("Proper cache path not set, found %s", c.File)
 	}
-	c2 := &Cache{Name: "itcache", Source: p, File: "it-cache.cache"}
+	c2 := &Cache{baseProvider: baseProvider{Name: "itcache"}, Source: p, File: "it-cache.cache"}
 	r.AddProvider(c2)
 	if c2.File != filepath.Join(cacheDir("2"), "it-cache.cache") {
 		t.Errorf("Proper cache path not set, found %s", c2.File)

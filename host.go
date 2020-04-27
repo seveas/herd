@@ -42,6 +42,14 @@ func init() {
 // booleans, numbers, nil and slices of these values.
 type HostAttributes map[string]interface{}
 
+func (h HostAttributes) prefix(prefix string) HostAttributes {
+	ret := make(map[string]interface{})
+	for k, v := range h {
+		ret[prefix+k] = v
+	}
+	return ret
+}
+
 // A host represents a remote host. It can be instantiated manually, but is
 // usually fetched from one or more Providers, which can all contribute to the
 // hosts attributes.
@@ -171,7 +179,11 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 }
 
 func (h *Host) Amend(h2 *Host) {
+	h.Attributes["herd_provider"] = append(h.Attributes["herd_provider"].([]string), h2.Attributes["herd_provider"].([]string)[0])
 	for attr, value := range h2.Attributes {
+		if attr == "herd_provider" {
+			continue
+		}
 		h.Attributes[attr] = value
 	}
 	for _, k := range h2.publicKeys {
