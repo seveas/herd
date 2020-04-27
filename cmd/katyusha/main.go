@@ -153,7 +153,6 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 
 	registry := katyusha.NewRegistry(currentUser.dataDir, currentUser.cacheDir)
 	registry.SetSortFields(viper.GetStringSlice("Sort"))
-	registry.LoadMagicProviders()
 	conf := viper.Sub("Providers")
 	if conf != nil {
 		if err := registry.LoadProviders(conf); err != nil {
@@ -162,6 +161,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 			return nil, err
 		}
 	}
+	registry.LoadMagicProviders()
 	var mc chan katyusha.CacheMessage
 	if logrus.IsLevelEnabled(logrus.InfoLevel) {
 		mc = ui.CacheUpdateChannel()

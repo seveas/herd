@@ -12,24 +12,19 @@ import (
 )
 
 type HttpProvider struct {
-	Name     string
-	Url      string
-	Username string
-	Password string
-	Headers  map[string]string
-	Timeout  time.Duration
+	baseProvider `mapstructure:",squash"`
+	Url          string
+	Username     string
+	Password     string
+	Headers      map[string]string
 }
 
 func NewHttpProvider(name string) HostProvider {
-	return &HttpProvider{Name: name, Timeout: 30 * time.Second}
+	return &HttpProvider{baseProvider: baseProvider{Name: name, Timeout: 30 * time.Second}}
 }
 
 func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(p)
-}
-
-func (p *HttpProvider) String() string {
-	return p.Name
 }
 
 func (p *HttpProvider) fetch(ctx context.Context, mc chan CacheMessage) ([]byte, error) {
@@ -37,8 +32,6 @@ func (p *HttpProvider) fetch(ctx context.Context, mc chan CacheMessage) ([]byte,
 	if err != nil {
 		return []byte{}, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
-	defer cancel()
 	req = req.WithContext(ctx)
 	if p.Username != "" {
 		req.SetBasicAuth(p.Username, p.Password)

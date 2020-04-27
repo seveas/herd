@@ -10,12 +10,12 @@ import (
 )
 
 type JsonProvider struct {
-	Name string
-	File string
+	baseProvider `mapstructure:",squash"`
+	File         string
 }
 
 func NewJsonProvider(name string) HostProvider {
-	return &JsonProvider{Name: name}
+	return &JsonProvider{baseProvider: baseProvider{Name: name}}
 }
 
 func (p *JsonProvider) ParseViper(v *viper.Viper) error {
@@ -37,8 +37,4 @@ func (p *JsonProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 		h.init()
 	}
 	return hosts, err
-}
-
-func (p *JsonProvider) String() string {
-	return p.Name
 }

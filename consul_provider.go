@@ -37,21 +37,17 @@ func init() {
 }
 
 type ConsulProvider struct {
-	Name    string
-	Address string
+	baseProvider `mapstructure:",squash"`
+	Address      string
 }
 
 func NewConsulProvider(name string) HostProvider {
 	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
-	return &ConsulProvider{Name: name, Address: addr}
+	return &ConsulProvider{baseProvider: baseProvider{Name: name}, Address: addr}
 }
 
 func (p *ConsulProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(p)
-}
-
-func (p *ConsulProvider) String() string {
-	return p.Name
 }
 
 func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
@@ -88,6 +84,7 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 		hosts = append(hosts, r.hosts...)
 		todo -= 1
 	}
+
 	if !errs.HasErrors() {
 		return hosts, nil
 	}

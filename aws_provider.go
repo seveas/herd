@@ -38,7 +38,7 @@ func init() {
 }
 
 type AwsProvider struct {
-	Name            string
+	baseProvider    `mapstructure:",squash"`
 	AccessKeyId     string
 	SecretAccessKey string
 	Partition       string
@@ -46,7 +46,7 @@ type AwsProvider struct {
 }
 
 func NewAwsProvider(name string) HostProvider {
-	p := &AwsProvider{Name: name, Partition: "aws"}
+	p := &AwsProvider{baseProvider: baseProvider{Name: name}, Partition: "aws"}
 
 	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
 		p.AccessKeyId = v
@@ -64,14 +64,7 @@ func NewAwsProvider(name string) HostProvider {
 }
 
 func (p *AwsProvider) ParseViper(v *viper.Viper) error {
-	if err := v.Unmarshal(p); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *AwsProvider) String() string {
-	return p.Name
+	return v.Unmarshal(p)
 }
 
 func (p *AwsProvider) setRegions() error {

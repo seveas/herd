@@ -41,6 +41,9 @@ func TestMain(m *testing.M) {
 		if strings.HasPrefix(envvar, "KATYUSHA") {
 			os.Unsetenv(envvar[:strings.IndexRune(envvar, '=')])
 		}
+		if strings.HasPrefix(envvar, "AWS") {
+			os.Unsetenv(envvar[:strings.IndexRune(envvar, '=')])
+		}
 	}
 	os.Exit(m.Run())
 }

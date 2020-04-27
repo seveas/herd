@@ -10,12 +10,12 @@ import (
 )
 
 type PlainTextProvider struct {
-	Name string
-	File string
+	baseProvider `mapstructure:",squash"`
+	File         string
 }
 
 func NewPlainTextProvider(name string) HostProvider {
-	return &PlainTextProvider{Name: name}
+	return &PlainTextProvider{baseProvider: baseProvider{Name: name}}
 }
 
 func (p *PlainTextProvider) ParseViper(v *viper.Viper) error {
@@ -38,8 +38,4 @@ func (p *PlainTextProvider) Load(ctx context.Context, mc chan CacheMessage) (Hos
 		hosts = append(hosts, host)
 	}
 	return hosts, nil
-}
-
-func (p *PlainTextProvider) String() string {
-	return p.Name
 }

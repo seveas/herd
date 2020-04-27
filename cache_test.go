@@ -12,16 +12,13 @@ import (
 )
 
 type fakeProvider struct {
-	loaded int
+	baseProvider `mapstructure:",squash"`
+	loaded       int
 }
 
 func (p *fakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	p.loaded++
 	return Hosts{NewHost("test-host", HostAttributes{})}, nil
-}
-
-func (p *fakeProvider) String() string {
-	return "fake"
 }
 
 func (p *fakeProvider) ParseViper(v *viper.Viper) error {
