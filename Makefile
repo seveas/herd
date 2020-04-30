@@ -17,7 +17,10 @@ fmt:
 vet:
 	go vet ./...
 
-test: fmt vet
+tidy:
+	go mod tidy
+
+test: fmt vet tidy
 	go test ./...
 	docker-compose down || true
 	docker-compose build

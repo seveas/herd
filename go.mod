@@ -8,8 +8,6 @@ require (
 	github.com/aws/aws-sdk-go v1.30.14
 	github.com/chzyer/logex v1.1.10 // indirect
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
-	github.com/davecgh/go-spew v1.1.1
-	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/go-test/deep v1.0.1
 	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/go-immutable-radix v1.1.0 // indirect
@@ -21,7 +19,6 @@ require (
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/sirupsen/logrus v1.2.0
