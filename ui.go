@@ -458,7 +458,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 			} else if queued > 0 {
 				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d in progress, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, todo-queued, nok, nfail, nerr)
 			} else {
-				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d in progress, %d ok, %d fail, %d error", since, togo, total-todo, todo, total, nok, nfail, nerr)
+				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d in progress, %d ok, %d fail, %d error", since, togo, total-todo, total, todo, nok, nfail, nerr)
 			}
 		}
 	}()
