@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"runtime/pprof"
+	"runtime/trace"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -48,6 +50,30 @@ var rootCmd = &cobra.Command{
   katyusha interactive *vpn-gateway*`,
 	Args:    cobra.NoArgs,
 	Version: katyusha.Version(),
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if f := viper.GetString("Profile"); f != "" {
+			pfd, err := os.Create(f + ".cpuprofile")
+			if err != nil {
+				bail("Could not create CPU profile file: ", err)
+			}
+			if err = pprof.StartCPUProfile(pfd); err != nil {
+				bail("Could not start CPU profile: ", err)
+			}
+			tfd, err := os.Create(f + ".trace")
+			if err != nil {
+				bail("Could not create trace file: ", err)
+			}
+			if err = trace.Start(tfd); err != nil {
+				bail("Could not start trace: ", err)
+			}
+			cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
+				pprof.StopCPUProfile()
+				pfd.Close()
+				trace.Stop()
+				tfd.Close()
+			}
+		}
+	},
 }
 
 func main() {
@@ -89,6 +115,7 @@ Cache: %s
 	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
 	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
 	rootCmd.PersistentFlags().Bool("timestamp", false, "In tail mode, prefix each line with the current time")
+	rootCmd.PersistentFlags().String("profile", "", "Write profiling and tracing data to files starting with this name")
 	viper.BindPFlag("Splay", rootCmd.PersistentFlags().Lookup("splay"))
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
@@ -100,6 +127,7 @@ Cache: %s
 	viper.BindPFlag("NoPager", rootCmd.PersistentFlags().Lookup("no-pager"))
 	viper.BindPFlag("NoColor", rootCmd.PersistentFlags().Lookup("no-color"))
 	viper.BindPFlag("Timestamp", rootCmd.PersistentFlags().Lookup("timestamp"))
+	viper.BindPFlag("Profile", rootCmd.PersistentFlags().Lookup("profile"))
 }
 
 func initConfig() {
