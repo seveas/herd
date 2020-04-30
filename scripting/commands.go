@@ -10,7 +10,7 @@ import (
 )
 
 type command interface {
-	execute(e *ScriptEngine) error
+	execute(e *ScriptEngine)
 }
 
 type setCommand struct {
@@ -18,7 +18,7 @@ type setCommand struct {
 	value    interface{}
 }
 
-func (c setCommand) execute(e *ScriptEngine) error {
+func (c setCommand) execute(e *ScriptEngine) {
 	switch c.variable {
 	case "Output":
 		e.Ui.SetOutputMode(c.value.(katyusha.OutputMode))
@@ -39,7 +39,6 @@ func (c setCommand) execute(e *ScriptEngine) error {
 	case "Parallel":
 		e.Runner.SetParallel(c.value.(int))
 	}
-	return nil
 }
 
 func (c setCommand) String() string {
@@ -51,9 +50,8 @@ type addHostsCommand struct {
 	attributes katyusha.MatchAttributes
 }
 
-func (c addHostsCommand) execute(e *ScriptEngine) error {
+func (c addHostsCommand) execute(e *ScriptEngine) {
 	e.Runner.AddHosts(c.glob, c.attributes)
-	return nil
 }
 
 func (c addHostsCommand) String() string {
@@ -65,9 +63,8 @@ type removeHostsCommand struct {
 	attributes katyusha.MatchAttributes
 }
 
-func (c removeHostsCommand) execute(e *ScriptEngine) error {
+func (c removeHostsCommand) execute(e *ScriptEngine) {
 	e.Runner.RemoveHosts(c.glob, c.attributes)
-	return nil
 }
 
 func (c removeHostsCommand) String() string {
@@ -78,9 +75,8 @@ type listHostsCommand struct {
 	opts katyusha.HostListOptions
 }
 
-func (c listHostsCommand) execute(e *ScriptEngine) error {
+func (c listHostsCommand) execute(e *ScriptEngine) {
 	e.Ui.PrintHostList(e.Runner.GetHosts(), c.opts)
-	return nil
 }
 
 func (c listHostsCommand) String() string {
@@ -93,7 +89,7 @@ type runCommand struct {
 	command string
 }
 
-func (c runCommand) execute(e *ScriptEngine) error {
+func (c runCommand) execute(e *ScriptEngine) {
 	oc := e.Ui.OutputChannel(e.Runner)
 	pc := e.Ui.ProgressChannel(e.Runner)
 	hi := e.Runner.Run(c.command, pc, oc)
@@ -102,7 +98,6 @@ func (c runCommand) execute(e *ScriptEngine) error {
 	if !strings.HasPrefix(c.command, "katyusha:") {
 		e.Ui.PrintHistoryItem(hi)
 	}
-	return nil
 }
 
 func (c runCommand) String() string {
