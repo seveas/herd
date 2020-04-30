@@ -335,6 +335,8 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	}
 	client, err := host.connect(ctx)
 	if err != nil {
+		r.EndTime = time.Now()
+		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
 		r.Err = err
 		return r
 	}
