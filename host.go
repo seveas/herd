@@ -55,6 +55,7 @@ func (h HostAttributes) prefix(prefix string) HostAttributes {
 // hosts attributes.
 type Host struct {
 	Name       string
+	Address    string
 	Port       int
 	Attributes HostAttributes
 	publicKeys []ssh.PublicKey
@@ -126,7 +127,10 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 }
 
 func (h *Host) address() string {
-	return fmt.Sprintf("%s:%d", h.Name, h.Port)
+	if h.Address == "" {
+		return fmt.Sprintf("%s:%d", h.Name, h.Port)
+	}
+	return fmt.Sprintf("%s:%d", h.Address, h.Port)
 }
 
 var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
@@ -179,6 +183,9 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 }
 
 func (h *Host) Amend(h2 *Host) {
+	if h.Address == "" {
+		h.Address = h2.Address
+	}
 	h.Attributes["katyusha_provider"] = append(h.Attributes["katyusha_provider"].([]string), h2.Attributes["katyusha_provider"].([]string)[0])
 	for attr, value := range h2.Attributes {
 		if attr == "katyusha_provider" {
@@ -241,7 +248,7 @@ func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 	if host.connection != nil {
 		return host.connection, nil
 	}
-	logrus.Debugf("Connecting to %s", host.address())
+	logrus.Debugf("Connecting to %s (%s)", host.Name, host.address())
 	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
