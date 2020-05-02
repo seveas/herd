@@ -3,6 +3,7 @@ package herd
 import (
 	"context"
 	"math/rand"
+	"net"
 	"os"
 	"os/signal"
 	"time"
@@ -105,7 +106,12 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			logrus.Errorf("Unable to connect to ssh agent: %s", err)
 			return hi
 		}
-		r.agent = agent.NewClient(sock)
+		if _, ok := sock.(*net.UnixConn); ok {
+			sock2, _ := agentConnection()
+			r.agent = NewSshAgentClient(sock, sock2)
+		} else {
+			r.agent = agent.NewClient(sock)
+		}
 
 		r.signers, err = r.agent.Signers()
 		r.signersByPath = make(map[string]ssh.Signer)
