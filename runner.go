@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
 type OutputLine struct {
@@ -29,6 +31,9 @@ type Runner struct {
 	timeout        time.Duration
 	hostTimeout    time.Duration
 	connectTimeout time.Duration
+	agent          agent.Agent
+	signers        []ssh.Signer
+	signersByPath  map[string]ssh.Signer
 }
 
 func NewRunner(registry *Registry) *Runner {
@@ -94,6 +99,30 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		defer close(oc)
 	}
 	hi := newHistoryItem(command, r.hosts)
+	if r.agent == nil {
+		sock, err := agentConnection()
+		if err != nil {
+			logrus.Errorf("Unable to connect to ssh agent: %s", err)
+			return hi
+		}
+		r.agent = agent.NewClient(sock)
+
+		r.signers, err = r.agent.Signers()
+		r.signersByPath = make(map[string]ssh.Signer)
+		if err != nil {
+			logrus.Errorf("Unable to retrieve keys from SSH agent: %s", err)
+			return hi
+		}
+		if len(r.signers) == 0 {
+			logrus.Errorf("No keys found in ssh agent")
+			return hi
+		}
+
+		for _, signer := range r.signers {
+			comment := signer.PublicKey().(*agent.Key).Comment
+			r.signersByPath[comment] = signer
+		}
+	}
 	c := make(chan *Result)
 	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -113,6 +142,9 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 					pc <- ProgressMessage{Host: host}
 					r.splayDelay(ctx)
 					host.sshConfig.Timeout = r.connectTimeout
+					if len(host.sshConfig.Auth) == 0 {
+						host.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(host), nil })}
+					}
 					hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
 					c <- host.Run(hctx, command, oc)
 					hcancel()
@@ -126,6 +158,9 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 				r.splayDelay(ctx)
 				ctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
 				h.sshConfig.Timeout = r.connectTimeout
+				if len(h.sshConfig.Auth) == 0 {
+					h.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(h), nil })}
+				}
 				c <- h.Run(ctx, command, oc)
 				hcancel()
 			}(ctx, host)
@@ -173,4 +208,15 @@ func (r *Runner) splayDelay(ctx context.Context) {
 	case <-tctx.Done():
 		return
 	}
+}
+
+func (r *Runner) signersForHost(h *Host) []ssh.Signer {
+	if path := h.extConfig["identityfile"]; path != "" {
+		if k, ok := r.signersByPath[path]; ok {
+			return []ssh.Signer{k}
+		} else {
+			return []ssh.Signer{}
+		}
+	}
+	return r.signers
 }
