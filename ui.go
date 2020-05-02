@@ -193,10 +193,14 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 
 	for _, h := range hi.Hosts {
 		var txt string
+		result, ok := hi.Results[h.Name]
+		if !ok {
+			continue
+		}
 		if ui.outputMode == OutputAll {
-			txt = ui.formatter.formatResult(hi.Results[h.Name], hlen)
+			txt = ui.formatter.formatResult(result, hlen)
 		} else {
-			txt = ui.formatter.formatOutput(hi.Results[h.Name], hlen)
+			txt = ui.formatter.formatOutput(result, hlen)
 		}
 		if !usePager {
 			ui.pchan <- txt

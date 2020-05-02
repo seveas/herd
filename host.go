@@ -86,7 +86,6 @@ func (h *Host) init() {
 	h.publicKeys = make([]ssh.PublicKey, 0)
 	h.sshConfig = &ssh.ClientConfig{
 		ClientVersion:   "SSH-2.0-Katyusha-0.1",
-		Auth:            []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return sshAgentKeys(h.extConfig["identityfile"]) })},
 		User:            localUser,
 		Timeout:         3 * time.Second,
 		HostKeyCallback: h.hostKeyCallback,
