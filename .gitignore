@@ -1,4 +1,5 @@
 /katyusha
+/ssh-agent-proxy
 /*.exe
 *.crt
 *.key

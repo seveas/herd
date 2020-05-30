@@ -8,6 +8,9 @@ endif
 katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
+ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
+	go build -o "$@" github.com/seveas/katyusha/cmd/ssh-agent-proxy
+
 $(antlr_sources): scripting/Katyusha.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Katyusha.g4)
 
