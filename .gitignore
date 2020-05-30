@@ -1,4 +1,5 @@
 /herd
+/ssh-agent-proxy
 /*.exe
 *.crt
 *.key

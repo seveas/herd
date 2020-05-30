@@ -8,6 +8,9 @@ endif
 herd: go.mod *.go cmd/herd/*.go scripting/*.go $(antlr_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/herd
 
+ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
+	go build -o "$@" github.com/seveas/herd/cmd/ssh-agent-proxy
+
 $(antlr_sources): scripting/Herd.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
 

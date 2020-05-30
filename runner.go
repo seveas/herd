@@ -107,8 +107,15 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			return hi
 		}
 		if _, ok := sock.(*net.UnixConn); ok {
-			sock2, _ := agentConnection()
-			r.agent = NewSshAgentClient(sock, sock2)
+			if _, ok := os.LookupEnv("HERD_FAST_SSH_AGENT"); ok {
+				sock2, _ := agentConnection()
+				r.agent = NewSshAgentClient(sock, sock2)
+			} else {
+				if _, ok := os.LookupEnv("HERD_SLOW_SSH_AGENT"); !ok {
+					logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
+				}
+				r.agent = agent.NewClient(sock)
+			}
 		} else {
 			r.agent = agent.NewClient(sock)
 		}
