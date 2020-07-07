@@ -24,12 +24,14 @@ func init() {
 	listCmd.Flags().Bool("all-attributes", false, "List hosts with all their attributes")
 	listCmd.Flags().Bool("csv", false, "Output in csv format")
 	listCmd.Flags().Bool("header", true, "Print attribute names in a header line before printing host data")
+	listCmd.Flags().String("template", "", "Template topuse for showing hosts")
 	viper.BindPFlag("OneLine", listCmd.Flags().Lookup("oneline"))
 	viper.BindPFlag("Separator", listCmd.Flags().Lookup("separator"))
 	viper.BindPFlag("AllAttributes", listCmd.Flags().Lookup("all-attributes"))
 	viper.BindPFlag("Attributes", listCmd.Flags().Lookup("attributes"))
 	viper.BindPFlag("Csv", listCmd.Flags().Lookup("csv"))
 	viper.BindPFlag("Header", listCmd.Flags().Lookup("header"))
+	viper.BindPFlag("Template", listCmd.Flags().Lookup("template"))
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -59,6 +61,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		AllAttributes: viper.GetBool("AllAttributes"),
 		Header:        viper.GetBool("Header"),
 		Align:         true,
+		Template:      viper.GetString("Template"),
 	}
 	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
 	return nil
