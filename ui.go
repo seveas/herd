@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -52,6 +53,7 @@ type HostListOptions struct {
 	AllAttributes bool
 	Align         bool
 	Header        bool
+	Template      string
 }
 
 type SimpleUI struct {
@@ -316,6 +318,22 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			}
 		}
 		writer.Flush()
+	} else if opts.Template != "" {
+		tmpl, err := template.New("host").Parse(opts.Template + "\n")
+		if err != nil {
+			logrus.Errorf("Unable to parse template '%s': %s", opts.Template, err)
+			return
+		}
+		for _, host := range hosts {
+			var out io.Writer = ui
+			if pgr != nil {
+				out = pgr
+			}
+			err := tmpl.Execute(out, host)
+			if err != nil {
+				logrus.Errorf("Error executing template: %s", err)
+			}
+		}
 	} else {
 		for _, host := range hosts {
 			if pgr != nil {
