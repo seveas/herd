@@ -161,6 +161,14 @@ func (r *Registry) AddMagicProvider(p HostProvider) {
 	r.AddProvider(p)
 }
 
+func (r *Registry) InvalidateCache() {
+	for _, p := range r.providers {
+		if c, ok := p.(*Cache); ok {
+			c.Lifetime = -1
+		}
+	}
+}
+
 type loadresult struct {
 	provider *baseProvider
 	hosts    []*Host

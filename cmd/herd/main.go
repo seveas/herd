@@ -116,6 +116,7 @@ Cache: %s
 	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
 	rootCmd.PersistentFlags().Bool("timestamp", false, "In tail mode, prefix each line with the current time")
 	rootCmd.PersistentFlags().String("profile", "", "Write profiling and tracing data to files starting with this name")
+	rootCmd.PersistentFlags().Bool("refresh", false, "Force caches to be refreshed")
 	viper.BindPFlag("Splay", rootCmd.PersistentFlags().Lookup("splay"))
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
@@ -128,6 +129,7 @@ Cache: %s
 	viper.BindPFlag("NoColor", rootCmd.PersistentFlags().Lookup("no-color"))
 	viper.BindPFlag("Timestamp", rootCmd.PersistentFlags().Lookup("timestamp"))
 	viper.BindPFlag("Profile", rootCmd.PersistentFlags().Lookup("profile"))
+	viper.BindPFlag("Refresh", rootCmd.PersistentFlags().Lookup("refresh"))
 }
 
 func initConfig() {
@@ -190,6 +192,9 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 		}
 	}
 	registry.LoadMagicProviders()
+	if viper.GetBool("Refresh") {
+		registry.InvalidateCache()
+	}
 	var mc chan herd.CacheMessage
 	if logrus.IsLevelEnabled(logrus.InfoLevel) {
 		mc = ui.CacheUpdateChannel()
