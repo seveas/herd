@@ -3,6 +3,7 @@ package herd
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"path/filepath"
@@ -239,6 +240,9 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 
 func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
 	ret := make(Hosts, 0)
+	if strings.HasPrefix(hostnameGlob, "file:") {
+		return r.getHostsFromFile(hostnameGlob[5:], attributes)
+	}
 	for _, host := range r.hosts {
 		if host.Match(hostnameGlob, attributes) {
 			ret = append(ret, host)
@@ -247,6 +251,32 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hos
 	if len(ret) == 0 && len(attributes) == 0 {
 		if _, err := net.LookupHost(hostnameGlob); err == nil {
 			ret = append(ret, NewHost(hostnameGlob, HostAttributes{}))
+		}
+	}
+	return ret
+}
+
+func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) Hosts {
+	ret := make(Hosts, 0)
+	seen := make(map[string]int)
+	data, err := ioutil.ReadFile(fn)
+	if err != nil {
+		logrus.Errorf("Error reading %s: %s", fn, err)
+		return ret
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	for i, host := range r.hosts {
+		seen[host.Name] = i
+	}
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if i, ok := seen[line]; ok {
+			host := r.hosts[i]
+			if host.Match("*", attributes) {
+				ret = append(ret, host)
+			}
+		} else {
+			logrus.Warnf("Host %s not found", line)
 		}
 	}
 	return ret

@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,9 @@ func (r *Runner) SetConnectTimeout(t time.Duration) {
 
 func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
 	hosts := append(r.hosts, r.registry.GetHosts(glob, attrs)...)
-	hosts.Sort(r.registry.sort)
+	if !strings.HasPrefix(glob, "file:") {
+		hosts.Sort(r.registry.sort)
+	}
 	r.hosts = hosts.Uniq()
 }
 
