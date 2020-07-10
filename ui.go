@@ -417,6 +417,15 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 				name = ansi.Color(name, "red")
 			}
 			line := msg.Data
+			// Strip all text up to the last embedded \r, unless that is part of a \r\n
+			for bytes.HasSuffix(line, []byte("\r\n")) {
+				line = line[:len(line)-1]
+				line[len(line)-1] = '\n'
+			}
+			if idx := bytes.LastIndex(line, []byte("\r")); idx != -1 {
+				line = line[idx+1:]
+			}
+			// Make sure we don't pollute hostnames with colors
 			suffix := []byte{}
 			colors := cr.FindAll(line, -1)
 			if colors != nil && !bytes.Equal(colors[len(colors)-1], reset) {
