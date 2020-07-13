@@ -162,6 +162,9 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 		} else {
 			err = fmt.Errorf("%s must be a string", varName)
 		}
+	default:
+		c.GetParser().NotifyErrorListeners(fmt.Sprintf("Unknown variable: %s", varName), c.GetVarname(), nil)
+		return
 	}
 
 	if err != nil {
