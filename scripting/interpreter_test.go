@@ -141,6 +141,14 @@ var testcases = []testcase{
 		program: "set LogLevel \"foo\"\n",
 		errors:  []error{fmt.Errorf("line 1:13 Unknown loglevel: foo. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR")},
 	},
+	{
+		program: "set NonExistent true\n",
+		errors:  []error{fmt.Errorf("line 1:4 Unknown variable: NonExistent")},
+	},
+	{
+		program: "set timeout 10s\n",
+		errors:  []error{fmt.Errorf("line 1:4 Unknown variable: timeout")},
+	},
 }
 
 func TestScripts(t *testing.T) {
