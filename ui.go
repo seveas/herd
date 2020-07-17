@@ -450,9 +450,10 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
 		total := len(r.hosts)
-		queued, todo := total, total
+		queued, todo, waiting, running, done := total, total, 0, 0, 0
 		nok, nfail, nerr := 0, 0, 0
 		hlen := r.hosts.maxLen()
+		show_waiting := false
 		for {
 			select {
 			case <-ticker.C:
@@ -460,36 +461,51 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				if !ok {
 					return
 				}
-				if msg.Result == nil {
+				switch msg.State {
+				case Waiting:
 					queued--
-					continue
-				}
-				if msg.Result.ExitStatus == -1 {
-					nerr++
-				} else if msg.Result.ExitStatus == 0 {
-					nok++
-				} else {
-					nfail++
-				}
-				if ui.outputMode == OutputPerhost {
-					ui.pchan <- ui.formatter.formatResult(msg.Result, hlen)
-				} else if ui.outputMode == OutputTail {
-					status := ui.formatter.formatStatus(msg.Result, hlen)
-					if ui.outputTimestamp {
-						status = msg.Result.EndTime.Format("15:04:05.000 ") + status
+					waiting++
+				case Running:
+					waiting--
+					running++
+				case Finished:
+					running--
+					todo--
+					done++
+					switch msg.Result.ExitStatus {
+					case -1:
+						nerr++
+					case 0:
+						nok++
+					default:
+						nfail++
 					}
-					ui.pchan <- status
+					if ui.outputMode == OutputPerhost {
+						ui.pchan <- ui.formatter.formatResult(msg.Result, hlen)
+					} else if ui.outputMode == OutputTail {
+						status := ui.formatter.formatStatus(msg.Result, hlen)
+						if ui.outputTimestamp {
+							status = msg.Result.EndTime.Format("15:04:05.000 ") + status
+						}
+						ui.pchan <- status
+					}
 				}
-				todo--
 			}
 			since := time.Since(start).Truncate(time.Second)
 			togo := r.timeout - since
 			if todo == 0 {
 				ui.pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
-			} else if queued > 0 {
-				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d queued, %d in progress, %d ok, %d fail, %d error", since, togo, total-todo, total, queued, todo-queued, nok, nfail, nerr)
 			} else {
-				ui.pchan <- fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done, %d in progress, %d ok, %d fail, %d error", since, togo, total-todo, total, todo, nok, nfail, nerr)
+				msg := fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done", since, togo, done, total)
+				if queued > 0 {
+					msg += fmt.Sprintf(", %d queued", queued)
+				}
+				if waiting > 0 || show_waiting {
+					show_waiting = true
+					msg += fmt.Sprintf(", %d waiting", waiting)
+				}
+				msg += fmt.Sprintf(", %d in progress, %d ok, %d fail, %d error", running, nok, nfail, nerr)
+				ui.pchan <- msg
 			}
 		}
 	}()

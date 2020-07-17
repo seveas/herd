@@ -22,6 +22,7 @@ type OutputLine struct {
 
 type ProgressMessage struct {
 	Host   *Host
+	State  ProgressState
 	Result *Result
 }
 
@@ -37,6 +38,15 @@ type Runner struct {
 	signers        []ssh.Signer
 	signersByPath  map[string]ssh.Signer
 }
+
+type ProgressState int
+
+const (
+	Queued = iota
+	Waiting
+	Running
+	Finished
+)
 
 func NewRunner(registry *Registry) *Runner {
 	return &Runner{
@@ -155,8 +165,11 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			logrus.Debugf("Starting worker %d/%d", i+1, r.parallel)
 			go func() {
 				for host := range hqueue {
-					pc <- ProgressMessage{Host: host}
-					r.splayDelay(ctx)
+					if r.splay > 0 {
+						pc <- ProgressMessage{Host: host, State: Waiting}
+						r.splayDelay(ctx)
+					}
+					pc <- ProgressMessage{Host: host, State: Running}
 					host.sshConfig.Timeout = r.connectTimeout
 					if len(host.sshConfig.Auth) == 0 {
 						host.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(host), nil })}
@@ -170,8 +183,11 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	} else {
 		for _, host := range hi.Hosts {
 			go func(ctx context.Context, h *Host) {
-				pc <- ProgressMessage{Host: h}
-				r.splayDelay(ctx)
+				if r.splay > 0 {
+					pc <- ProgressMessage{Host: h, State: Waiting}
+					r.splayDelay(ctx)
+				}
+				pc <- ProgressMessage{Host: h, State: Running}
 				ctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
 				h.sshConfig.Timeout = r.connectTimeout
 				if len(h.sshConfig.Auth) == 0 {
@@ -196,7 +212,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			logrus.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
 			cancel()
 		case r := <-c:
-			pc <- ProgressMessage{Host: r.Host, Result: r}
+			pc <- ProgressMessage{Host: r.Host, State: Finished, Result: r}
 			hi.Results[r.Host.Name] = r
 			todo--
 		}
