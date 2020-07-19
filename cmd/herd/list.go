@@ -24,7 +24,7 @@ func init() {
 	listCmd.Flags().Bool("all-attributes", false, "List hosts with all their attributes")
 	listCmd.Flags().Bool("csv", false, "Output in csv format")
 	listCmd.Flags().Bool("header", true, "Print attribute names in a header line before printing host data")
-	listCmd.Flags().String("template", "", "Template topuse for showing hosts")
+	listCmd.Flags().String("template", "", "Template to use for showing hosts")
 	viper.BindPFlag("OneLine", listCmd.Flags().Lookup("oneline"))
 	viper.BindPFlag("Separator", listCmd.Flags().Lookup("separator"))
 	viper.BindPFlag("AllAttributes", listCmd.Flags().Lookup("all-attributes"))
