@@ -19,7 +19,7 @@ func getCurrentUser() (*userData, error) {
 		cacheDir:        filepath.Join(u.HomeDir, "Library", "Caches", "herd"),
 		configDir:       filepath.Join(u.HomeDir, "Library", "Preferences", "herd"),
 		systemConfigDir: "/etc/herd",
-		dataDir:         filepath.Join(u.HomeDir, "Library", "Application Support", "herd"),
-		historyDir:      filepath.Join(u.HomeDir, "Library", "Application Support", "herd", "history"),
+		dataDir:         filepath.Join(u.HomeDir, "Library", "ApplicationSupport", "herd"),
+		historyDir:      filepath.Join(u.HomeDir, "Library", "ApplicationSupport", "herd", "history"),
 	}, nil
 }
