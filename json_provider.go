@@ -10,12 +10,12 @@ import (
 )
 
 type JsonProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	File         string
 }
 
 func NewJsonProvider(name string) HostProvider {
-	return &JsonProvider{baseProvider: baseProvider{Name: name}}
+	return &JsonProvider{BaseProvider: BaseProvider{Name: name}}
 }
 
 func (p *JsonProvider) ParseViper(v *viper.Viper) error {

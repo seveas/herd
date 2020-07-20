@@ -12,7 +12,7 @@ import (
 )
 
 type fakeProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	loaded       int
 }
 

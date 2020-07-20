@@ -20,7 +20,7 @@ import (
 
 func init() {
 	magicProviders["putty"] = func(r *Registry) {
-		r.AddMagicProvider(&PuttyProvider{baseProvider: baseProvider{Name: "putty"}})
+		r.AddMagicProvider(&PuttyProvider{BaseProvider: BaseProvider{Name: "putty"}})
 	}
 }
 
@@ -138,7 +138,7 @@ func puttyConfig(host string) map[string]string {
 }
 
 type PuttyProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 }
 
 func (p *PuttyProvider) ParseViper(v *viper.Viper) error {

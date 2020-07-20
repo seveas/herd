@@ -9,7 +9,7 @@ test_expect_success "We can run katyusha" "
 "
 
 test_expect_success "All providers marked the base providers as squashable" "
-	! git grep '^\s*baseProvider$'
+	! git grep '^\s*BaseProvider$'
 "
 
 test_done
