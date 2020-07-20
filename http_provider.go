@@ -12,7 +12,7 @@ import (
 )
 
 type HttpProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	Url          string
 	Username     string
 	Password     string
@@ -20,7 +20,7 @@ type HttpProvider struct {
 }
 
 func NewHttpProvider(name string) HostProvider {
-	return &HttpProvider{baseProvider: baseProvider{Name: name, Timeout: 30 * time.Second}}
+	return &HttpProvider{BaseProvider: BaseProvider{Name: name, Timeout: 30 * time.Second}}
 }
 
 func (p *HttpProvider) ParseViper(v *viper.Viper) error {

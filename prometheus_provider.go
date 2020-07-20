@@ -39,7 +39,7 @@ type PrometheusTarget struct {
 }
 
 func NewPrometheusProvider(name string) HostProvider {
-	return &PrometheusProvider{HttpProvider: HttpProvider{baseProvider: baseProvider{Name: name}}}
+	return &PrometheusProvider{HttpProvider: HttpProvider{BaseProvider: BaseProvider{Name: name}}}
 }
 
 func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {

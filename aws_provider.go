@@ -38,7 +38,7 @@ func init() {
 }
 
 type AwsProvider struct {
-	baseProvider    `mapstructure:",squash"`
+	BaseProvider    `mapstructure:",squash"`
 	AccessKeyId     string
 	SecretAccessKey string
 	Partition       string
@@ -46,7 +46,7 @@ type AwsProvider struct {
 }
 
 func NewAwsProvider(name string) HostProvider {
-	p := &AwsProvider{baseProvider: baseProvider{Name: name}, Partition: "aws"}
+	p := &AwsProvider{BaseProvider: BaseProvider{Name: name}, Partition: "aws"}
 
 	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
 		p.AccessKeyId = v

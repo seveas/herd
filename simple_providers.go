@@ -10,12 +10,12 @@ import (
 )
 
 type PlainTextProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	File         string
 }
 
 func NewPlainTextProvider(name string) HostProvider {
-	return &PlainTextProvider{baseProvider: baseProvider{Name: name}}
+	return &PlainTextProvider{BaseProvider: BaseProvider{Name: name}}
 }
 
 func (p *PlainTextProvider) ParseViper(v *viper.Viper) error {

@@ -26,6 +26,11 @@ var availableProviders = map[string]func(string) HostProvider{
 
 var magicProviders = map[string]func(*Registry){}
 
+func RegisterProvider(name string, constructor func(string) HostProvider, magic func(*Registry)) {
+	availableProviders[name] = constructor
+	magicProviders[name] = magic
+}
+
 type Registry struct {
 	providers []HostProvider
 	hosts     Hosts
@@ -39,17 +44,17 @@ type Hosts []*Host
 type HostProvider interface {
 	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
-	base() *baseProvider
+	base() *BaseProvider
 }
 
-type baseProvider struct {
+type BaseProvider struct {
 	Name    string
 	Prefix  string
 	Timeout time.Duration
 	magic   bool
 }
 
-func (p *baseProvider) base() *baseProvider {
+func (p *BaseProvider) base() *BaseProvider {
 	return p
 }
 
@@ -85,11 +90,11 @@ func (r *Registry) LoadMagicProviders() {
 	r.AddMagicProvider(NewKnownHostsProvider("known_hosts"))
 	fn := filepath.Join(r.dataDir, "inventory")
 	if _, err := os.Stat(fn); err == nil {
-		r.AddMagicProvider(&PlainTextProvider{baseProvider: baseProvider{Name: "inventory"}, File: fn})
+		r.AddMagicProvider(&PlainTextProvider{BaseProvider: BaseProvider{Name: "inventory"}, File: fn})
 	}
 	fn += ".json"
 	if _, err := os.Stat(fn); err == nil {
-		r.AddMagicProvider(&JsonProvider{baseProvider: baseProvider{Name: "inventory"}, File: fn})
+		r.AddMagicProvider(&JsonProvider{BaseProvider: BaseProvider{Name: "inventory"}, File: fn})
 	}
 	// And now we do the other magic ones
 	for _, fnc := range magicProviders {
@@ -99,7 +104,7 @@ func (r *Registry) LoadMagicProviders() {
 
 func (r *Registry) cache(p HostProvider) HostProvider {
 	return &Cache{
-		baseProvider: baseProvider{Name: p.base().Name},
+		BaseProvider: BaseProvider{Name: p.base().Name},
 		Lifetime:     1 * time.Hour,
 		File:         filepath.Join(r.cacheDir, p.base().Name+".cache"),
 		Source:       p,
@@ -171,7 +176,7 @@ func (r *Registry) InvalidateCache() {
 }
 
 type loadresult struct {
-	provider *baseProvider
+	provider *BaseProvider
 	hosts    []*Host
 	err      error
 }

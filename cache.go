@@ -13,14 +13,14 @@ import (
 )
 
 type Cache struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	Lifetime     time.Duration
 	File         string
 	Source       HostProvider
 }
 
 func NewCache(name string) HostProvider {
-	return &Cache{baseProvider: baseProvider{Name: name}, Lifetime: 1 * time.Hour}
+	return &Cache{BaseProvider: BaseProvider{Name: name}, Lifetime: 1 * time.Hour}
 }
 
 func (c *Cache) ParseViper(v *viper.Viper) error {
@@ -44,7 +44,7 @@ func (c *Cache) mustRefresh() bool {
 
 func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	if !c.mustRefresh() {
-		jp := &JsonProvider{baseProvider: c.baseProvider, File: c.File}
+		jp := &JsonProvider{BaseProvider: c.BaseProvider, File: c.File}
 		hosts, err := jp.Load(ctx, mc)
 		if err != nil {
 			return hosts, err

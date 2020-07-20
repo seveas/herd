@@ -37,13 +37,13 @@ func init() {
 }
 
 type ConsulProvider struct {
-	baseProvider `mapstructure:",squash"`
+	BaseProvider `mapstructure:",squash"`
 	Address      string
 }
 
 func NewConsulProvider(name string) HostProvider {
 	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
-	return &ConsulProvider{baseProvider: baseProvider{Name: name}, Address: addr}
+	return &ConsulProvider{BaseProvider: BaseProvider{Name: name}, Address: addr}
 }
 
 func (p *ConsulProvider) ParseViper(v *viper.Viper) error {
