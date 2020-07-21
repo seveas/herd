@@ -141,6 +141,14 @@ type PuttyProvider struct {
 	BaseProvider `mapstructure:",squash"`
 }
 
+func (p *PuttyProvider) Equals(o HostProvider) bool {
+	if c, ok := o.(*Cache); ok {
+		o = c.Source
+	}
+	op, ok := o.(*PuttyProvider)
+	return ok && p.BaseProvider.Equals(&op.BaseProvider)
+}
+
 func (p *PuttyProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(p)
 }

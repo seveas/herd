@@ -23,6 +23,15 @@ func NewCache(name string) HostProvider {
 	return &Cache{BaseProvider: BaseProvider{Name: name}, Lifetime: 1 * time.Hour}
 }
 
+func (c *Cache) Equals(p HostProvider) bool {
+	// We ignore the cache parameters, so caching doesn't actually change
+	// whether providers are equal.
+	if o, ok := p.(*Cache); ok {
+		p = o.Source
+	}
+	return c.Source.Equals(p)
+}
+
 func (c *Cache) ParseViper(v *viper.Viper) error {
 	sv := v.Sub("Source")
 	if sv == nil {

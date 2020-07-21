@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -40,6 +41,16 @@ type PrometheusTarget struct {
 
 func NewPrometheusProvider(name string) HostProvider {
 	return &PrometheusProvider{HttpProvider: HttpProvider{BaseProvider: BaseProvider{Name: name}}}
+}
+
+func (p *PrometheusProvider) Equals(o HostProvider) bool {
+	if c, ok := o.(*Cache); ok {
+		o = c.Source
+	}
+	op, ok := o.(*PrometheusProvider)
+	return ok &&
+		p.HttpProvider.Equals(&op.HttpProvider) &&
+		deep.Equal(p.Jobs, op.Jobs) == nil
 }
 
 func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {

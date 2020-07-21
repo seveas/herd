@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 )
 
@@ -61,6 +62,19 @@ func NewAwsProvider(name string) HostProvider {
 		p.SecretAccessKey = v
 	}
 	return p
+}
+
+func (p *AwsProvider) Equals(o HostProvider) bool {
+	if c, ok := o.(*Cache); ok {
+		o = c.Source
+	}
+	op, ok := o.(*AwsProvider)
+	return ok &&
+		p.BaseProvider.Equals(&op.BaseProvider) &&
+		p.AccessKeyId == op.AccessKeyId &&
+		p.SecretAccessKey == op.SecretAccessKey &&
+		p.Partition == op.Partition &&
+		deep.Equal(p.Regions, op.Regions) == nil
 }
 
 func (p *AwsProvider) ParseViper(v *viper.Viper) error {

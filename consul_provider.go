@@ -46,6 +46,16 @@ func NewConsulProvider(name string) HostProvider {
 	return &ConsulProvider{BaseProvider: BaseProvider{Name: name}, Address: addr}
 }
 
+func (p *ConsulProvider) Equals(o HostProvider) bool {
+	if c, ok := o.(*Cache); ok {
+		o = c.Source
+	}
+	op, ok := o.(*ConsulProvider)
+	return ok &&
+		p.BaseProvider.Equals(&op.BaseProvider) &&
+		p.Address == op.Address
+}
+
 func (p *ConsulProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(p)
 }
