@@ -58,7 +58,7 @@ func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	data, err := p.fetch(ctx, mc)
+	data, err := p.Fetch(ctx, mc)
 	if err != nil {
 		return Hosts{}, err
 	}

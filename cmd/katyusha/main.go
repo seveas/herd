@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime/pprof"
 	"runtime/trace"
+	"strings"
 	"time"
 
 	"github.com/mgutz/ansi"
@@ -96,13 +97,15 @@ Configuration: %s, %s
 Datadir: %s
 History: %s
 Cache: %s
+Providers: %s
 `,
 		rootCmd.HelpTemplate(),
 		filepath.Join(currentUser.configDir, "config.yaml"),
 		filepath.Join(currentUser.systemConfigDir, "config.yaml"),
 		currentUser.dataDir,
 		currentUser.historyDir,
-		currentUser.cacheDir))
+		currentUser.cacheDir,
+		strings.Join(katyusha.Providers(), ",")))
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")

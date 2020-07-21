@@ -24,11 +24,22 @@ var availableProviders = map[string]func(string) HostProvider{
 	"known_hosts": NewKnownHostsProvider,
 }
 
+func Providers() []string {
+	ret := []string{}
+	for k := range availableProviders {
+		ret = append(ret, k)
+	}
+	sort.Slice(ret, func(i, j int) bool { return ret[i] < ret[j] })
+	return ret
+}
+
 var magicProviders = map[string]func(*Registry){}
 
 func RegisterProvider(name string, constructor func(string) HostProvider, magic func(*Registry)) {
 	availableProviders[name] = constructor
-	magicProviders[name] = magic
+	if magic != nil {
+		magicProviders[name] = magic
+	}
 }
 
 type Registry struct {
@@ -109,15 +120,6 @@ func (r *Registry) LoadMagicProviders() {
 	}
 }
 
-func (r *Registry) cache(p HostProvider) HostProvider {
-	return &Cache{
-		BaseProvider: BaseProvider{Name: p.base().Name},
-		Lifetime:     1 * time.Hour,
-		File:         filepath.Join(r.cacheDir, p.base().Name+".cache"),
-		Source:       p,
-	}
-}
-
 func (r *Registry) LoadProviders(c *viper.Viper) error {
 	rerr := &MultiError{Subject: "Errors loading providers"}
 
@@ -171,6 +173,11 @@ func (r *Registry) AddProvider(p HostProvider) {
 
 func (r *Registry) AddMagicProvider(p HostProvider) {
 	p.base().magic = true
+	for _, pr := range r.providers {
+		if pr.Equals(p) {
+			return
+		}
+	}
 	r.AddProvider(p)
 }
 
