@@ -18,20 +18,8 @@ func init() {
 	availableProviders["consul"] = NewConsulProvider
 	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
 		magicProviders["consul"] = func(r *Registry) {
-			addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
-			found := false
-			for _, v := range r.providers {
-				if c, ok := v.(*Cache); ok {
-					v = c.Source
-				}
-				if p, ok := v.(*ConsulProvider); ok && p.Address == addr {
-					found = true
-					break
-				}
-			}
-			if !found {
-				r.AddMagicProvider(r.cache(NewConsulProvider("consul")))
-			}
+			p := NewConsulProvider("consul")
+			r.AddMagicProvider(NewCacheFromProvider(p))
 		}
 	}
 }

@@ -21,19 +21,7 @@ func init() {
 	magicProviders["aws"] = func(r *Registry) {
 		p := NewAwsProvider("aws").(*AwsProvider)
 		if p.AccessKeyId != "" && p.SecretAccessKey != "" {
-			found := false
-			for _, v := range r.providers {
-				if c, ok := v.(*Cache); ok {
-					v = c.Source
-				}
-				if p2, ok := v.(*AwsProvider); ok && p.AccessKeyId == p2.AccessKeyId {
-					found = true
-					break
-				}
-			}
-			if !found {
-				r.AddMagicProvider(r.cache(p))
-			}
+			r.AddMagicProvider(NewCacheFromProvider(p))
 		}
 	}
 }

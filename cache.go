@@ -23,6 +23,14 @@ func NewCache(name string) HostProvider {
 	return &Cache{BaseProvider: BaseProvider{Name: name}, Lifetime: 1 * time.Hour}
 }
 
+func NewCacheFromProvider(p HostProvider) HostProvider {
+	return &Cache{
+		BaseProvider: BaseProvider{Name: p.base().Name},
+		Lifetime:     1 * time.Hour,
+		Source:       p,
+	}
+}
+
 func (c *Cache) Equals(p HostProvider) bool {
 	// We ignore the cache parameters, so caching doesn't actually change
 	// whether providers are equal.
