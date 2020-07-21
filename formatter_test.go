@@ -74,18 +74,18 @@ func init() {
 }
 
 func TestPrettyFormatterFormatCommand(t *testing.T) {
-	if x := testformatter.formatCommand("hello world"); x != "\033[36mhello world\033[0m\n" {
+	if x := testformatter.formatCommand("hello world"); x != "\033[0;36mhello world\033[0m\n" {
 		t.Errorf("Expected colored string, got %s", strconv.Quote(x))
 	}
 }
 
 func TestPrettyFormatterFormatStatus(t *testing.T) {
 	expected := []string{
-		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
-		"\033[32mtest-host-002.example.com  completed successfully after 12s\033[0m\n",
-		"\033[32mtest-host-003.example.com  completed successfully after 12s\033[0m\n",
-		"\033[31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
-		"\033[32mtest-host-005.example.com  completed successfully after 12s\033[0m\n",
+		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
+		"\033[0;32mtest-host-002.example.com  completed successfully after 12s\033[0m\n",
+		"\033[0;32mtest-host-003.example.com  completed successfully after 12s\033[0m\n",
+		"\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
+		"\033[0;32mtest-host-005.example.com  completed successfully after 12s\033[0m\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatStatus(r, 0); s != expected[i] {
@@ -96,11 +96,11 @@ func TestPrettyFormatterFormatStatus(t *testing.T) {
 
 func TestPrettyFormatterFormatOutput(t *testing.T) {
 	expected := []string{
-		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
+		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"test-host-002.example.com  May the forks be with you\n  And you\n",
 		"test-host-003.example.com  Newline is added automatically\n",
-		"\033[31mtest-host-004.example.com  \033[0mText on stderr\n  More text\n\033[31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
-		"test-host-005.example.com  Text on stdout without newline\n\x1b[31mtest-host-005.example.com  \x1b[0mText on stderr\n  More text\n",
+		"\033[0;31mtest-host-004.example.com  \033[0mText on stderr\n  More text\n\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
+		"test-host-005.example.com  Text on stdout without newline\n\x1b[0;31mtest-host-005.example.com  \x1b[0mText on stderr\n  More text\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatOutput(r, 0); s != expected[i] {
@@ -111,11 +111,11 @@ func TestPrettyFormatterFormatOutput(t *testing.T) {
 
 func TestPrettyFormatterFormatResult(t *testing.T) {
 	expected := []string{
-		"\033[31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
-		"\033[32mtest-host-002.example.com  completed successfully after 12s\033[0m\n    May the forks be with you\n    And you\n",
-		"\033[32mtest-host-003.example.com  completed successfully after 12s\033[0m\n    Newline is added automatically\n",
-		"\033[31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n\033[90m----\033[0m\n    Text on stderr\n    More text\n",
-		"\x1b[32mtest-host-005.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[90m----\x1b[0m\n    Text on stderr\n    More text\n",
+		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
+		"\033[0;32mtest-host-002.example.com  completed successfully after 12s\033[0m\n    May the forks be with you\n    And you\n",
+		"\033[0;32mtest-host-003.example.com  completed successfully after 12s\033[0m\n    Newline is added automatically\n",
+		"\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
+		"\x1b[0;32mtest-host-005.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[0;90m----\x1b[0m\n    Text on stderr\n    More text\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatResult(r, 0); s != expected[i] {
