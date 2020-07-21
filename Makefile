@@ -48,9 +48,17 @@ test-integration:
 	done; exit $$ec
 
 dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
+ssh_agent_oses := darwin dragonfly freebsd linux netbsd openbsd
 build_all:
-	$(foreach os,$(dist_oses),echo "Building for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_third_party -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/herd/cmd/herd;)
+	@echo Building herd
+	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_third_party -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/herd/cmd/herd;)
+	@echo Building ssh-agent-proxy
+	@$(foreach os,$(ssh_agent_oses),echo " - for $(os)" && GOOS=$(os) GOARCH=amd64 go build -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/herd/cmd/ssh-agent-proxy;)
 
 clean:
 	rm -f herd
 	rm -f ssh-agent-proxy
+
+fullclean: clean
+	rm -rf dist/
+	rm -f $(antlr_sources)
