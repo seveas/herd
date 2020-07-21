@@ -3,7 +3,7 @@ module github.com/seveas/herd
 go 1.13
 
 require (
-	github.com/antlr/antlr4 v0.0.0-20191115170859-54daca92f7b0
+	github.com/antlr/antlr4 v0.0.0-20200712162734-eb1adaa8a7a6
 	github.com/armon/go-metrics v0.3.3 // indirect
 	github.com/aws/aws-sdk-go v1.30.18
 	github.com/chzyer/logex v1.1.10 // indirect
