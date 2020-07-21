@@ -5,8 +5,12 @@ else
 	antlr_sources := scripting/parser/katyusha_base_listener.go scripting/parser/katyusha_lexer.go scripting/parser/katyusha_listener.go scripting/parser/katyusha_parser.go
 endif
 
+ifneq ($(origin KATYUSHA_TAGS), undefined)
+	TAGS := -tags $(KATYUSHA_TAGS)
+endif
+
 katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources)
-	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
+	go build $(TAGS) -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
 	go build -o "$@" github.com/seveas/katyusha/cmd/ssh-agent-proxy
@@ -45,4 +49,8 @@ test-integration:
 
 dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
 build_all:
-	$(foreach os,$(dist_oses),echo "Building for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/katyusha/cmd/katyusha;)
+	$(foreach os,$(dist_oses),echo "Building for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_third_party -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/katyusha/cmd/katyusha;)
+
+clean:
+	rm -f katyusha
+	rm -f ssh-agent-proxy

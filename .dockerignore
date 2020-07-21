@@ -1,3 +1,5 @@
 .git
 dist
 katyusha
+ssh-agent-proxy
+cmd/katyusha/third_party_providers.go

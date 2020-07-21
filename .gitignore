@@ -6,3 +6,4 @@
 *.csr
 *.srl
 test-results
+third_party_providers.go
