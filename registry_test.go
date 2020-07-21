@@ -2,6 +2,7 @@ package katyusha
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -14,7 +15,6 @@ func TestNewRegistry(t *testing.T) {
 	r := NewRegistry(dataDir("0"), cacheDir("0"))
 	if len(r.providers) > 0 {
 		t.Errorf("got %d providers, expected none", len(r.providers))
-		return
 	}
 }
 
@@ -45,6 +45,10 @@ func TestMagicProviders(t *testing.T) {
 
 type FakeProvider struct {
 	BaseProvider `mapstructure:",squash"`
+}
+
+func (p *FakeProvider) Equals(o HostProvider) bool {
+	return false
 }
 
 func (p *FakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
@@ -83,5 +87,19 @@ func TestRelativeFiles(t *testing.T) {
 	r.AddProvider(c2)
 	if c2.File != filepath.Join(cacheDir("2"), "it-cache.cache") {
 		t.Errorf("Proper cache path not set, found %s", c2.File)
+	}
+}
+
+func TestBaseEquals(t *testing.T) {
+	for name, constructor := range availableProviders {
+		if name == "cache" {
+			continue
+		}
+		p1 := constructor(fmt.Sprintf("test-%s", name))
+		p2 := constructor(fmt.Sprintf("test-%s", name))
+		p2.base().Prefix = name + ":"
+		if p1.Equals(p2) {
+			t.Errorf("Provider %s is not testing base equality", name)
+		}
 	}
 }

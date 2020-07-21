@@ -16,6 +16,10 @@ type fakeProvider struct {
 	loaded       int
 }
 
+func (p *fakeProvider) Equals(o HostProvider) bool {
+	return false
+}
+
 func (p *fakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	p.loaded++
 	return Hosts{NewHost("test-host", HostAttributes{})}, nil
@@ -53,5 +57,16 @@ func TestCache(t *testing.T) {
 	}
 	if c.Source.(*fakeProvider).loaded != 1 {
 		t.Errorf("Second cache load went to the backend provider")
+	}
+}
+
+func TestCacheEqual(t *testing.T) {
+	p := NewPlainTextProvider("plain")
+	c := NewCacheFromProvider(p)
+	if !c.Equals(p) {
+		t.Errorf("Caching is affecting equality")
+	}
+	if !p.Equals(c) {
+		t.Errorf("Caching is affecting equality in reverse")
 	}
 }
