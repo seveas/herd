@@ -30,6 +30,13 @@ const (
 	OutputAll
 )
 
+var outputModeString map[OutputMode]string = map[OutputMode]string{
+	OutputTail:    "tail",
+	OutputPerhost: "per-host",
+	OutputInline:  "inline",
+	OutputAll:     "all",
+}
+
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHostList(hosts Hosts, opts HostListOptions)
@@ -43,6 +50,7 @@ type UI interface {
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
 	BindLogrus()
+	PrintSettings()
 }
 
 type HostListOptions struct {
@@ -510,4 +518,11 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 		}
 	}()
 	return pc
+}
+
+func (ui *SimpleUI) PrintSettings() {
+	ui.pchan <- fmt.Sprintf("Output:         %s\n", outputModeString[ui.outputMode])
+	ui.pchan <- fmt.Sprintf("Timestamp:      %t\n", ui.outputTimestamp)
+	ui.pchan <- fmt.Sprintf("NoPager:        %t\n", !ui.pagerEnabled)
+	ui.pchan <- fmt.Sprintf("NoColor:        %t\n", ansi.Black == "")
 }

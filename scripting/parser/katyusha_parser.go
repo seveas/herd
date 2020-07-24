@@ -1,4 +1,4 @@
-// Code generated from Katyusha.g4 by ANTLR 4.7.2. DO NOT EDIT.
+// Code generated from Katyusha.g4 by ANTLR 4.8. DO NOT EDIT.
 
 package parser // Katyusha
 
@@ -16,64 +16,65 @@ var _ = reflect.Copy
 var _ = strconv.Itoa
 
 var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 26, 135,
+	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 26, 136,
 	4, 2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7,
 	4, 8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 4, 11, 9, 11, 4, 12, 9, 12, 4, 13,
 	9, 13, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 3, 2, 3, 3,
 	3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 40, 10, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 5,
-	3, 5, 3, 5, 3, 5, 3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 54, 10, 6, 12, 6, 14, 6,
-	57, 11, 6, 3, 6, 6, 6, 60, 10, 6, 13, 6, 14, 6, 61, 5, 6, 64, 10, 6, 3,
-	7, 3, 7, 3, 7, 3, 7, 7, 7, 70, 10, 7, 12, 7, 14, 7, 73, 11, 7, 3, 7, 6,
-	7, 76, 10, 7, 13, 7, 14, 7, 77, 5, 7, 80, 10, 7, 3, 8, 3, 8, 3, 8, 5, 8,
-	85, 10, 8, 3, 9, 3, 9, 3, 9, 3, 9, 3, 9, 5, 9, 92, 10, 9, 3, 10, 3, 10,
-	3, 11, 3, 11, 3, 11, 5, 11, 99, 10, 11, 3, 12, 3, 12, 3, 12, 3, 12, 3,
-	12, 3, 12, 7, 12, 107, 10, 12, 12, 12, 14, 12, 110, 11, 12, 3, 12, 3, 12,
-	5, 12, 114, 10, 12, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3,
-	13, 3, 13, 3, 13, 7, 13, 126, 10, 13, 12, 13, 14, 13, 129, 11, 13, 3, 13,
-	3, 13, 5, 13, 133, 10, 13, 3, 13, 2, 2, 14, 2, 4, 6, 8, 10, 12, 14, 16,
-	18, 20, 22, 24, 2, 6, 3, 2, 18, 19, 4, 2, 20, 20, 22, 22, 4, 2, 21, 21,
-	23, 23, 4, 2, 16, 18, 24, 24, 2, 142, 2, 29, 3, 2, 2, 2, 4, 39, 3, 2, 2,
-	2, 6, 43, 3, 2, 2, 2, 8, 45, 3, 2, 2, 2, 10, 49, 3, 2, 2, 2, 12, 65, 3,
-	2, 2, 2, 14, 81, 3, 2, 2, 2, 16, 86, 3, 2, 2, 2, 18, 93, 3, 2, 2, 2, 20,
-	98, 3, 2, 2, 2, 22, 113, 3, 2, 2, 2, 24, 132, 3, 2, 2, 2, 26, 28, 5, 4,
-	3, 2, 27, 26, 3, 2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2, 29, 30,
-	3, 2, 2, 2, 30, 32, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 33, 7, 2, 2, 3,
-	33, 3, 3, 2, 2, 2, 34, 40, 5, 6, 4, 2, 35, 40, 5, 8, 5, 2, 36, 40, 5, 10,
-	6, 2, 37, 40, 5, 12, 7, 2, 38, 40, 5, 14, 8, 2, 39, 34, 3, 2, 2, 2, 39,
-	35, 3, 2, 2, 2, 39, 36, 3, 2, 2, 2, 39, 37, 3, 2, 2, 2, 39, 38, 3, 2, 2,
-	2, 39, 40, 3, 2, 2, 2, 40, 41, 3, 2, 2, 2, 41, 42, 7, 3, 2, 2, 42, 5, 3,
-	2, 2, 2, 43, 44, 7, 8, 2, 2, 44, 7, 3, 2, 2, 2, 45, 46, 7, 11, 2, 2, 46,
-	47, 7, 18, 2, 2, 47, 48, 5, 18, 10, 2, 48, 9, 3, 2, 2, 2, 49, 50, 7, 12,
-	2, 2, 50, 63, 7, 15, 2, 2, 51, 55, 9, 2, 2, 2, 52, 54, 5, 16, 9, 2, 53,
-	52, 3, 2, 2, 2, 54, 57, 3, 2, 2, 2, 55, 53, 3, 2, 2, 2, 55, 56, 3, 2, 2,
-	2, 56, 64, 3, 2, 2, 2, 57, 55, 3, 2, 2, 2, 58, 60, 5, 16, 9, 2, 59, 58,
-	3, 2, 2, 2, 60, 61, 3, 2, 2, 2, 61, 59, 3, 2, 2, 2, 61, 62, 3, 2, 2, 2,
-	62, 64, 3, 2, 2, 2, 63, 51, 3, 2, 2, 2, 63, 59, 3, 2, 2, 2, 64, 11, 3,
-	2, 2, 2, 65, 66, 7, 13, 2, 2, 66, 79, 7, 15, 2, 2, 67, 71, 9, 2, 2, 2,
-	68, 70, 5, 16, 9, 2, 69, 68, 3, 2, 2, 2, 70, 73, 3, 2, 2, 2, 71, 69, 3,
-	2, 2, 2, 71, 72, 3, 2, 2, 2, 72, 80, 3, 2, 2, 2, 73, 71, 3, 2, 2, 2, 74,
-	76, 5, 16, 9, 2, 75, 74, 3, 2, 2, 2, 76, 77, 3, 2, 2, 2, 77, 75, 3, 2,
-	2, 2, 77, 78, 3, 2, 2, 2, 78, 80, 3, 2, 2, 2, 79, 67, 3, 2, 2, 2, 79, 75,
-	3, 2, 2, 2, 80, 13, 3, 2, 2, 2, 81, 82, 7, 14, 2, 2, 82, 84, 7, 15, 2,
-	2, 83, 85, 5, 24, 13, 2, 84, 83, 3, 2, 2, 2, 84, 85, 3, 2, 2, 2, 85, 15,
-	3, 2, 2, 2, 86, 91, 7, 18, 2, 2, 87, 88, 9, 3, 2, 2, 88, 92, 5, 18, 10,
-	2, 89, 90, 9, 4, 2, 2, 90, 92, 7, 25, 2, 2, 91, 87, 3, 2, 2, 2, 91, 89,
-	3, 2, 2, 2, 92, 17, 3, 2, 2, 2, 93, 94, 9, 5, 2, 2, 94, 19, 3, 2, 2, 2,
-	95, 99, 5, 18, 10, 2, 96, 99, 5, 22, 12, 2, 97, 99, 5, 24, 13, 2, 98, 95,
-	3, 2, 2, 2, 98, 96, 3, 2, 2, 2, 98, 97, 3, 2, 2, 2, 99, 21, 3, 2, 2, 2,
-	100, 101, 7, 9, 2, 2, 101, 114, 7, 4, 2, 2, 102, 103, 7, 9, 2, 2, 103,
-	108, 5, 20, 11, 2, 104, 105, 7, 5, 2, 2, 105, 107, 5, 20, 11, 2, 106, 104,
-	3, 2, 2, 2, 107, 110, 3, 2, 2, 2, 108, 106, 3, 2, 2, 2, 108, 109, 3, 2,
-	2, 2, 109, 111, 3, 2, 2, 2, 110, 108, 3, 2, 2, 2, 111, 112, 7, 4, 2, 2,
-	112, 114, 3, 2, 2, 2, 113, 100, 3, 2, 2, 2, 113, 102, 3, 2, 2, 2, 114,
-	23, 3, 2, 2, 2, 115, 116, 7, 10, 2, 2, 116, 133, 7, 6, 2, 2, 117, 118,
-	7, 10, 2, 2, 118, 119, 7, 18, 2, 2, 119, 120, 7, 7, 2, 2, 120, 127, 5,
-	20, 11, 2, 121, 122, 7, 5, 2, 2, 122, 123, 7, 18, 2, 2, 123, 124, 7, 7,
-	2, 2, 124, 126, 5, 20, 11, 2, 125, 121, 3, 2, 2, 2, 126, 129, 3, 2, 2,
-	2, 127, 125, 3, 2, 2, 2, 127, 128, 3, 2, 2, 2, 128, 130, 3, 2, 2, 2, 129,
-	127, 3, 2, 2, 2, 130, 131, 7, 6, 2, 2, 131, 133, 3, 2, 2, 2, 132, 115,
-	3, 2, 2, 2, 132, 117, 3, 2, 2, 2, 133, 25, 3, 2, 2, 2, 17, 29, 39, 55,
-	61, 63, 71, 77, 79, 84, 91, 98, 108, 113, 127, 132,
+	3, 5, 3, 5, 5, 5, 49, 10, 5, 3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 55, 10, 6, 12,
+	6, 14, 6, 58, 11, 6, 3, 6, 6, 6, 61, 10, 6, 13, 6, 14, 6, 62, 5, 6, 65,
+	10, 6, 3, 7, 3, 7, 3, 7, 3, 7, 7, 7, 71, 10, 7, 12, 7, 14, 7, 74, 11, 7,
+	3, 7, 6, 7, 77, 10, 7, 13, 7, 14, 7, 78, 5, 7, 81, 10, 7, 3, 8, 3, 8, 3,
+	8, 5, 8, 86, 10, 8, 3, 9, 3, 9, 3, 9, 3, 9, 3, 9, 5, 9, 93, 10, 9, 3, 10,
+	3, 10, 3, 11, 3, 11, 3, 11, 5, 11, 100, 10, 11, 3, 12, 3, 12, 3, 12, 3,
+	12, 3, 12, 3, 12, 7, 12, 108, 10, 12, 12, 12, 14, 12, 111, 11, 12, 3, 12,
+	3, 12, 5, 12, 115, 10, 12, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3,
+	13, 3, 13, 3, 13, 3, 13, 7, 13, 127, 10, 13, 12, 13, 14, 13, 130, 11, 13,
+	3, 13, 3, 13, 5, 13, 134, 10, 13, 3, 13, 2, 2, 14, 2, 4, 6, 8, 10, 12,
+	14, 16, 18, 20, 22, 24, 2, 6, 3, 2, 18, 19, 4, 2, 20, 20, 22, 22, 4, 2,
+	21, 21, 23, 23, 4, 2, 16, 18, 24, 24, 2, 144, 2, 29, 3, 2, 2, 2, 4, 39,
+	3, 2, 2, 2, 6, 43, 3, 2, 2, 2, 8, 45, 3, 2, 2, 2, 10, 50, 3, 2, 2, 2, 12,
+	66, 3, 2, 2, 2, 14, 82, 3, 2, 2, 2, 16, 87, 3, 2, 2, 2, 18, 94, 3, 2, 2,
+	2, 20, 99, 3, 2, 2, 2, 22, 114, 3, 2, 2, 2, 24, 133, 3, 2, 2, 2, 26, 28,
+	5, 4, 3, 2, 27, 26, 3, 2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2,
+	29, 30, 3, 2, 2, 2, 30, 32, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 33, 7,
+	2, 2, 3, 33, 3, 3, 2, 2, 2, 34, 40, 5, 6, 4, 2, 35, 40, 5, 8, 5, 2, 36,
+	40, 5, 10, 6, 2, 37, 40, 5, 12, 7, 2, 38, 40, 5, 14, 8, 2, 39, 34, 3, 2,
+	2, 2, 39, 35, 3, 2, 2, 2, 39, 36, 3, 2, 2, 2, 39, 37, 3, 2, 2, 2, 39, 38,
+	3, 2, 2, 2, 39, 40, 3, 2, 2, 2, 40, 41, 3, 2, 2, 2, 41, 42, 7, 3, 2, 2,
+	42, 5, 3, 2, 2, 2, 43, 44, 7, 8, 2, 2, 44, 7, 3, 2, 2, 2, 45, 48, 7, 11,
+	2, 2, 46, 47, 7, 18, 2, 2, 47, 49, 5, 18, 10, 2, 48, 46, 3, 2, 2, 2, 48,
+	49, 3, 2, 2, 2, 49, 9, 3, 2, 2, 2, 50, 51, 7, 12, 2, 2, 51, 64, 7, 15,
+	2, 2, 52, 56, 9, 2, 2, 2, 53, 55, 5, 16, 9, 2, 54, 53, 3, 2, 2, 2, 55,
+	58, 3, 2, 2, 2, 56, 54, 3, 2, 2, 2, 56, 57, 3, 2, 2, 2, 57, 65, 3, 2, 2,
+	2, 58, 56, 3, 2, 2, 2, 59, 61, 5, 16, 9, 2, 60, 59, 3, 2, 2, 2, 61, 62,
+	3, 2, 2, 2, 62, 60, 3, 2, 2, 2, 62, 63, 3, 2, 2, 2, 63, 65, 3, 2, 2, 2,
+	64, 52, 3, 2, 2, 2, 64, 60, 3, 2, 2, 2, 65, 11, 3, 2, 2, 2, 66, 67, 7,
+	13, 2, 2, 67, 80, 7, 15, 2, 2, 68, 72, 9, 2, 2, 2, 69, 71, 5, 16, 9, 2,
+	70, 69, 3, 2, 2, 2, 71, 74, 3, 2, 2, 2, 72, 70, 3, 2, 2, 2, 72, 73, 3,
+	2, 2, 2, 73, 81, 3, 2, 2, 2, 74, 72, 3, 2, 2, 2, 75, 77, 5, 16, 9, 2, 76,
+	75, 3, 2, 2, 2, 77, 78, 3, 2, 2, 2, 78, 76, 3, 2, 2, 2, 78, 79, 3, 2, 2,
+	2, 79, 81, 3, 2, 2, 2, 80, 68, 3, 2, 2, 2, 80, 76, 3, 2, 2, 2, 81, 13,
+	3, 2, 2, 2, 82, 83, 7, 14, 2, 2, 83, 85, 7, 15, 2, 2, 84, 86, 5, 24, 13,
+	2, 85, 84, 3, 2, 2, 2, 85, 86, 3, 2, 2, 2, 86, 15, 3, 2, 2, 2, 87, 92,
+	7, 18, 2, 2, 88, 89, 9, 3, 2, 2, 89, 93, 5, 18, 10, 2, 90, 91, 9, 4, 2,
+	2, 91, 93, 7, 25, 2, 2, 92, 88, 3, 2, 2, 2, 92, 90, 3, 2, 2, 2, 93, 17,
+	3, 2, 2, 2, 94, 95, 9, 5, 2, 2, 95, 19, 3, 2, 2, 2, 96, 100, 5, 18, 10,
+	2, 97, 100, 5, 22, 12, 2, 98, 100, 5, 24, 13, 2, 99, 96, 3, 2, 2, 2, 99,
+	97, 3, 2, 2, 2, 99, 98, 3, 2, 2, 2, 100, 21, 3, 2, 2, 2, 101, 102, 7, 9,
+	2, 2, 102, 115, 7, 4, 2, 2, 103, 104, 7, 9, 2, 2, 104, 109, 5, 20, 11,
+	2, 105, 106, 7, 5, 2, 2, 106, 108, 5, 20, 11, 2, 107, 105, 3, 2, 2, 2,
+	108, 111, 3, 2, 2, 2, 109, 107, 3, 2, 2, 2, 109, 110, 3, 2, 2, 2, 110,
+	112, 3, 2, 2, 2, 111, 109, 3, 2, 2, 2, 112, 113, 7, 4, 2, 2, 113, 115,
+	3, 2, 2, 2, 114, 101, 3, 2, 2, 2, 114, 103, 3, 2, 2, 2, 115, 23, 3, 2,
+	2, 2, 116, 117, 7, 10, 2, 2, 117, 134, 7, 6, 2, 2, 118, 119, 7, 10, 2,
+	2, 119, 120, 7, 18, 2, 2, 120, 121, 7, 7, 2, 2, 121, 128, 5, 20, 11, 2,
+	122, 123, 7, 5, 2, 2, 123, 124, 7, 18, 2, 2, 124, 125, 7, 7, 2, 2, 125,
+	127, 5, 20, 11, 2, 126, 122, 3, 2, 2, 2, 127, 130, 3, 2, 2, 2, 128, 126,
+	3, 2, 2, 2, 128, 129, 3, 2, 2, 2, 129, 131, 3, 2, 2, 2, 130, 128, 3, 2,
+	2, 2, 131, 132, 7, 6, 2, 2, 132, 134, 3, 2, 2, 2, 133, 116, 3, 2, 2, 2,
+	133, 118, 3, 2, 2, 2, 134, 25, 3, 2, 2, 2, 18, 29, 39, 48, 56, 62, 64,
+	72, 78, 80, 85, 92, 99, 109, 114, 128, 133,
 }
 var deserializer = antlr.NewATNDeserializer(nil)
 var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
@@ -660,6 +661,7 @@ func (s *SetContext) ExitRule(listener antlr.ParseTreeListener) {
 func (p *KatyushaParser) Set() (localctx ISetContext) {
 	localctx = NewSetContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 6, KatyushaParserRULE_set)
+	var _la int
 
 	defer func() {
 		p.ExitRule()
@@ -682,19 +684,26 @@ func (p *KatyushaParser) Set() (localctx ISetContext) {
 		p.SetState(43)
 		p.Match(KatyushaParserSET)
 	}
-	{
-		p.SetState(44)
+	p.SetState(46)
+	p.GetErrorHandler().Sync(p)
+	_la = p.GetTokenStream().LA(1)
 
-		var _m = p.Match(KatyushaParserIDENTIFIER)
+	if _la == KatyushaParserIDENTIFIER {
+		{
+			p.SetState(44)
 
-		localctx.(*SetContext).varname = _m
-	}
-	{
-		p.SetState(45)
+			var _m = p.Match(KatyushaParserIDENTIFIER)
 
-		var _x = p.Scalar()
+			localctx.(*SetContext).varname = _m
+		}
+		{
+			p.SetState(45)
 
-		localctx.(*SetContext).varvalue = _x
+			var _x = p.Scalar()
+
+			localctx.(*SetContext).varvalue = _x
+		}
+
 	}
 
 	return localctx
@@ -842,19 +851,19 @@ func (p *KatyushaParser) Add() (localctx IAddContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(47)
+		p.SetState(48)
 		p.Match(KatyushaParserADD)
 	}
 	{
-		p.SetState(48)
+		p.SetState(49)
 		p.Match(KatyushaParserHOSTS)
 	}
-	p.SetState(61)
+	p.SetState(62)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 4, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 5, p.GetParserRuleContext()) {
 	case 1:
 		{
-			p.SetState(49)
+			p.SetState(50)
 
 			var _lt = p.GetTokenStream().LT(1)
 
@@ -871,39 +880,39 @@ func (p *KatyushaParser) Add() (localctx IAddContext) {
 				p.Consume()
 			}
 		}
-		p.SetState(53)
+		p.SetState(54)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == KatyushaParserIDENTIFIER {
 			{
-				p.SetState(50)
+				p.SetState(51)
 
 				var _x = p.Filter()
 
 				localctx.(*AddContext).filters = _x
 			}
 
-			p.SetState(55)
+			p.SetState(56)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
 
 	case 2:
-		p.SetState(57)
+		p.SetState(58)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for ok := true; ok; ok = _la == KatyushaParserIDENTIFIER {
 			{
-				p.SetState(56)
+				p.SetState(57)
 
 				var _x = p.Filter()
 
 				localctx.(*AddContext).filters = _x
 			}
 
-			p.SetState(59)
+			p.SetState(60)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
@@ -1055,19 +1064,19 @@ func (p *KatyushaParser) Remove() (localctx IRemoveContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(63)
+		p.SetState(64)
 		p.Match(KatyushaParserREMOVE)
 	}
 	{
-		p.SetState(64)
+		p.SetState(65)
 		p.Match(KatyushaParserHOSTS)
 	}
-	p.SetState(77)
+	p.SetState(78)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 7, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 8, p.GetParserRuleContext()) {
 	case 1:
 		{
-			p.SetState(65)
+			p.SetState(66)
 
 			var _lt = p.GetTokenStream().LT(1)
 
@@ -1084,39 +1093,39 @@ func (p *KatyushaParser) Remove() (localctx IRemoveContext) {
 				p.Consume()
 			}
 		}
-		p.SetState(69)
+		p.SetState(70)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == KatyushaParserIDENTIFIER {
 			{
-				p.SetState(66)
+				p.SetState(67)
 
 				var _x = p.Filter()
 
 				localctx.(*RemoveContext).filters = _x
 			}
 
-			p.SetState(71)
+			p.SetState(72)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
 
 	case 2:
-		p.SetState(73)
+		p.SetState(74)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for ok := true; ok; ok = _la == KatyushaParserIDENTIFIER {
 			{
-				p.SetState(72)
+				p.SetState(73)
 
 				var _x = p.Filter()
 
 				localctx.(*RemoveContext).filters = _x
 			}
 
-			p.SetState(75)
+			p.SetState(76)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
@@ -1236,20 +1245,20 @@ func (p *KatyushaParser) List() (localctx IListContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(79)
+		p.SetState(80)
 		p.Match(KatyushaParserLIST)
 	}
 	{
-		p.SetState(80)
+		p.SetState(81)
 		p.Match(KatyushaParserHOSTS)
 	}
-	p.SetState(82)
+	p.SetState(83)
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == KatyushaParserCB_OPEN {
 		{
-			p.SetState(81)
+			p.SetState(82)
 
 			var _x = p.Hash()
 
@@ -1420,19 +1429,19 @@ func (p *KatyushaParser) Filter() (localctx IFilterContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(84)
+		p.SetState(85)
 
 		var _m = p.Match(KatyushaParserIDENTIFIER)
 
 		localctx.(*FilterContext).key = _m
 	}
-	p.SetState(89)
+	p.SetState(90)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case KatyushaParserEQUALS, KatyushaParserNOT_EQUALS:
 		{
-			p.SetState(85)
+			p.SetState(86)
 
 			var _lt = p.GetTokenStream().LT(1)
 
@@ -1450,7 +1459,7 @@ func (p *KatyushaParser) Filter() (localctx IFilterContext) {
 			}
 		}
 		{
-			p.SetState(86)
+			p.SetState(87)
 
 			var _x = p.Scalar()
 
@@ -1459,7 +1468,7 @@ func (p *KatyushaParser) Filter() (localctx IFilterContext) {
 
 	case KatyushaParserMATCHES, KatyushaParserNOT_MATCHES:
 		{
-			p.SetState(87)
+			p.SetState(88)
 
 			var _lt = p.GetTokenStream().LT(1)
 
@@ -1477,7 +1486,7 @@ func (p *KatyushaParser) Filter() (localctx IFilterContext) {
 			}
 		}
 		{
-			p.SetState(88)
+			p.SetState(89)
 
 			var _m = p.Match(KatyushaParserREGEXP)
 
@@ -1588,7 +1597,7 @@ func (p *KatyushaParser) Scalar() (localctx IScalarContext) {
 
 	p.EnterOuterAlt(localctx, 1)
 	{
-		p.SetState(91)
+		p.SetState(92)
 		_la = p.GetTokenStream().LA(1)
 
 		if !(((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<KatyushaParserDURATION)|(1<<KatyushaParserNUMBER)|(1<<KatyushaParserIDENTIFIER)|(1<<KatyushaParserSTRING))) != 0) {
@@ -1710,28 +1719,28 @@ func (p *KatyushaParser) Value() (localctx IValueContext) {
 		}
 	}()
 
-	p.SetState(96)
+	p.SetState(97)
 	p.GetErrorHandler().Sync(p)
 
 	switch p.GetTokenStream().LA(1) {
 	case KatyushaParserDURATION, KatyushaParserNUMBER, KatyushaParserIDENTIFIER, KatyushaParserSTRING:
 		p.EnterOuterAlt(localctx, 1)
 		{
-			p.SetState(93)
+			p.SetState(94)
 			p.Scalar()
 		}
 
 	case KatyushaParserSB_OPEN:
 		p.EnterOuterAlt(localctx, 2)
 		{
-			p.SetState(94)
+			p.SetState(95)
 			p.Array()
 		}
 
 	case KatyushaParserCB_OPEN:
 		p.EnterOuterAlt(localctx, 3)
 		{
-			p.SetState(95)
+			p.SetState(96)
 			p.Hash()
 		}
 
@@ -1849,48 +1858,48 @@ func (p *KatyushaParser) Array() (localctx IArrayContext) {
 	}()
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(111)
+	p.SetState(112)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 12, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 13, p.GetParserRuleContext()) {
 	case 1:
 		{
-			p.SetState(98)
+			p.SetState(99)
 			p.Match(KatyushaParserSB_OPEN)
 		}
 		{
-			p.SetState(99)
+			p.SetState(100)
 			p.Match(KatyushaParserT__1)
 		}
 
 	case 2:
 		{
-			p.SetState(100)
+			p.SetState(101)
 			p.Match(KatyushaParserSB_OPEN)
 		}
 		{
-			p.SetState(101)
+			p.SetState(102)
 			p.Value()
 		}
-		p.SetState(106)
+		p.SetState(107)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == KatyushaParserT__2 {
 			{
-				p.SetState(102)
+				p.SetState(103)
 				p.Match(KatyushaParserT__2)
 			}
 			{
-				p.SetState(103)
+				p.SetState(104)
 				p.Value()
 			}
 
-			p.SetState(108)
+			p.SetState(109)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
 		{
-			p.SetState(109)
+			p.SetState(110)
 			p.Match(KatyushaParserT__1)
 		}
 
@@ -2014,64 +2023,64 @@ func (p *KatyushaParser) Hash() (localctx IHashContext) {
 	}()
 
 	p.EnterOuterAlt(localctx, 1)
-	p.SetState(130)
+	p.SetState(131)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 14, p.GetParserRuleContext()) {
+	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 15, p.GetParserRuleContext()) {
 	case 1:
 		{
-			p.SetState(113)
+			p.SetState(114)
 			p.Match(KatyushaParserCB_OPEN)
 		}
 		{
-			p.SetState(114)
+			p.SetState(115)
 			p.Match(KatyushaParserT__3)
 		}
 
 	case 2:
 		{
-			p.SetState(115)
+			p.SetState(116)
 			p.Match(KatyushaParserCB_OPEN)
 		}
 		{
-			p.SetState(116)
+			p.SetState(117)
 			p.Match(KatyushaParserIDENTIFIER)
 		}
 		{
-			p.SetState(117)
+			p.SetState(118)
 			p.Match(KatyushaParserT__4)
 		}
 		{
-			p.SetState(118)
+			p.SetState(119)
 			p.Value()
 		}
-		p.SetState(125)
+		p.SetState(126)
 		p.GetErrorHandler().Sync(p)
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == KatyushaParserT__2 {
 			{
-				p.SetState(119)
+				p.SetState(120)
 				p.Match(KatyushaParserT__2)
 			}
 			{
-				p.SetState(120)
+				p.SetState(121)
 				p.Match(KatyushaParserIDENTIFIER)
 			}
 			{
-				p.SetState(121)
+				p.SetState(122)
 				p.Match(KatyushaParserT__4)
 			}
 			{
-				p.SetState(122)
+				p.SetState(123)
 				p.Value()
 			}
 
-			p.SetState(127)
+			p.SetState(128)
 			p.GetErrorHandler().Sync(p)
 			_la = p.GetTokenStream().LA(1)
 		}
 		{
-			p.SetState(128)
+			p.SetState(129)
 			p.Match(KatyushaParserT__3)
 		}
 

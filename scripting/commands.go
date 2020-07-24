@@ -37,12 +37,26 @@ func (c setCommand) execute(e *ScriptEngine) {
 	case "ConnectTimeout":
 		e.Runner.SetConnectTimeout(c.value.(time.Duration))
 	case "Parallel":
-		e.Runner.SetParallel(c.value.(int))
+		e.Runner.SetParallel(int(c.value.(int64)))
 	}
 }
 
 func (c setCommand) String() string {
 	return fmt.Sprintf("set %s %v", c.variable, c.value)
+}
+
+type showVariablesCommand struct {
+	variable string
+	value    interface{}
+}
+
+func (c showVariablesCommand) execute(e *ScriptEngine) {
+	e.Ui.PrintSettings()
+	e.Runner.PrintSettings(e.Ui)
+}
+
+func (c showVariablesCommand) String() string {
+	return "set"
 }
 
 type addHostsCommand struct {

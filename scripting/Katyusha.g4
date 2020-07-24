@@ -32,7 +32,7 @@ SKIP_ : ( SPACES | COMMENT ) -> skip ;
 prog : line* EOF ;
 line : ( run | set | add | remove | list )? '\n' ;
 run : RUN ;
-set: SET varname=IDENTIFIER varvalue=scalar ;
+set: SET (varname=IDENTIFIER varvalue=scalar)? ;
 add: ADD HOSTS ( glob=(GLOB|IDENTIFIER) filters=filter* | filters=filter+ );
 remove: REMOVE HOSTS ( glob=(GLOB|IDENTIFIER) filters=filter* | filters=filter+ );
 list: LIST HOSTS opts=hash? ;
