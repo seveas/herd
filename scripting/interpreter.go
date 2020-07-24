@@ -103,7 +103,12 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 	if l.errorListener.hasErrors() {
 		return
 	}
-	varName := c.GetVarname().GetText()
+	varToken := c.GetVarname()
+	if varToken == nil {
+		l.commands = append(l.commands, showVariablesCommand{})
+		return
+	}
+	varName := varToken.GetText()
 	varValue, err := convertScalar(c.GetVarvalue())
 
 	if err != nil {

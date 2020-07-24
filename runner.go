@@ -2,6 +2,8 @@ package herd
 
 import (
 	"context"
+	"fmt"
+	"io"
 	"math/rand"
 	"net"
 	"os"
@@ -80,6 +82,14 @@ func (r *Runner) SetHostTimeout(t time.Duration) {
 
 func (r *Runner) SetConnectTimeout(t time.Duration) {
 	r.connectTimeout = t
+}
+
+func (r *Runner) PrintSettings(ui io.Writer) {
+	fmt.Fprintf(ui, "Parallel:       %d\n", r.parallel)
+	fmt.Fprintf(ui, "Splay:          %s\n", r.splay)
+	fmt.Fprintf(ui, "Timeout:        %s\n", r.timeout)
+	fmt.Fprintf(ui, "HostTimeout:    %s\n", r.hostTimeout)
+	fmt.Fprintf(ui, "ConnectTimeout: %s\n", r.connectTimeout)
 }
 
 func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
