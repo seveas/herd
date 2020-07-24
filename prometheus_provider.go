@@ -7,10 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 	"time"
 
-	"github.com/go-test/deep"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -43,14 +43,14 @@ func NewPrometheusProvider(name string) HostProvider {
 	return &PrometheusProvider{HttpProvider: HttpProvider{BaseProvider: BaseProvider{Name: name}}}
 }
 
-func (p *PrometheusProvider) Equals(o HostProvider) bool {
+func (p *PrometheusProvider) Equivalent(o HostProvider) bool {
 	if c, ok := o.(*Cache); ok {
 		o = c.Source
 	}
 	op, ok := o.(*PrometheusProvider)
 	return ok &&
-		p.HttpProvider.Equals(&op.HttpProvider) &&
-		deep.Equal(p.Jobs, op.Jobs) == nil
+		p.HttpProvider.Equivalent(&op.HttpProvider) &&
+		reflect.DeepEqual(p.Jobs, op.Jobs)
 }
 
 func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {

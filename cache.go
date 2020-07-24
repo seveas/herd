@@ -31,13 +31,13 @@ func NewCacheFromProvider(p HostProvider) HostProvider {
 	}
 }
 
-func (c *Cache) Equals(p HostProvider) bool {
+func (c *Cache) Equivalent(p HostProvider) bool {
 	// We ignore the cache parameters, so caching doesn't actually change
 	// whether providers are equal.
 	if o, ok := p.(*Cache); ok {
 		p = o.Source
 	}
-	return c.Source.Equals(p)
+	return c.Source.Equivalent(p)
 }
 
 func (c *Cache) ParseViper(v *viper.Viper) error {

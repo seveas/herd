@@ -2,7 +2,6 @@ package katyusha
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -47,7 +46,7 @@ type FakeProvider struct {
 	BaseProvider `mapstructure:",squash"`
 }
 
-func (p *FakeProvider) Equals(o HostProvider) bool {
+func (p *FakeProvider) Equivalent(o HostProvider) bool {
 	return false
 }
 
@@ -87,19 +86,5 @@ func TestRelativeFiles(t *testing.T) {
 	r.AddProvider(c2)
 	if c2.File != filepath.Join(cacheDir("2"), "it-cache.cache") {
 		t.Errorf("Proper cache path not set, found %s", c2.File)
-	}
-}
-
-func TestBaseEquals(t *testing.T) {
-	for name, constructor := range availableProviders {
-		if name == "cache" {
-			continue
-		}
-		p1 := constructor(fmt.Sprintf("test-%s", name))
-		p2 := constructor(fmt.Sprintf("test-%s", name))
-		p2.base().Prefix = name + ":"
-		if p1.Equals(p2) {
-			t.Errorf("Provider %s is not testing base equality", name)
-		}
 	}
 }

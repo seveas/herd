@@ -18,14 +18,12 @@ func NewJsonProvider(name string) HostProvider {
 	return &JsonProvider{BaseProvider: BaseProvider{Name: name}}
 }
 
-func (p *JsonProvider) Equals(o HostProvider) bool {
+func (p *JsonProvider) Equivalent(o HostProvider) bool {
 	if c, ok := o.(*Cache); ok {
 		o = c.Source
 	}
 	op, ok := o.(*JsonProvider)
-	return ok &&
-		p.BaseProvider.Equals(&op.BaseProvider) &&
-		p.File == op.File
+	return ok && p.File == op.File
 }
 
 func (p *JsonProvider) ParseViper(v *viper.Viper) error {

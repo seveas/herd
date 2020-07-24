@@ -18,14 +18,12 @@ func NewPlainTextProvider(name string) HostProvider {
 	return &PlainTextProvider{BaseProvider: BaseProvider{Name: name}}
 }
 
-func (p *PlainTextProvider) Equals(o HostProvider) bool {
+func (p *PlainTextProvider) Equivalent(o HostProvider) bool {
 	if c, ok := o.(*Cache); ok {
 		o = c.Source
 	}
 	op, ok := o.(*PlainTextProvider)
-	return ok &&
-		p.BaseProvider.Equals(&op.BaseProvider) &&
-		p.File == op.File
+	return ok && p.File == op.File
 }
 
 func (p *PlainTextProvider) ParseViper(v *viper.Viper) error {

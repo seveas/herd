@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"reflect"
 
-	"github.com/go-test/deep"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
@@ -32,14 +32,12 @@ func NewKnownHostsProvider(name string) HostProvider {
 	return &KnownHostsProvider{BaseProvider: BaseProvider{Name: name}, Files: files}
 }
 
-func (p *KnownHostsProvider) Equals(o HostProvider) bool {
+func (p *KnownHostsProvider) Equivalent(o HostProvider) bool {
 	if c, ok := o.(*Cache); ok {
 		o = c.Source
 	}
 	op, ok := o.(*KnownHostsProvider)
-	return ok &&
-		p.BaseProvider.Equals(&op.BaseProvider) &&
-		deep.Equal(p.Files, op.Files) == nil
+	return ok && reflect.DeepEqual(p.Files, op.Files)
 }
 
 func (p *KnownHostsProvider) ParseViper(v *viper.Viper) error {

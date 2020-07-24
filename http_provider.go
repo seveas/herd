@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"time"
 
-	"github.com/go-test/deep"
 	"github.com/spf13/viper"
 )
 
@@ -24,17 +24,16 @@ func NewHttpProvider(name string) HostProvider {
 	return &HttpProvider{BaseProvider: BaseProvider{Name: name, Timeout: 30 * time.Second}}
 }
 
-func (p *HttpProvider) Equals(o HostProvider) bool {
+func (p *HttpProvider) Equivalent(o HostProvider) bool {
 	if c, ok := o.(*Cache); ok {
 		o = c.Source
 	}
 	op, ok := o.(*HttpProvider)
 	return ok &&
-		p.BaseProvider.Equals(&op.BaseProvider) &&
 		p.Url == op.Url &&
 		p.Username == op.Username &&
 		p.Password == op.Password &&
-		deep.Equal(p.Headers, op.Headers) == nil
+		reflect.DeepEqual(p.Headers, op.Headers)
 }
 
 func (p *HttpProvider) ParseViper(v *viper.Viper) error {
