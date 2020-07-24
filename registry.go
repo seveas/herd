@@ -55,7 +55,7 @@ type Hosts []*Host
 type HostProvider interface {
 	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
-	Equals(p HostProvider) bool
+	Equivalent(p HostProvider) bool
 	base() *BaseProvider
 }
 
@@ -68,12 +68,6 @@ type BaseProvider struct {
 
 func (p *BaseProvider) base() *BaseProvider {
 	return p
-}
-
-func (p *BaseProvider) Equals(o *BaseProvider) bool {
-	return p.Name == o.Name &&
-		p.Prefix == o.Prefix &&
-		p.Timeout == o.Timeout
 }
 
 type CacheMessage struct {
@@ -174,7 +168,7 @@ func (r *Registry) AddProvider(p HostProvider) {
 func (r *Registry) AddMagicProvider(p HostProvider) {
 	p.base().magic = true
 	for _, pr := range r.providers {
-		if pr.Equals(p) {
+		if pr.Equivalent(p) {
 			return
 		}
 	}

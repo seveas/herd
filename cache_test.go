@@ -16,7 +16,7 @@ type fakeProvider struct {
 	loaded       int
 }
 
-func (p *fakeProvider) Equals(o HostProvider) bool {
+func (p *fakeProvider) Equivalent(o HostProvider) bool {
 	return false
 }
 
@@ -60,13 +60,13 @@ func TestCache(t *testing.T) {
 	}
 }
 
-func TestCacheEqual(t *testing.T) {
+func TestCacheEquivalent(t *testing.T) {
 	p := NewPlainTextProvider("plain")
 	c := NewCacheFromProvider(p)
-	if !c.Equals(p) {
+	if !c.Equivalent(p) {
 		t.Errorf("Caching is affecting equality")
 	}
-	if !p.Equals(c) {
+	if !p.Equivalent(c) {
 		t.Errorf("Caching is affecting equality in reverse")
 	}
 }
