@@ -9,7 +9,13 @@ ifneq ($(origin KATYUSHA_TAGS), undefined)
 	TAGS := -tags $(KATYUSHA_TAGS)
 endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources)
+ifeq ($(origin KATYUSHA_PROVIDERS), undefined)
+	tpp_sorces :=
+else
+	tpp_sources := cmd/katyusha/third_party_providers.go
+endif
+
+katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources) $(tpp_sources)
 	go build $(TAGS) -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -17,6 +23,13 @@ ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
 
 $(antlr_sources): scripting/Katyusha.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Katyusha.g4)
+
+$(tpp_sources):
+	@echo "Enabling third party providers: $(KATYUSHA_PROVIDERS)"
+	@echo "package main" > $@
+	@echo "import (" >> $@
+	@for provider in $(KATYUSHA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
+	@echo ")" >> $@
 
 fmt:
 	go fmt ./...
@@ -58,6 +71,7 @@ build_all:
 clean:
 	rm -f katyusha
 	rm -f ssh-agent-proxy
+	rm -f cmd/katyusha/third_party_providers.go
 
 fullclean: clean
 	rm -rf dist/
