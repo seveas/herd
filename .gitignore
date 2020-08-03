@@ -7,4 +7,4 @@
 *.srl
 *.test
 test-results
-third_party_providers.go
+extra_providers.go

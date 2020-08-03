@@ -9,10 +9,10 @@ ifneq ($(origin KATYUSHA_TAGS), undefined)
 	TAGS := -tags $(KATYUSHA_TAGS)
 endif
 
-ifeq ($(origin KATYUSHA_PROVIDERS), undefined)
-	tpp_sorces :=
+ifeq ($(origin KATYUSHA_EXTRA_PROVIDERS), undefined)
+	tpp_sources :=
 else
-	tpp_sources := cmd/katyusha/third_party_providers.go
+	tpp_sources := cmd/katyusha/extra_providers.go
 endif
 
 katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources) $(tpp_sources)
@@ -25,10 +25,10 @@ $(antlr_sources): scripting/Katyusha.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Katyusha.g4)
 
 $(tpp_sources):
-	@echo "Enabling third party providers: $(KATYUSHA_PROVIDERS)"
+	@echo "Enabling third party providers: $(KATYUSHA_EXTRA_PROVIDERS)"
 	@echo "package main" > $@
 	@echo "import (" >> $@
-	@for provider in $(KATYUSHA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
+	@for provider in $(KATYUSHA_EXTRA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
 	@echo ")" >> $@
 
 fmt:
@@ -64,14 +64,14 @@ dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
 ssh_agent_oses := darwin dragonfly freebsd linux netbsd openbsd
 build_all:
 	@echo Building katyusha
-	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_third_party -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/katyusha/cmd/katyusha;)
+	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_extra -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/katyusha/cmd/katyusha;)
 	@echo Building ssh-agent-proxy
 	@$(foreach os,$(ssh_agent_oses),echo " - for $(os)" && GOOS=$(os) GOARCH=amd64 go build -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/katyusha/cmd/ssh-agent-proxy;)
 
 clean:
 	rm -f katyusha
 	rm -f ssh-agent-proxy
-	rm -f cmd/katyusha/third_party_providers.go
+	rm -f cmd/katyusha/extra_providers.go
 
 fullclean: clean
 	rm -rf dist/
