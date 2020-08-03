@@ -5,6 +5,7 @@ package katyusha
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"sort"
 	"time"
@@ -16,9 +17,9 @@ import (
 
 func init() {
 	availableProviders["consul"] = NewConsulProvider
-	if _, ok := os.LookupEnv("CONSUL_HTTP_ADDR"); ok {
-		magicProviders["consul"] = func(r *Registry) {
-			p := NewConsulProvider("consul")
+	magicProviders["consul"] = func(r *Registry) {
+		p := NewConsulProvider("consul")
+		if p.(*ConsulProvider).Address != "" {
 			r.AddMagicProvider(NewCacheFromProvider(p))
 		}
 	}
@@ -31,6 +32,12 @@ type ConsulProvider struct {
 
 func NewConsulProvider(name string) HostProvider {
 	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
+	if addr == "" {
+		_, err := net.LookupHost("consul.service.consul")
+		if err == nil {
+			addr = "http://consul.service.consul:8500"
+		}
+	}
 	return &ConsulProvider{BaseProvider: BaseProvider{Name: name}, Address: addr}
 }
 
