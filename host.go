@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -407,18 +408,17 @@ func (h1 *Host) less(h2 *Host, attributes []string) bool {
 			if !ok1 && !ok2 {
 				continue
 			}
-			// FIXME need to support more types
-			if _, ok := v1.(string); !ok {
-				continue
-			}
-			if _, ok := v2.(string); !ok {
+			// Compare the string values, this way we don't need to check a matrix of types
+			s1, err1 := cast.ToStringE(v1)
+			s2, err2 := cast.ToStringE(v2)
+			if err1 != nil || err2 != nil {
 				continue
 			}
 			// When equal, continue to the next field
-			if v1.(string) == v2.(string) {
+			if s1 == s2 {
 				continue
 			}
-			return v1.(string) < v2.(string)
+			return s1 < s2
 		}
 	}
 	return h1.Name < h2.Name
