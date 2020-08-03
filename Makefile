@@ -9,7 +9,13 @@ ifneq ($(origin HERD_TAGS), undefined)
 	TAGS := -tags $(HERD_TAGS)
 endif
 
-herd: go.mod *.go cmd/herd/*.go scripting/*.go $(antlr_sources)
+ifeq ($(origin HERD_PROVIDERS), undefined)
+	tpp_sorces :=
+else
+	tpp_sources := cmd/herd/third_party_providers.go
+endif
+
+herd: go.mod *.go cmd/herd/*.go scripting/*.go $(antlr_sources) $(tpp_sources)
 	go build $(TAGS) -o "$@" github.com/seveas/herd/cmd/herd
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -17,6 +23,13 @@ ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
 
 $(antlr_sources): scripting/Herd.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
+
+$(tpp_sources):
+	@echo "Enabling third party providers: $(HERD_PROVIDERS)"
+	@echo "package main" > $@
+	@echo "import (" >> $@
+	@for provider in $(HERD_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
+	@echo ")" >> $@
 
 fmt:
 	go fmt ./...
@@ -58,6 +71,7 @@ build_all:
 clean:
 	rm -f herd
 	rm -f ssh-agent-proxy
+	rm -f cmd/herd/third_party_providers.go
 
 fullclean: clean
 	rm -rf dist/
