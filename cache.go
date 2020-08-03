@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -61,6 +62,7 @@ func (c *Cache) mustRefresh() bool {
 
 func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	if !c.mustRefresh() {
+		logrus.Debugf("Loading cached data from %s for %s", c.File, c.Source.base().Name)
 		jp := &JsonProvider{BaseProvider: c.BaseProvider, File: c.File}
 		hosts, err := jp.Load(ctx, mc)
 		if err != nil {
