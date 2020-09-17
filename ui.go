@@ -63,6 +63,7 @@ type HostListOptions struct {
 	Align         bool
 	Header        bool
 	Template      string
+	Stats         []string
 }
 
 type SimpleUI struct {
@@ -350,6 +351,47 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 				logrus.Errorf("Error executing template: %s", err)
 			}
 		}
+	} else if len(opts.Stats) != 0 {
+		var writer datawriter
+		var out io.Writer = ui
+		if pgr != nil {
+			out = pgr
+		}
+		if opts.Csv {
+			writer = csv.NewWriter(out)
+		} else if opts.Align {
+			writer = newColumnizer(out, "   ")
+		}
+		valueKeys := make([]string, 0)
+		values := make(map[string][]string)
+		stats := make(map[string]int)
+
+		if opts.Header {
+			attrline := make([]string, len(opts.Stats)+1)
+			copy(attrline, opts.Stats)
+			writer.Write(attrline)
+		}
+		for _, host := range hosts {
+			v := make([]string, len(opts.Stats)+1)
+			for i, attr := range opts.Stats {
+				iv, _ := host.Attributes[attr]
+				v[i] = fmt.Sprintf("%v", iv)
+			}
+			vs := strings.Join(v, "\000")
+			if _, ok := stats[vs]; ok {
+				stats[vs]++
+			} else {
+				values[vs] = v
+				stats[vs] = 1
+				valueKeys = append(valueKeys, vs)
+			}
+		}
+		end := len(opts.Stats)
+		for _, k := range valueKeys {
+			values[k][end] = fmt.Sprintf("%v", stats[k])
+			writer.Write(values[k])
+		}
+		writer.Flush()
 	} else {
 		for _, host := range hosts {
 			if pgr != nil {
