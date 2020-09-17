@@ -22,6 +22,7 @@ func TestMagicProviders(t *testing.T) {
 	defer os.Setenv("HOME", realUserHome)
 
 	os.Setenv("HOME", homeDir("1"))
+	os.Unsetenv("CONSUL_HTTP_ADDR")
 	r := NewRegistry(dataDir("1"), cacheDir("1"))
 	r.LoadMagicProviders()
 	expect := 1
@@ -32,7 +33,6 @@ func TestMagicProviders(t *testing.T) {
 
 	if len(r.providers) != expect {
 		t.Errorf("Got %d providers, expected %d", len(r.providers), expect)
-		t.Errorf("%v", r.providers)
 	}
 	if _, ok := r.providers[0].(*KnownHostsProvider); !ok {
 		t.Errorf("expected the first provider to be the known hosts provider, not %s", reflect.TypeOf(r.providers[0]))
