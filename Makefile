@@ -72,6 +72,7 @@ clean:
 	rm -f herd
 	rm -f ssh-agent-proxy
 	rm -f cmd/herd/extra_providers.go
+	go mod tidy
 
 fullclean: clean
 	rm -rf dist/
