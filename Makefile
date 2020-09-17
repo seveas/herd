@@ -72,6 +72,7 @@ clean:
 	rm -f katyusha
 	rm -f ssh-agent-proxy
 	rm -f cmd/katyusha/extra_providers.go
+	go mod tidy
 
 fullclean: clean
 	rm -rf dist/
