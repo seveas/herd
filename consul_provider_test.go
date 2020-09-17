@@ -20,4 +20,5 @@ func TestDuplicateProviders(t *testing.T) {
 	if len(r.providers) != 2 {
 		t.Errorf("AddMagicProviders detected a duplicate provider where there is none")
 	}
+	os.Unsetenv("CONSUL_HTTP_ADDR")
 }
