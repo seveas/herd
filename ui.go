@@ -19,6 +19,7 @@ import (
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
+	"gopkg.in/yaml.v2"
 )
 
 type OutputMode int
@@ -79,6 +80,13 @@ type SimpleUI struct {
 	lineBuf         string
 	isTerminal      bool
 	wg              *sync.WaitGroup
+}
+
+var templateFuncs = template.FuncMap{
+	"yaml": func(data interface{}) (string, error) {
+		b, err := yaml.Marshal(data)
+		return "---\n" + string(b), err
+	},
 }
 
 func NewSimpleUI() *SimpleUI {
@@ -327,7 +335,7 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 		}
 		writer.Flush()
 	} else if opts.Template != "" {
-		tmpl, err := template.New("host").Parse(opts.Template + "\n")
+		tmpl, err := template.New("host").Funcs(templateFuncs).Parse(opts.Template + "\n")
 		if err != nil {
 			logrus.Errorf("Unable to parse template '%s': %s", opts.Template, err)
 			return
