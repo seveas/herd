@@ -8,6 +8,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -17,6 +18,7 @@ import (
 type KnownHostsProvider struct {
 	BaseProvider `mapstructure:",squash"`
 	Files        []string
+	hashed       bool
 }
 
 func NewKnownHostsProvider(name string) HostProvider {
@@ -29,7 +31,7 @@ func NewKnownHostsProvider(name string) HostProvider {
 			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
 		}
 	}
-	return &KnownHostsProvider{BaseProvider: BaseProvider{Name: name}, Files: files}
+	return &KnownHostsProvider{BaseProvider: BaseProvider{Name: name}, Files: files, hashed: false}
 }
 
 func (p *KnownHostsProvider) Equivalent(o HostProvider) bool {
@@ -64,6 +66,14 @@ func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 			}
 			data = rest
 			name := matches[0]
+			if strings.HasPrefix(name, "|") {
+				if !p.hashed {
+					logrus.Warnf("Hashed hostnames found in %s. Please set `HashKnownHosts no` in your ssh config and delte the hashed entries", f)
+					p.hashed = true
+				}
+				continue
+
+			}
 			if idx, ok := seen[name]; ok {
 				// -1 means: seen but did not match
 				// FIXME: if we ever match on key attributes, this is wrong.
