@@ -247,6 +247,17 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	}
 }
 
+func startPager(p *pager, o *io.Writer) {
+	if p == nil {
+		return
+	}
+	if err := p.start(); err != nil {
+		logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
+	} else {
+		*o = p
+	}
+}
+
 func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 	if len(hosts) == 0 {
 		logrus.Error("No hosts to list")
@@ -260,21 +271,15 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 		ui.pchan <- strings.Join(names, opts.Separator) + "\n"
 		return
 	}
-	var pgr *pager
-	if ui.pagerEnabled && len(hosts) > ui.height {
-		pgr = &pager{}
-		if err := pgr.start(); err != nil {
-			logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-			pgr = nil
-		} else {
-			defer pgr.Wait()
-		}
+	var writer datawriter
+	var out io.Writer = ui
+	pgr := &pager{}
+	if !ui.pagerEnabled {
+		pgr = nil
 	}
 	if opts.AllAttributes || len(opts.Attributes) > 0 {
-		var writer datawriter
-		var out io.Writer = ui
-		if pgr != nil {
-			out = pgr
+		if len(hosts) > ui.height {
+			startPager(pgr, &out)
 		}
 		if opts.Csv {
 			writer = csv.NewWriter(out)
@@ -318,59 +323,31 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			writer.Write(line)
 		}
 		// Start the pager after all if we are getting too wide
-		if w, ok := writer.(*columnizer); ok && ui.pagerEnabled && pgr == nil {
-			sum := 0
-			for i := 0; i < len(w.lengths); i++ {
-				sum += w.lengths[i]
-			}
-			if sum > ui.width {
-				pgr = &pager{}
-				if err := pgr.start(); err != nil {
-					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-					pgr = nil
-				} else {
-					w.output = pgr
-					defer pgr.Wait()
-				}
-			}
+		if w, ok := writer.(*columnizer); ok && w.width > ui.width {
+			startPager(pgr, &w.output)
 		}
 		writer.Flush()
 	} else if opts.Template != "" {
+		if len(hosts) > ui.height {
+			startPager(pgr, &out)
+		}
 		tmpl, err := template.New("host").Funcs(templateFuncs).Parse(opts.Template + "\n")
 		if err != nil {
 			logrus.Errorf("Unable to parse template '%s': %s", opts.Template, err)
 			return
 		}
 		for _, host := range hosts {
-			var out io.Writer = ui
-			if pgr != nil {
-				out = pgr
-			}
 			err := tmpl.Execute(out, host)
 			if err != nil {
 				logrus.Errorf("Error executing template: %s", err)
 			}
 		}
 	} else if len(opts.Stats) != 0 {
-		var writer datawriter
-		var out io.Writer = ui
-		if pgr != nil {
-			out = pgr
-		}
-		if opts.Csv {
-			writer = csv.NewWriter(out)
-		} else if opts.Align {
-			writer = newColumnizer(out, "   ")
-		}
+		// First we generate the statistics
 		valueKeys := make([]string, 0)
 		values := make(map[string][]string)
 		stats := make(map[string]int)
 
-		if opts.Header {
-			attrline := make([]string, len(opts.Stats)+1)
-			copy(attrline, opts.Stats)
-			writer.Write(attrline)
-		}
 		for _, host := range hosts {
 			v := make([]string, len(opts.Stats)+1)
 			for i, attr := range opts.Stats {
@@ -387,20 +364,42 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			}
 		}
 		end := len(opts.Stats)
+
+		// And now we write
+		if len(valueKeys) > ui.height {
+			startPager(pgr, &out)
+		}
+		if opts.Csv {
+			writer = csv.NewWriter(out)
+		} else if opts.Align {
+			writer = newColumnizer(out, "   ")
+		} else {
+			writer = newPassthrough(out)
+		}
+		if opts.Header {
+			attrline := make([]string, len(opts.Stats)+1)
+			copy(attrline, opts.Stats)
+			attrline[len(opts.Stats)] = "count"
+			writer.Write(attrline)
+		}
 		for _, k := range valueKeys {
 			values[k][end] = fmt.Sprintf("%v", stats[k])
 			writer.Write(values[k])
 		}
+		// Start the pager after all if we are getting too wide
+		if w, ok := writer.(*columnizer); ok && w.width > ui.width {
+			startPager(pgr, &w.output)
+		}
 		writer.Flush()
 	} else {
+		if len(hosts) > ui.height {
+			startPager(pgr, &out)
+		}
 		for _, host := range hosts {
-			if pgr != nil {
-				pgr.WriteString(host.Name + "\n")
-			} else {
-				ui.pchan <- host.Name + "\n"
-			}
+			fmt.Fprintln(out, host.Name)
 		}
 	}
+	pgr.Wait()
 }
 
 func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {

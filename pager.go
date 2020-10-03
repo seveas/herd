@@ -14,6 +14,9 @@ type pager struct {
 }
 
 func (p *pager) start() error {
+	if p == nil || p.process != nil {
+		return nil
+	}
 	pager, ok := os.LookupEnv("PAGER")
 	if !ok {
 		pager = "less"
@@ -49,8 +52,8 @@ func (p *pager) Write(msg []byte) (int, error) {
 }
 
 func (p *pager) Wait() error {
-	if p.process == nil {
-		return fmt.Errorf("trying to wait for a process that hasn't started")
+	if p == nil || p.process == nil {
+		return nil
 	}
 	p.stdin.Close()
 	return p.process.Wait()
