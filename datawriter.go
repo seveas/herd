@@ -12,6 +12,7 @@ type datawriter interface {
 }
 
 type columnizer struct {
+	width   int
 	rows    [][]string
 	lengths []int
 	output  io.Writer
@@ -27,11 +28,14 @@ func (c *columnizer) Write(r []string) error {
 		c.lengths = make([]int, len(r))
 	}
 	c.rows = append(c.rows, r)
+	tl := len(c.lengths) - 1
 	for i, v := range r {
 		if l := len(v); l > c.lengths[i] {
 			c.lengths[i] = l
 		}
+		tl += c.lengths[i]
 	}
+	c.width = tl
 	return nil
 }
 
