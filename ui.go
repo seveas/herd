@@ -64,6 +64,7 @@ type HostListOptions struct {
 	Header        bool
 	Template      string
 	Stats         []string
+	StatsSort     bool
 }
 
 type SimpleUI struct {
@@ -364,6 +365,19 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			}
 		}
 		end := len(opts.Stats)
+		if opts.StatsSort {
+			// We sort by count, keeping the order of entries with the same count intact
+			positions := make(map[string]int)
+			for i, k := range valueKeys {
+				positions[k] = i
+			}
+			sort.Slice(valueKeys, func(i, j int) bool {
+				if stats[valueKeys[i]] == stats[valueKeys[j]] {
+					return positions[valueKeys[i]] < positions[valueKeys[j]]
+				}
+				return stats[valueKeys[i]] > stats[valueKeys[j]]
+			})
+		}
 
 		// And now we write
 		if len(valueKeys) > ui.height {
