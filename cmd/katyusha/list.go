@@ -65,6 +65,15 @@ func runList(cmd *cobra.Command, args []string) error {
 		Align:         true,
 		Template:      viper.GetString("Template"),
 		Stats:         viper.GetStringSlice("Stats"),
+		StatsSort:     false,
+	}
+	sort := viper.GetStringSlice("Sort")
+	for i, key := range sort {
+		if key == "count" {
+			viper.Set("sort", append(sort[:i], sort[i+1:]...))
+			opts.StatsSort = true
+			break
+		}
 	}
 	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
 	return nil
