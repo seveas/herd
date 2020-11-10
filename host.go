@@ -171,9 +171,9 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 	case "sshKey":
 		return h.sshKey, true
 	case "stdout":
-		return r.Stdout, true
+		return string(r.Stdout), true
 	case "stderr":
-		return r.Stderr, true
+		return string(r.Stderr), true
 	case "exitstatus":
 		return r.ExitStatus, true
 	case "err":
