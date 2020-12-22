@@ -26,7 +26,9 @@ $(antlr_sources): scripting/Katyusha.g4
 
 $(tpp_sources):
 	@echo "Enabling third party providers: $(KATYUSHA_EXTRA_PROVIDERS)"
-	@echo "package main" > $@
+	@echo "// +build !no_extra_providers" > $@
+	@echo "" >> $@
+	@echo "package main" >> $@
 	@echo "import (" >> $@
 	@for provider in $(KATYUSHA_EXTRA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
 	@echo ")" >> $@
