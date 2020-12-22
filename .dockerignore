@@ -2,4 +2,4 @@
 dist
 herd
 ssh-agent-proxy
-cmd/herd/third_party_providers.go
+cmd/herd/extra_providers.go
