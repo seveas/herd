@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -37,16 +38,52 @@ type sshAgentClient struct {
 	lock    sync.Mutex
 }
 
-func NewSshAgentClient(conn, conn2 io.ReadWriter) agent.Agent {
+func NewSshAgentClient(conn, conn2 io.ReadWriter) *sshAgentClient {
 	client := &sshAgentClient{client: agent.NewClient(conn), conn: conn2, waiters: make([]chan agentResponse, 0, 64)}
 	go client.readLoop()
 	return client
+}
+
+// Test the ssh agent by sending a bunch of requests in a pipelined way. If
+// they are not answered within the specified interval (50ms by default), the
+// ssh agent is too old and suffers from the bug solved in
+// https://github.com/openssh/openssh-portable/pull/183
+func (a *sshAgentClient) functional(timeout time.Duration) bool {
+	keys, err := a.List()
+	if err != nil || len(keys) == 0 {
+		// This is a lie, but avoids double errors: the next step checks
+		// whether there even are keys and will throw a better error
+		return true
+	}
+	tests := 10
+	c := make(chan bool)
+	t := time.NewTicker(timeout)
+	defer t.Stop()
+	for i := 0; i < tests; i++ {
+		go func() { _, err = a.Sign(keys[0], []byte("Test")); c <- (err == nil) }()
+	}
+	for i := 0; i < tests; i++ {
+		select {
+		case v := <-c:
+			if !v {
+				return false
+			}
+		case <-t.C:
+			return false
+		}
+	}
+	return true
 }
 
 func (a *sshAgentClient) readLoop() {
 	for {
 		data, err := a.readSingleReply()
 		a.lock.Lock()
+		if len(a.waiters) == 0 {
+			// We've hit EOF and readSingleReply returns instant errors
+			a.lock.Unlock()
+			break
+		}
 		ch := a.waiters[0]
 		a.waiters = a.waiters[1:]
 		a.lock.Unlock()

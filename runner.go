@@ -29,16 +29,17 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	registry       *Registry
-	hosts          Hosts
-	parallel       int
-	splay          time.Duration
-	timeout        time.Duration
-	hostTimeout    time.Duration
-	connectTimeout time.Duration
-	agent          agent.Agent
-	signers        []ssh.Signer
-	signersByPath  map[string]ssh.Signer
+	registry        *Registry
+	hosts           Hosts
+	parallel        int
+	splay           time.Duration
+	timeout         time.Duration
+	hostTimeout     time.Duration
+	connectTimeout  time.Duration
+	sshAgentTimeout time.Duration
+	agent           agent.Agent
+	signers         []ssh.Signer
+	signersByPath   map[string]ssh.Signer
 }
 
 type ProgressState int
@@ -52,11 +53,12 @@ const (
 
 func NewRunner(registry *Registry) *Runner {
 	return &Runner{
-		hosts:          make(Hosts, 0),
-		registry:       registry,
-		timeout:        60 * time.Second,
-		hostTimeout:    10 * time.Second,
-		connectTimeout: 3 * time.Second,
+		hosts:           make(Hosts, 0),
+		registry:        registry,
+		timeout:         60 * time.Second,
+		hostTimeout:     10 * time.Second,
+		connectTimeout:  3 * time.Second,
+		sshAgentTimeout: 50 * time.Millisecond,
 	}
 }
 
@@ -82,6 +84,10 @@ func (r *Runner) SetHostTimeout(t time.Duration) {
 
 func (r *Runner) SetConnectTimeout(t time.Duration) {
 	r.connectTimeout = t
+}
+
+func (r *Runner) SetSshAgentTimeout(t time.Duration) {
+	r.sshAgentTimeout = t
 }
 
 func (r *Runner) PrintSettings(ui io.Writer) {
@@ -130,13 +136,18 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			return hi
 		}
 		if _, ok := sock.(*net.UnixConn); ok {
-			if _, ok := os.LookupEnv("HERD_FAST_SSH_AGENT"); ok {
-				sock2, _ := agentConnection()
-				r.agent = NewSshAgentClient(sock, sock2)
+			// Determine whether we can use the faster pipelined ssh agent protocol
+			sock2, _ := agentConnection()
+			sock3, _ := agentConnection()
+			fastAgent := NewSshAgentClient(sock2, sock3)
+			if fastAgent.functional(r.sshAgentTimeout) {
+				sock.(*net.UnixConn).Close()
+				r.agent = fastAgent
 			} else {
-				if _, ok := os.LookupEnv("HERD_SLOW_SSH_AGENT"); !ok {
-					logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
-				}
+				// Pity.
+				logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
+				sock2.(*net.UnixConn).Close()
+				sock3.(*net.UnixConn).Close()
 				r.agent = agent.NewClient(sock)
 			}
 		} else {
