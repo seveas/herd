@@ -1,6 +1,4 @@
-// +build !no_aws
-
-package herd
+package aws
 
 import (
 	"context"
@@ -8,37 +6,23 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/seveas/herd"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/seveas/scattergather"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	availableProviders["aws"] = NewAwsProvider
-	magicProviders["aws"] = func(r *Registry) {
-		p := NewAwsProvider("aws").(*AwsProvider)
-		if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
-			p.config.AccessKeyId = v
-		}
-		if v, ok := os.LookupEnv("AWS_ACCESS_KEY"); ok {
-			p.config.AccessKeyId = v
-		}
-		if v, ok := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); ok {
-			p.config.SecretAccessKey = v
-		}
-		if v, ok := os.LookupEnv("AWS_SECRET_KEY"); ok {
-			p.config.SecretAccessKey = v
-		}
-		if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
-			r.AddMagicProvider(NewCacheFromProvider(p))
-		}
-	}
+	herd.RegisterProvider("aws", newAwsProvider, awsProviderMagic)
 }
 
-type AwsProvider struct {
+type awsProvider struct {
 	name   string
 	config struct {
 		Prefix          string
@@ -46,36 +30,56 @@ type AwsProvider struct {
 		SecretAccessKey string
 		Partition       string
 		Regions         []string
+		ExcludeRegions  []string
 	}
 }
 
-func (p *AwsProvider) Name() string {
-	return p.name
-}
-
-func (p *AwsProvider) Prefix() string {
-	return p.config.Prefix
-}
-
-func NewAwsProvider(name string) HostProvider {
-	p := &AwsProvider{name: name}
+func newAwsProvider(name string) herd.HostProvider {
+	p := &awsProvider{name: name}
 	p.config.Partition = "aws"
 	return p
 }
 
-func (p *AwsProvider) Equivalent(o HostProvider) bool {
-	op := o.(*AwsProvider)
+func awsProviderMagic(r *herd.Registry) {
+	p := newAwsProvider("aws").(*awsProvider)
+	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
+		p.config.AccessKeyId = v
+	}
+	if v, ok := os.LookupEnv("AWS_ACCESS_KEY"); ok {
+		p.config.AccessKeyId = v
+	}
+	if v, ok := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); ok {
+		p.config.SecretAccessKey = v
+	}
+	if v, ok := os.LookupEnv("AWS_SECRET_KEY"); ok {
+		p.config.SecretAccessKey = v
+	}
+	if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
+		r.AddMagicProvider(herd.NewCacheFromProvider(p))
+	}
+}
+
+func (p *awsProvider) Name() string {
+	return p.name
+}
+
+func (p *awsProvider) Prefix() string {
+	return p.config.Prefix
+}
+
+func (p *awsProvider) Equivalent(o herd.HostProvider) bool {
+	op := o.(*awsProvider)
 	return p.config.AccessKeyId == op.config.AccessKeyId &&
 		p.config.SecretAccessKey == op.config.SecretAccessKey &&
 		p.config.Partition == op.config.Partition &&
 		reflect.DeepEqual(p.config.Regions, op.config.Regions)
 }
 
-func (p *AwsProvider) ParseViper(v *viper.Viper) error {
+func (p *awsProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *AwsProvider) setRegions() error {
+func (p *awsProvider) setRegions() error {
 	resolver := endpoints.DefaultResolver().(endpoints.EnumPartitions)
 	var partition endpoints.Partition
 	for _, partition = range resolver.Partitions() {
@@ -94,40 +98,43 @@ func (p *AwsProvider) setRegions() error {
 	return nil
 }
 
-func (p *AwsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+func (p *awsProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
 	if len(p.config.Regions) == 0 {
 		if err := p.setRegions(); err != nil {
-			return Hosts{}, err
+			return herd.Hosts{}, err
 		}
 	}
-	hosts := make(Hosts, 0)
-	rc := make(chan loadresult)
+	logrus.Debugf("AWS regions: %v", p.config.Regions)
+	sg := scattergather.New(int64(len(p.config.Regions)))
 	for _, region := range p.config.Regions {
-		name := fmt.Sprintf("%s@%s", p.name, region)
-		mc <- CacheMessage{Name: name, Finished: false, Err: nil}
-		go func(region, name string) {
+		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
+			region := args[0].(string)
+			name := fmt.Sprintf("%s@%s", p.name, region)
+			mc <- herd.CacheMessage{Name: name, Finished: false, Err: nil}
 			hosts, err := p.loadRegion(region)
-			mc <- CacheMessage{Name: name, Finished: true, Err: err}
-			rc <- loadresult{hosts: hosts, err: err}
-		}(region, name)
+			mc <- herd.CacheMessage{Name: name, Finished: true, Err: err}
+			return hosts, err
+		}, ctx, region)
 	}
-	todo := len(p.config.Regions)
-	errs := &MultiError{}
-	for todo > 0 {
-		r := <-rc
-		if r.err != nil {
-			errs.Add(r.err)
-		}
-		hosts = append(hosts, r.hosts...)
-		todo -= 1
+
+	untypedResults, err := sg.Wait()
+	if err != nil {
+		return herd.Hosts{}, err
 	}
-	if !errs.HasErrors() {
-		return hosts, nil
+
+	hosts := make(herd.Hosts, 0)
+	for _, hu := range untypedResults {
+		hosts = append(hosts, hu.(herd.Hosts)...)
 	}
-	return hosts, errs
+	return hosts, err
 }
 
-func (p *AwsProvider) loadRegion(region string) (Hosts, error) {
+func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
+	for _, r := range p.config.ExcludeRegions {
+		if region == r {
+			return herd.Hosts{}, nil
+		}
+	}
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(p.config.AccessKeyId, p.config.SecretAccessKey, ""),
 		Region:      aws.String(region),
@@ -136,7 +143,7 @@ func (p *AwsProvider) loadRegion(region string) (Hosts, error) {
 		return nil, err
 	}
 	svc := ec2.New(sess)
-	ret := Hosts{}
+	ret := herd.Hosts{}
 	var token *string = nil
 	sv := aws.StringValue
 	iv := aws.Int64Value
@@ -151,7 +158,7 @@ func (p *AwsProvider) loadRegion(region string) (Hosts, error) {
 				if name == "" {
 					name = *instance.InstanceId
 				}
-				attrs := HostAttributes{
+				attrs := herd.HostAttributes{
 					"architecture":            sv(instance.Architecture),
 					"hypervisor":              sv(instance.Hypervisor),
 					"image_id":                sv(instance.ImageId),
@@ -186,7 +193,7 @@ func (p *AwsProvider) loadRegion(region string) (Hosts, error) {
 						attrs[*tag.Key] = *tag.Value
 					}
 				}
-				ret = append(ret, NewHost(name, attrs))
+				ret = append(ret, herd.NewHost(name, attrs))
 			}
 		}
 		if out.NextToken == nil {
