@@ -15,7 +15,7 @@ else
 	tpp_sources := cmd/herd/extra_providers.go
 endif
 
-herd: go.mod *.go cmd/herd/*.go scripting/*.go $(antlr_sources) $(tpp_sources)
+herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go $(antlr_sources) $(tpp_sources)
 	go build $(TAGS) -o "$@" github.com/seveas/herd/cmd/herd
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -44,6 +44,7 @@ tidy:
 
 test: fmt vet tidy
 	go test ./...
+	go mod vendor
 	docker-compose down || true
 	docker-compose build
 	make -C testdata/pki
