@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/provider/cache"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -55,7 +56,7 @@ func awsProviderMagic(r *katyusha.Registry) {
 		p.config.SecretAccessKey = v
 	}
 	if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
-		r.AddMagicProvider(katyusha.NewCacheFromProvider(p))
+		r.AddMagicProvider(cache.NewFromProvider(p))
 	}
 }
 

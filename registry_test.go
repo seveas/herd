@@ -1,11 +1,38 @@
 package katyusha
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/spf13/viper"
 )
+
+type fakeProvider struct {
+}
+
+func (p *fakeProvider) Name() string {
+	return "fake"
+}
+
+func (p *fakeProvider) Prefix() string {
+	return "fake:"
+}
+
+func (p *fakeProvider) Equivalent(o HostProvider) bool {
+	return false
+}
+
+func (p *fakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+	h := NewHost("test-host", HostAttributes{"foo": "bar"})
+	return Hosts{h}, nil
+}
+
+func (p *fakeProvider) ParseViper(v *viper.Viper) error {
+	return nil
+}
 
 func TestNewRegistry(t *testing.T) {
 	r := NewRegistry(dataDir("0"), cacheDir("0"))
@@ -59,10 +86,5 @@ func TestRelativeFiles(t *testing.T) {
 	r.AddProvider(p)
 	if p.config.File != filepath.Join(dataDir("2"), "inventory") {
 		t.Errorf("Filepath did not get interpreted relative to dataDir")
-	}
-	c := NewCacheFromProvider(p)
-	r.AddProvider(c)
-	if c.(*Cache).config.File != filepath.Join(cacheDir("2"), "ittest.cache") {
-		t.Errorf("Proper cache path not set, found %s", c.(*Cache).config.File)
 	}
 }

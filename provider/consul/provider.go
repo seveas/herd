@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/provider/cache"
 
 	consul "github.com/hashicorp/consul/api"
 	"github.com/seveas/scattergather"
@@ -48,7 +49,7 @@ func consulProviderMagic(r *katyusha.Registry) {
 	if addr != "" {
 		p := newConsulProvider("consul").(*consulProvider)
 		p.config.Address = addr
-		r.AddMagicProvider(katyusha.NewCacheFromProvider(p))
+		r.AddMagicProvider(cache.NewFromProvider(p))
 	}
 }
 
