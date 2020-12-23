@@ -1,4 +1,4 @@
-package herd
+package cache
 
 import (
 	"context"
@@ -9,14 +9,19 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/seveas/herd"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
+func init() {
+	herd.RegisterProvider("cache", newCache, nil)
+}
+
 type Cache struct {
 	name   string
-	source HostProvider
-	cache  *JsonProvider
+	source herd.HostProvider
 	config struct {
 		Lifetime time.Duration
 		File     string
@@ -24,15 +29,15 @@ type Cache struct {
 	}
 }
 
-func NewCache(name string) HostProvider {
-	c := &Cache{name: name, cache: NewJsonProvider(name).(*JsonProvider)}
+func newCache(name string) herd.HostProvider {
+	c := &Cache{name: name}
 	c.config.File = name + ".cache"
 	c.config.Lifetime = 1 * time.Hour
 	return c
 }
 
-func NewCacheFromProvider(p HostProvider) HostProvider {
-	c := NewCache(p.Name()).(*Cache)
+func NewFromProvider(p herd.HostProvider) herd.HostProvider {
+	c := newCache(p.Name()).(*Cache)
 	c.source = p
 	return c
 }
@@ -51,7 +56,15 @@ func (c *Cache) SetCacheDir(dir string) {
 	}
 }
 
-func (c *Cache) Equivalent(p HostProvider) bool {
+func (c *Cache) Source() herd.HostProvider {
+	return c.source
+}
+
+func (c *Cache) Invalidate() {
+	c.config.Lifetime = -1
+}
+
+func (c *Cache) Equivalent(p herd.HostProvider) bool {
 	panic("This should never be called for a cache")
 }
 
@@ -60,11 +73,13 @@ func (c *Cache) ParseViper(v *viper.Viper) error {
 	if sv == nil {
 		return fmt.Errorf("No source specified")
 	}
-	s, err := NewProvider(sv.GetString("provider"), c.name)
+	s, err := herd.NewProvider(sv.GetString("provider"), c.name)
 	if err != nil {
 		return err
 	}
-	s.ParseViper(sv)
+	if err := s.ParseViper(sv); err != nil {
+		return err
+	}
 	c.source = s
 	return v.Unmarshal(&c.config)
 }
@@ -74,16 +89,25 @@ func (c *Cache) mustRefresh() bool {
 	return err != nil || time.Since(info.ModTime()) > c.config.Lifetime
 }
 
-func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+func (c *Cache) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
-		c.cache.config.File = c.config.File
-		return c.cache.Load(ctx, mc)
+		hosts := make(herd.Hosts, 0)
+		data, err := ioutil.ReadFile(c.config.File)
+		if err != nil {
+			logrus.Errorf("Could not load %s data in %s: %s", c.name, c.config.File, err)
+			return hosts, err
+		}
+
+		if err = json.Unmarshal(data, &hosts); err != nil {
+			logrus.Errorf("Could not parse %s data in %s: %s", c.name, c.config.File, err)
+		}
+		return hosts, err
 	}
-	mc <- CacheMessage{Name: c.name, Finished: false, Err: nil}
+	mc <- herd.CacheMessage{Name: c.name, Finished: false, Err: nil}
 	hosts, err := c.source.Load(ctx, mc)
-	mc <- CacheMessage{Name: c.name, Finished: true, Err: err}
-	if len(hosts) > 0 {
+	mc <- herd.CacheMessage{Name: c.name, Finished: true, Err: err}
+	if err == nil && len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.config.File)
 		if err = os.MkdirAll(dir, 0700); err != nil {
@@ -96,3 +120,6 @@ func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	}
 	return hosts, err
 }
+
+// Make sure we actually are a cache
+var _ herd.Cache = &Cache{}

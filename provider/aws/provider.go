@@ -7,6 +7,7 @@ import (
 	"reflect"
 
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/provider/cache"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -55,7 +56,7 @@ func awsProviderMagic(r *herd.Registry) {
 		p.config.SecretAccessKey = v
 	}
 	if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
-		r.AddMagicProvider(herd.NewCacheFromProvider(p))
+		r.AddMagicProvider(cache.NewFromProvider(p))
 	}
 }
 

@@ -60,3 +60,5 @@ func (p *PlainTextProvider) Load(ctx context.Context, mc chan CacheMessage) (Hos
 	}
 	return hosts, nil
 }
+
+var _ DataLoader = &PlainTextProvider{}

@@ -16,7 +16,6 @@ import (
 )
 
 var availableProviders = map[string]func(string) HostProvider{
-	"cache":       NewCache,
 	"http":        NewHttpProvider,
 	"json":        NewJsonProvider,
 	"plain":       NewPlainTextProvider,
@@ -28,7 +27,7 @@ func Providers() []string {
 	for k := range availableProviders {
 		ret = append(ret, k)
 	}
-	sort.Slice(ret, func(i, j int) bool { return ret[i] < ret[j] })
+	sort.Strings(ret)
 	return ret
 }
 
@@ -59,8 +58,14 @@ type HostProvider interface {
 	Equivalent(p HostProvider) bool
 }
 
-type loadsData interface {
+type DataLoader interface {
 	SetDataDir(string)
+}
+
+type Cache interface {
+	Source() HostProvider
+	Invalidate()
+	SetCacheDir(string)
 }
 
 type CacheMessage struct {
@@ -138,10 +143,10 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 
 func (r *Registry) AddProvider(p HostProvider) {
 	logrus.Debugf("Adding provider %s", p.Name())
-	if c, ok := p.(*Cache); ok {
+	if c, ok := p.(Cache); ok {
 		c.SetCacheDir(r.cacheDir)
 	}
-	if c, ok := p.(loadsData); ok {
+	if c, ok := p.(DataLoader); ok {
 		c.SetDataDir(r.dataDir)
 	}
 	r.providers = append(r.providers, p)
@@ -162,16 +167,16 @@ func (r *Registry) AddMagicProvider(p HostProvider) {
 }
 
 func stripCache(p HostProvider) HostProvider {
-	if c, ok := p.(*Cache); ok {
-		return c.source
+	if c, ok := p.(Cache); ok {
+		return c.Source()
 	}
 	return p
 }
 
 func (r *Registry) InvalidateCache() {
 	for _, p := range r.providers {
-		if c, ok := p.(*Cache); ok {
-			c.config.Lifetime = -1
+		if c, ok := p.(Cache); ok {
+			c.Invalidate()
 		}
 	}
 }

@@ -58,3 +58,5 @@ func (p *JsonProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 	}
 	return hosts, err
 }
+
+var _ DataLoader = &JsonProvider{}
