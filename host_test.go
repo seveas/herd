@@ -7,7 +7,7 @@ import (
 
 func TestHostDeserialization(t *testing.T) {
 	data := map[string]interface{}{
-		"Name": "test-host",
+		"Name": "test-host.herd.ci",
 	}
 	bdata, _ := json.Marshal(data)
 	var host Host
@@ -15,9 +15,11 @@ func TestHostDeserialization(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unable to deserialize host data: %s", err)
 	}
-	host.init()
 	if host.Attributes == nil {
 		t.Errorf("Deserialized host does not get attributes")
+	}
+	if domain, ok := host.Attributes["domainname"]; !ok || domain != "herd.ci" {
+		t.Errorf("Deserialized host is missing attributes")
 	}
 	if host.Port != 22 {
 		t.Errorf("Deserialized host does not get default port")
@@ -25,13 +27,11 @@ func TestHostDeserialization(t *testing.T) {
 }
 
 func TestHostSorting(t *testing.T) {
-	h1 := &Host{Name: "host-a.example.com", Attributes: HostAttributes{"site": "site1", "role": "db"}}
-	h2 := &Host{Name: "host-b.example.com", Attributes: HostAttributes{"site": "site2", "role": "db"}}
-	h3 := &Host{Name: "host-c.example.com", Attributes: HostAttributes{"site": "site1", "role": "app"}}
-	h4 := &Host{Name: "host-d.example.com", Attributes: HostAttributes{"site": "site2", "role": "app"}}
+	h1 := NewHost("host-a.example.com", HostAttributes{"site": "site1", "role": "db"})
+	h2 := NewHost("host-b.example.com", HostAttributes{"site": "site2", "role": "db"})
+	h3 := NewHost("host-c.example.com", HostAttributes{"site": "site1", "role": "app"})
+	h4 := NewHost("host-d.example.com", HostAttributes{"site": "site2", "role": "app"})
 	hosts := Hosts{h1, h2, h3, h4}
-	h1.init()
-	h2.init()
 
 	if !h1.less(h2, []string{}) {
 		t.Errorf("Sorting hosts with no fields is failing")

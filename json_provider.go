@@ -56,8 +56,5 @@ func (p *JsonProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 	if err = json.Unmarshal(data, &hosts); err != nil {
 		logrus.Errorf("Could not parse %s data in %s: %s", p.name, p.config.File, err)
 	}
-	for _, h := range hosts {
-		h.init()
-	}
 	return hosts, err
 }
