@@ -15,7 +15,7 @@ else
 	tpp_sources := cmd/katyusha/extra_providers.go
 endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go $(antlr_sources) $(tpp_sources)
+katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go $(antlr_sources) $(tpp_sources)
 	go build $(TAGS) -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -44,6 +44,7 @@ tidy:
 
 test: fmt vet tidy
 	go test ./...
+	go mod vendor
 	docker-compose down || true
 	docker-compose build
 	make -C testdata/pki
