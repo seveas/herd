@@ -1,6 +1,4 @@
-// +build !no_prometheus
-
-package katyusha
+package prometheus
 
 import (
 	"context"
@@ -11,17 +9,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/seveas/katyusha"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	availableProviders["prometheus"] = NewPrometheusProvider
+	katyusha.RegisterProvider("prometheus", newPrometheusProvider, nil)
 }
 
-type PrometheusProvider struct {
+type prometheusProvider struct {
 	name   string
-	hp     *HttpProvider
+	hp     *katyusha.HttpProvider
 	config struct {
 		Jobs []string
 	}
@@ -42,46 +42,46 @@ type PrometheusTarget struct {
 	Health             string            `json:"health"`
 }
 
-func NewPrometheusProvider(name string) HostProvider {
-	return &PrometheusProvider{name: name, hp: NewHttpProvider(name).(*HttpProvider)}
+func newPrometheusProvider(name string) katyusha.HostProvider {
+	return &prometheusProvider{name: name, hp: katyusha.NewHttpProvider(name).(*katyusha.HttpProvider)}
 }
 
-func (p *PrometheusProvider) Name() string {
+func (p *prometheusProvider) Name() string {
 	return p.name
 }
 
-func (p *PrometheusProvider) Prefix() string {
+func (p *prometheusProvider) Prefix() string {
 	return p.hp.Prefix()
 }
 
-func (p *PrometheusProvider) Equivalent(o HostProvider) bool {
-	op := o.(*PrometheusProvider)
+func (p *prometheusProvider) Equivalent(o katyusha.HostProvider) bool {
+	op := o.(*prometheusProvider)
 	return p.hp.Equivalent(op.hp) &&
 		reflect.DeepEqual(p.config.Jobs, op.config.Jobs)
 }
 
-func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {
-	if err := v.Unmarshal(&p.hp.config); err != nil {
+func (p *prometheusProvider) ParseViper(v *viper.Viper) error {
+	if err := p.hp.ParseViper(v); err != nil {
 		return err
 	}
 	return v.Unmarshal(&p.config)
 }
 
-func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+func (p *prometheusProvider) Load(ctx context.Context, mc chan katyusha.CacheMessage) (katyusha.Hosts, error) {
 	data, err := p.hp.Fetch(ctx, mc)
 	if err != nil {
-		return Hosts{}, err
+		return katyusha.Hosts{}, err
 	}
 	var targets PrometheusTargets
 	err = json.Unmarshal(data, &targets)
 	if err != nil {
-		return Hosts{}, err
+		return katyusha.Hosts{}, err
 	}
 	if targets.Status != "success" {
-		return Hosts{}, fmt.Errorf("Prometheus API returned: %s", targets.Status)
+		return katyusha.Hosts{}, fmt.Errorf("Prometheus API returned: %s", targets.Status)
 	}
 
-	ret := make(Hosts, 0)
+	ret := make(katyusha.Hosts, 0)
 	for _, target := range targets.Data["activeTargets"] {
 		job := target.Labels["job"]
 		found := false
@@ -112,7 +112,7 @@ func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 				name = parts[0]
 			}
 		}
-		attributes := HostAttributes{
+		attributes := katyusha.HostAttributes{
 			"scrape_pool":          target.ScrapePool,
 			"scrape_url":           target.ScrapeUrl,
 			"last_scrape":          target.LastScrape,
@@ -122,7 +122,7 @@ func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 		for k, v := range target.Labels {
 			attributes[k] = v
 		}
-		ret = append(ret, NewHost(name, attributes))
+		ret = append(ret, katyusha.NewHost(name, attributes))
 	}
 
 	return ret, nil
