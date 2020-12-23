@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -53,21 +52,15 @@ type Registry struct {
 type Hosts []*Host
 
 type HostProvider interface {
+	Name() string
+	Prefix() string
 	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
 	Equivalent(p HostProvider) bool
-	base() *BaseProvider
 }
 
-type BaseProvider struct {
-	Name    string
-	Prefix  string
-	Timeout time.Duration
-	magic   bool
-}
-
-func (p *BaseProvider) base() *BaseProvider {
-	return p
+type loadsData interface {
+	SetDataDir(string)
 }
 
 type CacheMessage struct {
@@ -102,11 +95,15 @@ func (r *Registry) LoadMagicProviders() {
 	r.AddMagicProvider(NewKnownHostsProvider("known_hosts"))
 	fn := filepath.Join(r.dataDir, "inventory")
 	if _, err := os.Stat(fn); err == nil {
-		r.AddMagicProvider(&PlainTextProvider{BaseProvider: BaseProvider{Name: "inventory"}, File: fn})
+		p := NewPlainTextProvider("inventory")
+		p.(*PlainTextProvider).config.File = "inventory"
+		r.AddMagicProvider(p)
 	}
 	fn += ".json"
 	if _, err := os.Stat(fn); err == nil {
-		r.AddMagicProvider(&JsonProvider{BaseProvider: BaseProvider{Name: "inventory"}, File: fn})
+		p := NewJsonProvider("inventory")
+		p.(*JsonProvider).config.File = "inventory.json"
+		r.AddMagicProvider(p)
 	}
 	// And now we do the other magic ones
 	for _, fnc := range magicProviders {
@@ -140,51 +137,47 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 }
 
 func (r *Registry) AddProvider(p HostProvider) {
-	logrus.Debugf("Adding provider %s", p.base().Name)
-	// Always give a cache a file
+	logrus.Debugf("Adding provider %s", p.Name())
 	if c, ok := p.(*Cache); ok {
-		if c.File == "" {
-			c.File = filepath.Join(r.cacheDir, c.Name+".cache")
-		}
-		if !filepath.IsAbs(c.File) {
-			c.File = filepath.Join(r.cacheDir, c.File)
-		}
+		c.SetCacheDir(r.cacheDir)
 	}
-	// Interpret relative paths as relative to the dataDir
-	v := reflect.Indirect(reflect.ValueOf(p))
-	if v.Kind() == reflect.Struct {
-		fv := v.FieldByName("File")
-		if fv != *new(reflect.Value) && !fv.IsZero() {
-			p := fv.String()
-			if !filepath.IsAbs(p) {
-				fv.SetString(filepath.Join(r.dataDir, p))
-			}
-		}
+	if c, ok := p.(loadsData); ok {
+		c.SetDataDir(r.dataDir)
 	}
-
 	r.providers = append(r.providers, p)
 }
 
 func (r *Registry) AddMagicProvider(p HostProvider) {
-	p.base().magic = true
+	sp := stripCache(p)
 	for _, pr := range r.providers {
-		if pr.Equivalent(p) {
+		pr := stripCache(pr)
+		if reflect.TypeOf(sp) != reflect.TypeOf(pr) {
+			continue
+		}
+		if sp.Equivalent(pr) {
 			return
 		}
 	}
 	r.AddProvider(p)
 }
 
+func stripCache(p HostProvider) HostProvider {
+	if c, ok := p.(*Cache); ok {
+		return c.source
+	}
+	return p
+}
+
 func (r *Registry) InvalidateCache() {
 	for _, p := range r.providers {
 		if c, ok := p.(*Cache); ok {
-			c.Lifetime = -1
+			c.config.Lifetime = -1
 		}
 	}
 }
 
 type loadresult struct {
-	provider *BaseProvider
+	provider HostProvider
 	hosts    []*Host
 	err      error
 }
@@ -207,14 +200,8 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 
 	for _, p := range r.providers {
 		go func(pr HostProvider, ctx context.Context) {
-			base := pr.base()
-			if base.Timeout != 0 {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithTimeout(ctx, base.Timeout)
-				defer cancel()
-			}
 			hosts, err := pr.Load(ctx, mc)
-			rc <- loadresult{provider: base, hosts: hosts, err: err}
+			rc <- loadresult{provider: pr, hosts: hosts, err: err}
 		}(p, ctx)
 	}
 
@@ -225,15 +212,15 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 
 	for todo > 0 {
 		r := <-rc
-		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider.Name)
+		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider.Name())
 		if r.err != nil {
 			rerr.Add(r.err)
 		}
 		for _, host := range r.hosts {
-			if r.provider.Prefix != "" {
-				host.Attributes = host.Attributes.prefix(r.provider.Prefix)
+			if r.provider.Prefix() != "" {
+				host.Attributes = host.Attributes.prefix(r.provider.Prefix())
 			}
-			host.Attributes["katyusha_provider"] = []string{r.provider.Name}
+			host.Attributes["katyusha_provider"] = []string{r.provider.Name()}
 			if existing, ok := seen[host.Name]; ok {
 				hosts[existing].Amend(host)
 			} else {

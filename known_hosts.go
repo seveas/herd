@@ -16,9 +16,20 @@ import (
 )
 
 type KnownHostsProvider struct {
-	BaseProvider `mapstructure:",squash"`
-	Files        []string
-	hashed       bool
+	name   string
+	hashed bool
+	config struct {
+		Prefix string
+		Files  []string
+	}
+}
+
+func (p *KnownHostsProvider) Name() string {
+	return p.name
+}
+
+func (p *KnownHostsProvider) Prefix() string {
+	return p.config.Prefix
 }
 
 func NewKnownHostsProvider(name string) HostProvider {
@@ -31,25 +42,27 @@ func NewKnownHostsProvider(name string) HostProvider {
 			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
 		}
 	}
-	return &KnownHostsProvider{BaseProvider: BaseProvider{Name: name}, Files: files, hashed: false}
+	p := &KnownHostsProvider{
+		name:   name,
+		hashed: false,
+	}
+	p.config.Files = files
+	return p
 }
 
 func (p *KnownHostsProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
 	op, ok := o.(*KnownHostsProvider)
-	return ok && reflect.DeepEqual(p.Files, op.Files)
+	return ok && reflect.DeepEqual(p.config.Files, op.config.Files)
 }
 
 func (p *KnownHostsProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	return v.Unmarshal(&p.config)
 }
 
 func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	hosts := make(Hosts, 0)
 	seen := make(map[string]int)
-	for _, f := range p.Files {
+	for _, f := range p.config.Files {
 		data, err := ioutil.ReadFile(f)
 		if err != nil {
 			continue
