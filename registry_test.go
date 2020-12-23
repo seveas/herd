@@ -1,7 +1,6 @@
 package katyusha
 
 import (
-	"net"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -19,15 +18,9 @@ func TestMagicProviders(t *testing.T) {
 	defer os.Setenv("HOME", realUserHome)
 
 	os.Setenv("HOME", homeDir("1"))
-	os.Unsetenv("CONSUL_HTTP_ADDR")
 	r := NewRegistry(dataDir("1"), cacheDir("1"))
-	r.LoadMagicProviders()
 	expect := 1
-	_, err := net.LookupHost("consul.service.consul")
-	if err == nil {
-		expect++
-	}
-
+	r.LoadMagicProviders()
 	if len(r.providers) != expect {
 		t.Errorf("Got %d providers, expected %d", len(r.providers), expect)
 	}
@@ -37,8 +30,8 @@ func TestMagicProviders(t *testing.T) {
 
 	os.Setenv("HOME", homeDir("2"))
 	r = NewRegistry(dataDir("2"), cacheDir("2"))
+	expect = 2
 	r.LoadMagicProviders()
-	expect++
 	if len(r.providers) != expect {
 		t.Errorf("Got %d providers, expected %d", len(r.providers), expect)
 	}

@@ -22,6 +22,7 @@ require (
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
+	github.com/seveas/scattergather v0.0.0-20201127140643-f45b78bada02
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/afero v1.3.2 // indirect
 	github.com/spf13/cast v1.3.1
