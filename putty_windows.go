@@ -19,8 +19,9 @@ import (
 )
 
 func init() {
+	availableProviders["putty"] = NewPuttyProvider()
 	magicProviders["putty"] = func(r *Registry) {
-		r.AddMagicProvider(&PuttyProvider{BaseProvider: BaseProvider{Name: "putty"}})
+		r.AddMagicProvider(NewPuttyProvider("putty"))
 	}
 }
 
@@ -138,19 +139,30 @@ func puttyConfig(host string) map[string]string {
 }
 
 type PuttyProvider struct {
-	BaseProvider `mapstructure:",squash"`
+	name   string
+	config struct {
+		Prefix string
+	}
+}
+
+func NewPuttyProvider(name string) HostProvider {
+	return &PuttyProvider{name: name}
+}
+
+func (p *PuttyProvider) Name() string {
+	return "putty"
+}
+
+func (p *PuttyProvider) Prefix() string {
+	return p.config.Prefix
 }
 
 func (p *PuttyProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
-	op, ok := o.(*PuttyProvider)
-	return ok
+	return true
 }
 
 func (p *PuttyProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	return v.Unmarshal(&p.config)
 }
 
 func (p *PuttyProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {

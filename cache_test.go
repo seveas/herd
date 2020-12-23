@@ -12,8 +12,15 @@ import (
 )
 
 type fakeProvider struct {
-	BaseProvider `mapstructure:",squash"`
-	loaded       int
+	loaded int
+}
+
+func (p *fakeProvider) Name() string {
+	return "fake"
+}
+
+func (p *fakeProvider) Prefix() string {
+	return ""
 }
 
 func (p *fakeProvider) Equivalent(o HostProvider) bool {
@@ -36,16 +43,14 @@ func TestCache(t *testing.T) {
 		t.Fatalf("Unable to create temporary directory: %s", err.Error())
 	}
 	defer os.RemoveAll(tmpdir)
-	c := Cache{
-		Lifetime: 1 * time.Hour,
-		File:     filepath.Join(tmpdir, "cache", "cache-test.cache"),
-		Source:   &fakeProvider{},
-	}
+	c := NewCacheFromProvider(&fakeProvider{}).(*Cache)
+	c.config.Lifetime = 1 * time.Hour
+	c.SetCacheDir(filepath.Join(tmpdir, "cache"))
 	hosts, _ := c.Load(nil, mc)
 	if len(hosts) != 1 {
 		t.Errorf("First cache load did not succeed")
 	}
-	if c.Source.(*fakeProvider).loaded != 1 {
+	if c.source.(*fakeProvider).loaded != 1 {
 		t.Errorf("First cache load did not appear to happen")
 	}
 	if c.mustRefresh() {
@@ -55,18 +60,7 @@ func TestCache(t *testing.T) {
 	if len(hosts) != 1 {
 		t.Errorf("Second cache load did not succeed")
 	}
-	if c.Source.(*fakeProvider).loaded != 1 {
+	if c.source.(*fakeProvider).loaded != 1 {
 		t.Errorf("Second cache load went to the backend provider")
-	}
-}
-
-func TestCacheEquivalent(t *testing.T) {
-	p := NewPlainTextProvider("plain")
-	c := NewCacheFromProvider(p)
-	if !c.Equivalent(p) {
-		t.Errorf("Caching is affecting equality")
-	}
-	if !p.Equivalent(c) {
-		t.Errorf("Caching is affecting equality in reverse")
 	}
 }

@@ -18,48 +18,59 @@ import (
 func init() {
 	availableProviders["consul"] = NewConsulProvider
 	magicProviders["consul"] = func(r *Registry) {
-		p := NewConsulProvider("consul")
-		if p.(*ConsulProvider).Address != "" {
+		addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
+		if addr == "" {
+			_, err := net.LookupHost("consul.service.consul")
+			if err == nil {
+				addr = "http://consul.service.consul:8500"
+			}
+		}
+		if addr != "" {
+			p := NewConsulProvider("consul").(*ConsulProvider)
+			p.config.Address = addr
 			r.AddMagicProvider(NewCacheFromProvider(p))
 		}
 	}
 }
 
 type ConsulProvider struct {
-	BaseProvider `mapstructure:",squash"`
-	Address      string
+	name   string
+	config struct {
+		Address string
+		Prefix  string
+		Timeout time.Duration
+	}
 }
 
 func NewConsulProvider(name string) HostProvider {
-	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
-	if addr == "" {
-		_, err := net.LookupHost("consul.service.consul")
-		if err == nil {
-			addr = "http://consul.service.consul:8500"
-		}
-	}
-	return &ConsulProvider{BaseProvider: BaseProvider{Name: name}, Address: addr}
+	return &ConsulProvider{name: name}
+}
+
+func (p *ConsulProvider) Name() string {
+	return p.name
+}
+
+func (p *ConsulProvider) Prefix() string {
+	return p.config.Prefix
 }
 
 func (p *ConsulProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
-	op, ok := o.(*ConsulProvider)
-	return ok && p.Address == op.Address
+	return p.config.Address == o.(*ConsulProvider).config.Address
 }
 
 func (p *ConsulProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	return v.Unmarshal(&p.config)
 }
 
 func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	conf := consul.DefaultConfig()
-	conf.Address = p.Address
+	conf.Address = p.config.Address
 	client, err := consul.NewClient(conf)
 	if err != nil {
 		return Hosts{}, err
 	}
+	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
+	defer cancel()
 	catalog := client.Catalog()
 	datacenters, err := catalog.Datacenters()
 	if err != nil {
@@ -69,7 +80,7 @@ func (p *ConsulProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts,
 	hosts := make(Hosts, 0)
 	rc := make(chan loadresult)
 	for _, dc := range datacenters {
-		name := fmt.Sprintf("%s@%s", p.Name, dc)
+		name := fmt.Sprintf("%s@%s", p.name, dc)
 		mc <- CacheMessage{Name: name, Finished: false, Err: nil}
 		go func(dc, name string) {
 			hosts, err := p.loadDatacenter(conf, dc)

@@ -14,31 +14,45 @@ import (
 )
 
 type Cache struct {
-	BaseProvider `mapstructure:",squash"`
-	Lifetime     time.Duration
-	File         string
-	Source       HostProvider
+	name   string
+	source HostProvider
+	cache  *JsonProvider
+	config struct {
+		Lifetime time.Duration
+		File     string
+		Prefix   string
+	}
 }
 
 func NewCache(name string) HostProvider {
-	return &Cache{BaseProvider: BaseProvider{Name: name}, Lifetime: 1 * time.Hour}
+	c := &Cache{name: name, cache: NewJsonProvider(name).(*JsonProvider)}
+	c.config.File = name + ".cache"
+	c.config.Lifetime = 1 * time.Hour
+	return c
 }
 
 func NewCacheFromProvider(p HostProvider) HostProvider {
-	return &Cache{
-		BaseProvider: BaseProvider{Name: p.base().Name},
-		Lifetime:     1 * time.Hour,
-		Source:       p,
+	c := NewCache(p.Name()).(*Cache)
+	c.source = p
+	return c
+}
+
+func (c *Cache) Name() string {
+	return c.name
+}
+
+func (c *Cache) Prefix() string {
+	return c.config.Prefix + c.source.Prefix()
+}
+
+func (c *Cache) SetCacheDir(dir string) {
+	if !filepath.IsAbs(c.config.File) {
+		c.config.File = filepath.Join(dir, c.config.File)
 	}
 }
 
 func (c *Cache) Equivalent(p HostProvider) bool {
-	// We ignore the cache parameters, so caching doesn't actually change
-	// whether providers are equal.
-	if o, ok := p.(*Cache); ok {
-		p = o.Source
-	}
-	return c.Source.Equivalent(p)
+	panic("This should never be called for a cache")
 }
 
 func (c *Cache) ParseViper(v *viper.Viper) error {
@@ -46,53 +60,38 @@ func (c *Cache) ParseViper(v *viper.Viper) error {
 	if sv == nil {
 		return fmt.Errorf("No source specified")
 	}
-	s, err := NewProvider(sv.GetString("provider"), c.Name)
+	s, err := NewProvider(sv.GetString("provider"), c.name)
 	if err != nil {
 		return err
 	}
 	s.ParseViper(sv)
-	v.Set("Source", s)
-	return v.Unmarshal(c)
+	c.source = s
+	return v.Unmarshal(&c.config)
 }
 
 func (c *Cache) mustRefresh() bool {
-	info, err := os.Stat(c.File)
-	return err != nil || time.Since(info.ModTime()) > c.Lifetime
+	info, err := os.Stat(c.config.File)
+	return err != nil || time.Since(info.ModTime()) > c.config.Lifetime
 }
 
 func (c *Cache) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
 	if !c.mustRefresh() {
-		logrus.Debugf("Loading cached data from %s for %s", c.File, c.Source.base().Name)
-		jp := &JsonProvider{BaseProvider: c.BaseProvider, File: c.File}
-		hosts, err := jp.Load(ctx, mc)
-		if err != nil {
-			return hosts, err
-		}
-		return hosts, err
+		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
+		c.cache.config.File = c.config.File
+		return c.cache.Load(ctx, mc)
 	}
-	mc <- CacheMessage{Name: c.Name, Finished: false, Err: nil}
-	base := c.Source.base()
-	if base.Timeout != 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, base.Timeout)
-		defer cancel()
-	}
-	hosts, err := c.Source.Load(ctx, mc)
-	if base.Prefix != "" {
-		for i, _ := range hosts {
-			hosts[i].Attributes = hosts[i].Attributes.prefix(base.Prefix)
-		}
-	}
-	mc <- CacheMessage{Name: c.Name, Finished: true, Err: err}
+	mc <- CacheMessage{Name: c.name, Finished: false, Err: nil}
+	hosts, err := c.source.Load(ctx, mc)
+	mc <- CacheMessage{Name: c.name, Finished: true, Err: err}
 	if len(hosts) > 0 {
 		var data []byte
-		dir := filepath.Dir(c.File)
+		dir := filepath.Dir(c.config.File)
 		if err = os.MkdirAll(dir, 0700); err != nil {
 			return hosts, fmt.Errorf("Unable to create cache directory %s: %s", dir, err.Error())
 		}
 		data, err = json.Marshal(hosts)
 		if err == nil {
-			err = ioutil.WriteFile(c.File, data, 0644)
+			err = ioutil.WriteFile(c.config.File, data, 0644)
 		}
 	}
 	return hosts, err

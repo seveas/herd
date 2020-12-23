@@ -13,48 +13,61 @@ import (
 )
 
 type HttpProvider struct {
-	BaseProvider `mapstructure:",squash"`
-	Url          string
-	Username     string
-	Password     string
-	Headers      map[string]string
+	name   string
+	client *http.Client
+	config struct {
+		Prefix   string
+		Url      string
+		Username string
+		Password string
+		Headers  map[string]string
+		Timeout  time.Duration
+	}
 }
 
 func NewHttpProvider(name string) HostProvider {
-	return &HttpProvider{BaseProvider: BaseProvider{Name: name, Timeout: 30 * time.Second}}
+	p := &HttpProvider{name: name, client: http.DefaultClient}
+	p.config.Timeout = 5 * time.Second
+	return p
+}
+
+func (p *HttpProvider) Name() string {
+	return p.name
+}
+
+func (p *HttpProvider) Prefix() string {
+	return p.config.Prefix
 }
 
 func (p *HttpProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
-	op, ok := o.(*HttpProvider)
-	return ok &&
-		p.Url == op.Url &&
-		p.Username == op.Username &&
-		p.Password == op.Password &&
-		reflect.DeepEqual(p.Headers, op.Headers)
+	op := o.(*HttpProvider)
+	return p.config.Url == op.config.Url &&
+		p.config.Username == op.config.Username &&
+		p.config.Password == op.config.Password &&
+		reflect.DeepEqual(p.config.Headers, op.config.Headers)
 }
 
 func (p *HttpProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	return v.Unmarshal(&p.config)
 }
 
 func (p *HttpProvider) Fetch(ctx context.Context, mc chan CacheMessage) ([]byte, error) {
-	req, err := http.NewRequest("GET", p.Url, nil)
+	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
+	defer cancel()
+	req, err := http.NewRequest("GET", p.config.Url, nil)
 	if err != nil {
 		return []byte{}, err
 	}
 	req = req.WithContext(ctx)
-	if p.Username != "" {
-		req.SetBasicAuth(p.Username, p.Password)
+	if p.config.Username != "" {
+		req.SetBasicAuth(p.config.Username, p.config.Password)
 	}
-	if p.Headers != nil {
-		for key, value := range p.Headers {
+	if p.config.Headers != nil {
+		for key, value := range p.config.Headers {
 			req.Header.Set(key, value)
 		}
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := p.client.Do(req)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -77,7 +90,7 @@ func (p *HttpProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, e
 		return hosts, err
 	}
 	if err = json.Unmarshal(data, &hosts); err != nil {
-		err = fmt.Errorf("Could not parse %s data from %s: %s", p.Name, p.Url, err)
+		err = fmt.Errorf("Could not parse %s data from %s: %s", p.name, p.config.Url, err)
 	}
 	return hosts, err
 }

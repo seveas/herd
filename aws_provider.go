@@ -20,83 +20,90 @@ func init() {
 	availableProviders["aws"] = NewAwsProvider
 	magicProviders["aws"] = func(r *Registry) {
 		p := NewAwsProvider("aws").(*AwsProvider)
-		if p.AccessKeyId != "" && p.SecretAccessKey != "" {
+		if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
+			p.config.AccessKeyId = v
+		}
+		if v, ok := os.LookupEnv("AWS_ACCESS_KEY"); ok {
+			p.config.AccessKeyId = v
+		}
+		if v, ok := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); ok {
+			p.config.SecretAccessKey = v
+		}
+		if v, ok := os.LookupEnv("AWS_SECRET_KEY"); ok {
+			p.config.SecretAccessKey = v
+		}
+		if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
 			r.AddMagicProvider(NewCacheFromProvider(p))
 		}
 	}
 }
 
 type AwsProvider struct {
-	BaseProvider    `mapstructure:",squash"`
-	AccessKeyId     string
-	SecretAccessKey string
-	Partition       string
-	Regions         []string
+	name   string
+	config struct {
+		Prefix          string
+		AccessKeyId     string
+		SecretAccessKey string
+		Partition       string
+		Regions         []string
+	}
+}
+
+func (p *AwsProvider) Name() string {
+	return p.name
+}
+
+func (p *AwsProvider) Prefix() string {
+	return p.config.Prefix
 }
 
 func NewAwsProvider(name string) HostProvider {
-	p := &AwsProvider{BaseProvider: BaseProvider{Name: name}, Partition: "aws"}
-
-	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
-		p.AccessKeyId = v
-	}
-	if v, ok := os.LookupEnv("AWS_ACCESS_KEY"); ok {
-		p.AccessKeyId = v
-	}
-	if v, ok := os.LookupEnv("AWS_SECRET_ACCESS_KEY"); ok {
-		p.SecretAccessKey = v
-	}
-	if v, ok := os.LookupEnv("AWS_SECRET_KEY"); ok {
-		p.SecretAccessKey = v
-	}
+	p := &AwsProvider{name: name}
+	p.config.Partition = "aws"
 	return p
 }
 
 func (p *AwsProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
-	op, ok := o.(*AwsProvider)
-	return ok &&
-		p.AccessKeyId == op.AccessKeyId &&
-		p.SecretAccessKey == op.SecretAccessKey &&
-		p.Partition == op.Partition &&
-		reflect.DeepEqual(p.Regions, op.Regions)
+	op := o.(*AwsProvider)
+	return p.config.AccessKeyId == op.config.AccessKeyId &&
+		p.config.SecretAccessKey == op.config.SecretAccessKey &&
+		p.config.Partition == op.config.Partition &&
+		reflect.DeepEqual(p.config.Regions, op.config.Regions)
 }
 
 func (p *AwsProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	return v.Unmarshal(&p.config)
 }
 
 func (p *AwsProvider) setRegions() error {
 	resolver := endpoints.DefaultResolver().(endpoints.EnumPartitions)
 	var partition endpoints.Partition
 	for _, partition = range resolver.Partitions() {
-		if partition.ID() == p.Partition {
+		if partition.ID() == p.config.Partition {
 			break
 		}
 	}
-	if partition.ID() != p.Partition {
-		return fmt.Errorf("No such partition: %s", p.Partition)
+	if partition.ID() != p.config.Partition {
+		return fmt.Errorf("No such partition: %s", p.config.Partition)
 	}
 	svc := partition.Services()[endpoints.Ec2ServiceID]
-	p.Regions = make([]string, 0)
+	p.config.Regions = make([]string, 0)
 	for region := range svc.Regions() {
-		p.Regions = append(p.Regions, region)
+		p.config.Regions = append(p.config.Regions, region)
 	}
 	return nil
 }
 
 func (p *AwsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	if len(p.Regions) == 0 {
+	if len(p.config.Regions) == 0 {
 		if err := p.setRegions(); err != nil {
 			return Hosts{}, err
 		}
 	}
 	hosts := make(Hosts, 0)
 	rc := make(chan loadresult)
-	for _, region := range p.Regions {
-		name := fmt.Sprintf("%s@%s", p.Name, region)
+	for _, region := range p.config.Regions {
+		name := fmt.Sprintf("%s@%s", p.name, region)
 		mc <- CacheMessage{Name: name, Finished: false, Err: nil}
 		go func(region, name string) {
 			hosts, err := p.loadRegion(region)
@@ -104,7 +111,7 @@ func (p *AwsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, er
 			rc <- loadresult{hosts: hosts, err: err}
 		}(region, name)
 	}
-	todo := len(p.Regions)
+	todo := len(p.config.Regions)
 	errs := &MultiError{}
 	for todo > 0 {
 		r := <-rc
@@ -122,7 +129,7 @@ func (p *AwsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, er
 
 func (p *AwsProvider) loadRegion(region string) (Hosts, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(p.AccessKeyId, p.SecretAccessKey, ""),
+		Credentials: credentials.NewStaticCredentials(p.config.AccessKeyId, p.config.SecretAccessKey, ""),
 		Region:      aws.String(region),
 	})
 	if err != nil {

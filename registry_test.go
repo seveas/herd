@@ -1,14 +1,11 @@
 package herd
 
 import (
-	"context"
 	"net"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"github.com/spf13/viper"
 )
 
 func TestNewRegistry(t *testing.T) {
@@ -50,24 +47,8 @@ func TestMagicProviders(t *testing.T) {
 	}
 }
 
-type FakeProvider struct {
-	BaseProvider `mapstructure:",squash"`
-}
-
-func (p *FakeProvider) Equivalent(o HostProvider) bool {
-	return false
-}
-
-func (p *FakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	return Hosts{NewHost("hostname", HostAttributes{})}, nil
-}
-
-func (p *FakeProvider) ParseViper(v *viper.Viper) error {
-	return nil
-}
-
 func TestGetHosts(t *testing.T) {
-	r := Registry{providers: []HostProvider{&FakeProvider{}, &FakeProvider{}}}
+	r := Registry{providers: []HostProvider{&fakeProvider{}, &fakeProvider{}}}
 	err := r.LoadHosts(nil)
 	if err != nil {
 		t.Errorf("%t %v", err, err)
@@ -80,19 +61,15 @@ func TestGetHosts(t *testing.T) {
 
 func TestRelativeFiles(t *testing.T) {
 	r := NewRegistry(dataDir("2"), cacheDir("2"))
-	p := &PlainTextProvider{File: "inventory", BaseProvider: BaseProvider{Name: "ittest"}}
+	p := &PlainTextProvider{name: "ittest"}
+	p.config.File = "inventory"
 	r.AddProvider(p)
-	if p.File != filepath.Join(dataDir("2"), "inventory") {
+	if p.config.File != filepath.Join(dataDir("2"), "inventory") {
 		t.Errorf("Filepath did not get interpreted relative to dataDir")
 	}
-	c := &Cache{BaseProvider: BaseProvider{Name: "itcache"}, Source: p}
+	c := NewCacheFromProvider(p)
 	r.AddProvider(c)
-	if c.File != filepath.Join(cacheDir("2"), "itcache.cache") {
-		t.Errorf("Proper cache path not set, found %s", c.File)
-	}
-	c2 := &Cache{BaseProvider: BaseProvider{Name: "itcache"}, Source: p, File: "it-cache.cache"}
-	r.AddProvider(c2)
-	if c2.File != filepath.Join(cacheDir("2"), "it-cache.cache") {
-		t.Errorf("Proper cache path not set, found %s", c2.File)
+	if c.(*Cache).config.File != filepath.Join(cacheDir("2"), "ittest.cache") {
+		t.Errorf("Proper cache path not set, found %s", c.(*Cache).config.File)
 	}
 }

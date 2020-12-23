@@ -20,8 +20,11 @@ func init() {
 }
 
 type PrometheusProvider struct {
-	HttpProvider `mapstructure:",squash"`
-	Jobs         []string
+	name   string
+	hp     *HttpProvider
+	config struct {
+		Jobs []string
+	}
 }
 
 type PrometheusTargets struct {
@@ -40,25 +43,32 @@ type PrometheusTarget struct {
 }
 
 func NewPrometheusProvider(name string) HostProvider {
-	return &PrometheusProvider{HttpProvider: HttpProvider{BaseProvider: BaseProvider{Name: name}}}
+	return &PrometheusProvider{name: name, hp: NewHttpProvider(name).(*HttpProvider)}
+}
+
+func (p *PrometheusProvider) Name() string {
+	return p.name
+}
+
+func (p *PrometheusProvider) Prefix() string {
+	return p.hp.Prefix()
 }
 
 func (p *PrometheusProvider) Equivalent(o HostProvider) bool {
-	if c, ok := o.(*Cache); ok {
-		o = c.Source
-	}
-	op, ok := o.(*PrometheusProvider)
-	return ok &&
-		p.HttpProvider.Equivalent(&op.HttpProvider) &&
-		reflect.DeepEqual(p.Jobs, op.Jobs)
+	op := o.(*PrometheusProvider)
+	return p.hp.Equivalent(op.hp) &&
+		reflect.DeepEqual(p.config.Jobs, op.config.Jobs)
 }
 
 func (p *PrometheusProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(p)
+	if err := v.Unmarshal(&p.hp.config); err != nil {
+		return err
+	}
+	return v.Unmarshal(&p.config)
 }
 
 func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	data, err := p.Fetch(ctx, mc)
+	data, err := p.hp.Fetch(ctx, mc)
 	if err != nil {
 		return Hosts{}, err
 	}
@@ -75,7 +85,7 @@ func (p *PrometheusProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 	for _, target := range targets.Data["activeTargets"] {
 		job := target.Labels["job"]
 		found := false
-		for _, j := range p.Jobs {
+		for _, j := range p.config.Jobs {
 			if j == job {
 				found = true
 			}
