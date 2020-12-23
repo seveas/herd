@@ -21,8 +21,9 @@ func init() {
 }
 
 type consulProvider struct {
-	name   string
-	config struct {
+	name         string
+	consulConfig *consul.Config
+	config       struct {
 		Address string
 		Prefix  string
 		Timeout time.Duration
@@ -68,9 +69,8 @@ func (p *consulProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
-	conf := consul.DefaultConfig()
-	conf.Address = p.config.Address
-	client, err := consul.NewClient(conf)
+	p.consulConfig.Address = p.config.Address
+	client, err := consul.NewClient(p.consulConfig)
 	if err != nil {
 		return herd.Hosts{}, err
 	}
@@ -88,7 +88,7 @@ func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (h
 			dc := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, dc)
 			mc <- herd.CacheMessage{Name: name, Finished: false, Err: nil}
-			hosts, err := p.loadDatacenter(conf, dc)
+			hosts, err := p.loadDatacenter(dc)
 			mc <- herd.CacheMessage{Name: name, Finished: true, Err: err}
 			return hosts, err
 		}, ctx, dc)
@@ -96,7 +96,7 @@ func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (h
 
 	untypedResults, err := sg.Wait()
 	if err != nil {
-		return herd.Hosts{}, nil
+		return herd.Hosts{}, err
 	}
 
 	hosts := make(herd.Hosts, 0)
@@ -106,9 +106,9 @@ func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (h
 	return hosts, nil
 }
 
-func (p *consulProvider) loadDatacenter(conf *consul.Config, dc string) (herd.Hosts, error) {
+func (p *consulProvider) loadDatacenter(dc string) (herd.Hosts, error) {
 	nodePositions := make(map[string]int)
-	client, err := consul.NewClient(conf)
+	client, err := consul.NewClient(p.consulConfig)
 	catalog := client.Catalog()
 	if err != nil {
 		return herd.Hosts{}, err

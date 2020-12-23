@@ -10,11 +10,13 @@ require (
 	github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-test/deep v1.0.7
+	github.com/google/uuid v1.1.2
 	github.com/hashicorp/consul/api v1.5.0
 	github.com/hashicorp/go-hclog v0.14.1 // indirect
 	github.com/hashicorp/go-immutable-radix v1.2.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.9.3 // indirect
+	github.com/jarcoal/httpmock v1.0.6
 	github.com/lxn/win v0.0.0-20191128105842-2da648fda5b4
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-isatty v0.0.12
