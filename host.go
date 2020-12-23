@@ -3,6 +3,7 @@ package katyusha
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"hash/crc32"
 	"net"
@@ -67,6 +68,18 @@ type Host struct {
 	connection *ssh.Client
 	lastResult *Result
 	csum       uint32
+}
+
+type host Host
+
+func (h *Host) UnmarshalJSON(data []byte) error {
+	var h2 host
+	if err := json.Unmarshal(data, &h2); err != nil {
+		return err
+	}
+	*h = Host(h2)
+	h.init()
+	return nil
 }
 
 // Hosts should be initialized with this function, which also initializes any
