@@ -36,7 +36,6 @@ func TestMain(m *testing.M) {
 			realUserHome = u.HomeDir
 		}
 	}
-	os.Unsetenv("CONSUL_HTTP_ADDR")
 	for _, envvar := range os.Environ() {
 		if strings.HasPrefix(envvar, "HERD") {
 			os.Unsetenv(envvar[:strings.IndexRune(envvar, '=')])
