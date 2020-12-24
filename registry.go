@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -16,9 +14,6 @@ import (
 )
 
 var availableProviders = map[string]func(string) HostProvider{
-	"http":        NewHttpProvider,
-	"json":        NewJsonProvider,
-	"plain":       NewPlainTextProvider,
 	"known_hosts": NewKnownHostsProvider,
 }
 
@@ -59,7 +54,7 @@ type HostProvider interface {
 }
 
 type DataLoader interface {
-	SetDataDir(string)
+	SetDataDir(string) error
 }
 
 type Cache interface {
@@ -98,18 +93,6 @@ func NewProvider(pname, name string) (HostProvider, error) {
 func (r *Registry) LoadMagicProviders() {
 	// We always want these to be done first, so they're not implementing magic providerness themselves
 	r.AddMagicProvider(NewKnownHostsProvider("known_hosts"))
-	fn := filepath.Join(r.dataDir, "inventory")
-	if _, err := os.Stat(fn); err == nil {
-		p := NewPlainTextProvider("inventory")
-		p.(*PlainTextProvider).config.File = "inventory"
-		r.AddMagicProvider(p)
-	}
-	fn += ".json"
-	if _, err := os.Stat(fn); err == nil {
-		p := NewJsonProvider("inventory")
-		p.(*JsonProvider).config.File = "inventory.json"
-		r.AddMagicProvider(p)
-	}
 	// And now we do the other magic ones
 	for _, fnc := range magicProviders {
 		fnc(r)
@@ -146,7 +129,7 @@ func (r *Registry) AddProvider(p HostProvider) {
 	if c, ok := p.(Cache); ok {
 		c.SetCacheDir(r.cacheDir)
 	}
-	if c, ok := p.(DataLoader); ok {
+	if c, ok := stripCache(p).(DataLoader); ok {
 		c.SetDataDir(r.dataDir)
 	}
 	r.providers = append(r.providers, p)
@@ -154,6 +137,11 @@ func (r *Registry) AddProvider(p HostProvider) {
 
 func (r *Registry) AddMagicProvider(p HostProvider) {
 	sp := stripCache(p)
+	if c, ok := sp.(DataLoader); ok {
+		if err := c.SetDataDir(r.dataDir); err != nil {
+			return
+		}
+	}
 	for _, pr := range r.providers {
 		pr := stripCache(pr)
 		if reflect.TypeOf(sp) != reflect.TypeOf(pr) {

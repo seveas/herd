@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/seveas/katyusha"
+	"github.com/seveas/katyusha/provider/http"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -21,7 +22,7 @@ func init() {
 
 type prometheusProvider struct {
 	name   string
-	hp     *katyusha.HttpProvider
+	hp     *http.HttpProvider
 	config struct {
 		Jobs []string
 	}
@@ -43,7 +44,7 @@ type PrometheusTarget struct {
 }
 
 func newPrometheusProvider(name string) katyusha.HostProvider {
-	return &prometheusProvider{name: name, hp: katyusha.NewHttpProvider(name).(*katyusha.HttpProvider)}
+	return &prometheusProvider{name: name, hp: http.NewProvider(name).(*http.HttpProvider)}
 }
 
 func (p *prometheusProvider) Name() string {
