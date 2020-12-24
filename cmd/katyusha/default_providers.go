@@ -4,6 +4,7 @@ package main
 // providers in the desired order
 import (
 	_ "github.com/seveas/katyusha/provider/known_hosts"
+	_ "github.com/seveas/katyusha/provider/putty"
 
 	_ "github.com/seveas/katyusha/provider/json"
 	_ "github.com/seveas/katyusha/provider/plain"
