@@ -1,4 +1,4 @@
-package herd
+package http
 
 import (
 	"context"
@@ -9,8 +9,14 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/seveas/herd"
+
 	"github.com/spf13/viper"
 )
+
+func init() {
+	herd.RegisterProvider("http", NewProvider, nil)
+}
 
 type HttpProvider struct {
 	name   string
@@ -25,7 +31,7 @@ type HttpProvider struct {
 	}
 }
 
-func NewHttpProvider(name string) HostProvider {
+func NewProvider(name string) herd.HostProvider {
 	p := &HttpProvider{name: name, client: http.DefaultClient}
 	p.config.Timeout = 5 * time.Second
 	return p
@@ -39,7 +45,7 @@ func (p *HttpProvider) Prefix() string {
 	return p.config.Prefix
 }
 
-func (p *HttpProvider) Equivalent(o HostProvider) bool {
+func (p *HttpProvider) Equivalent(o herd.HostProvider) bool {
 	op := o.(*HttpProvider)
 	return p.config.Url == op.config.Url &&
 		p.config.Username == op.config.Username &&
@@ -51,7 +57,7 @@ func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *HttpProvider) Fetch(ctx context.Context, mc chan CacheMessage) ([]byte, error) {
+func (p *HttpProvider) Fetch(ctx context.Context, mc chan herd.CacheMessage) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
 	defer cancel()
 	req, err := http.NewRequest("GET", p.config.Url, nil)
@@ -83,8 +89,8 @@ func (p *HttpProvider) Fetch(ctx context.Context, mc chan CacheMessage) ([]byte,
 	return body, err
 }
 
-func (p *HttpProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	hosts := Hosts{}
+func (p *HttpProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+	hosts := herd.Hosts{}
 	data, err := p.Fetch(ctx, mc)
 	if err != nil {
 		return hosts, err
