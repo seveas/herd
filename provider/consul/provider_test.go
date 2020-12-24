@@ -13,10 +13,10 @@ import (
 )
 
 func TestProviderEquivalence(t *testing.T) {
-	p1 := newConsulProvider("test").(*consulProvider)
+	p1 := newProvider("test").(*consulProvider)
 	p1.config.Address = "http://consul:8080"
 
-	p2 := newConsulProvider("test 2").(*consulProvider)
+	p2 := newProvider("test 2").(*consulProvider)
 	p2.config.Address = "http://consul:8080"
 	p2.config.Prefix = "consul:"
 
@@ -31,7 +31,7 @@ func TestProviderEquivalence(t *testing.T) {
 }
 
 func TestConsulMock(t *testing.T) {
-	p := newConsulProvider("test").(*consulProvider)
+	p := newProvider("test").(*consulProvider)
 	p.consulConfig.HttpClient = http.DefaultClient
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()

@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	herd.RegisterProvider("prometheus", newPrometheusProvider, nil)
+	herd.RegisterProvider("prometheus", newProvider, nil)
 }
 
 type prometheusProvider struct {
@@ -43,7 +43,7 @@ type PrometheusTarget struct {
 	Health             string            `json:"health"`
 }
 
-func newPrometheusProvider(name string) herd.HostProvider {
+func newProvider(name string) herd.HostProvider {
 	return &prometheusProvider{name: name, hp: http.NewProvider(name).(*http.HttpProvider)}
 }
 

@@ -31,8 +31,8 @@ func newProvider(name string) herd.HostProvider {
 	return &puttyProvider{name: name}
 }
 
-func magicProvider(r *herd.Registry) {
-	r.AddMagicProvider(newProvider("putty"))
+func magicProvider() herd.HostProvider {
+	return newProvider("putty")
 }
 
 func (p *puttyProvider) Name() string {

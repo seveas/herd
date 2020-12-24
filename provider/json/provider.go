@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	herd.RegisterProvider("json", newJsonProvider, jsonProviderMagic)
+	herd.RegisterProvider("json", newProvider, magicProvider)
 }
 
 type jsonProvider struct {
@@ -26,14 +26,14 @@ type jsonProvider struct {
 	}
 }
 
-func newJsonProvider(name string) herd.HostProvider {
+func newProvider(name string) herd.HostProvider {
 	return &jsonProvider{name: name}
 }
 
-func jsonProviderMagic(r *herd.Registry) {
+func magicProvider() herd.HostProvider {
 	p := &jsonProvider{name: "inventory"}
 	p.config.File = "inventory.json"
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *jsonProvider) Name() string {

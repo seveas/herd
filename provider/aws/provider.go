@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	herd.RegisterProvider("aws", newAwsProvider, awsProviderMagic)
+	herd.RegisterProvider("aws", newProvider, magicProvider)
 }
 
 type awsProvider struct {
@@ -35,14 +35,14 @@ type awsProvider struct {
 	}
 }
 
-func newAwsProvider(name string) herd.HostProvider {
+func newProvider(name string) herd.HostProvider {
 	p := &awsProvider{name: name}
 	p.config.Partition = "aws"
 	return p
 }
 
-func awsProviderMagic(r *herd.Registry) {
-	p := newAwsProvider("aws").(*awsProvider)
+func magicProvider() herd.HostProvider {
+	p := newProvider("aws").(*awsProvider)
 	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
 		p.config.AccessKeyId = v
 	}
@@ -56,8 +56,9 @@ func awsProviderMagic(r *herd.Registry) {
 		p.config.SecretAccessKey = v
 	}
 	if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
-		r.AddMagicProvider(cache.NewFromProvider(p))
+		return cache.NewFromProvider(p)
 	}
+	return nil
 }
 
 func (p *awsProvider) Name() string {

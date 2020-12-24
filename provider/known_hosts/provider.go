@@ -42,7 +42,7 @@ func newProvider(name string) herd.HostProvider {
 	return &knownHostsProvider{name: name}
 }
 
-func magicProvider(r *herd.Registry) {
+func magicProvider() herd.HostProvider {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
 	if home, ok := os.LookupEnv("HOME"); ok {
 		files = append(files, filepath.Join(home, ".ssh", "known_hosts"))
@@ -54,7 +54,7 @@ func magicProvider(r *herd.Registry) {
 	}
 	p := &knownHostsProvider{name: "known_hosts", hashed: false}
 	p.config.Files = files
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *knownHostsProvider) Equivalent(o herd.HostProvider) bool {

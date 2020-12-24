@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	herd.RegisterProvider("plain", newPlainTextProvider, plainTextMagic)
+	herd.RegisterProvider("plain", newProvider, magicProvider)
 }
 
 type plainTextProvider struct {
@@ -25,14 +25,14 @@ type plainTextProvider struct {
 	}
 }
 
-func newPlainTextProvider(name string) herd.HostProvider {
+func newProvider(name string) herd.HostProvider {
 	return &plainTextProvider{name: name}
 }
 
-func plainTextMagic(r *herd.Registry) {
+func magicProvider() herd.HostProvider {
 	p := &plainTextProvider{name: "inventory"}
 	p.config.File = "inventory"
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *plainTextProvider) Name() string {
