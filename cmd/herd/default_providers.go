@@ -4,6 +4,7 @@ package main
 // providers in the desired order
 import (
 	_ "github.com/seveas/herd/provider/known_hosts"
+	_ "github.com/seveas/herd/provider/putty"
 
 	_ "github.com/seveas/herd/provider/json"
 	_ "github.com/seveas/herd/provider/plain"
