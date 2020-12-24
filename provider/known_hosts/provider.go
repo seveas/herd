@@ -10,12 +10,18 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/seveas/herd"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/crypto/ssh"
 )
 
-type KnownHostsProvider struct {
+func init() {
+	herd.RegisterProvider("known_hosts", newProvider, magicProvider)
+}
+
+type knownHostsProvider struct {
 	name   string
 	hashed bool
 	config struct {
@@ -24,15 +30,19 @@ type KnownHostsProvider struct {
 	}
 }
 
-func (p *KnownHostsProvider) Name() string {
+func (p *knownHostsProvider) Name() string {
 	return p.name
 }
 
-func (p *KnownHostsProvider) Prefix() string {
+func (p *knownHostsProvider) Prefix() string {
 	return p.config.Prefix
 }
 
-func NewKnownHostsProvider(name string) HostProvider {
+func newProvider(name string) herd.HostProvider {
+	return &knownHostsProvider{name: name}
+}
+
+func magicProvider(r *herd.Registry) {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
 	if home, ok := os.LookupEnv("HOME"); ok {
 		files = append(files, filepath.Join(home, ".ssh", "known_hosts"))
@@ -42,25 +52,22 @@ func NewKnownHostsProvider(name string) HostProvider {
 			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
 		}
 	}
-	p := &KnownHostsProvider{
-		name:   name,
-		hashed: false,
-	}
+	p := &knownHostsProvider{name: "known_hosts", hashed: false}
 	p.config.Files = files
-	return p
+	r.AddMagicProvider(p)
 }
 
-func (p *KnownHostsProvider) Equivalent(o HostProvider) bool {
-	op, ok := o.(*KnownHostsProvider)
+func (p *knownHostsProvider) Equivalent(o herd.HostProvider) bool {
+	op, ok := o.(*knownHostsProvider)
 	return ok && reflect.DeepEqual(p.config.Files, op.config.Files)
 }
 
-func (p *KnownHostsProvider) ParseViper(v *viper.Viper) error {
+func (p *knownHostsProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
-	hosts := make(Hosts, 0)
+func (p *knownHostsProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+	hosts := make(herd.Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.config.Files {
 		data, err := ioutil.ReadFile(f)
@@ -81,7 +88,7 @@ func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 			name := matches[0]
 			if strings.HasPrefix(name, "|") {
 				if !p.hashed {
-					logrus.Warnf("Hashed hostnames found in %s. Please set `HashKnownHosts no` in your ssh config and delte the hashed entries", f)
+					logrus.Warnf("Hashed hostnames found in %s. Please set `HashknownHosts no` in your ssh config and delte the hashed entries", f)
 					p.hashed = true
 				}
 				continue
@@ -95,7 +102,7 @@ func (p *KnownHostsProvider) Load(ctx context.Context, mc chan CacheMessage) (Ho
 				}
 				continue
 			}
-			host := NewHost(name, HostAttributes{"PublicKeyComment": comment})
+			host := herd.NewHost(name, herd.HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
 			seen[host.Name] = len(hosts)
 			hosts = append(hosts, host)

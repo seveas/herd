@@ -13,9 +13,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-var availableProviders = map[string]func(string) HostProvider{
-	"known_hosts": NewKnownHostsProvider,
-}
+var availableProviders = make(map[string]func(string) HostProvider)
+var magicProviders = make(map[string]func(*Registry))
 
 func Providers() []string {
 	ret := []string{}
@@ -25,8 +24,6 @@ func Providers() []string {
 	sort.Strings(ret)
 	return ret
 }
-
-var magicProviders = map[string]func(*Registry){}
 
 func RegisterProvider(name string, constructor func(string) HostProvider, magic func(*Registry)) {
 	availableProviders[name] = constructor
@@ -91,9 +88,6 @@ func NewProvider(pname, name string) (HostProvider, error) {
 }
 
 func (r *Registry) LoadMagicProviders() {
-	// We always want these to be done first, so they're not implementing magic providerness themselves
-	r.AddMagicProvider(NewKnownHostsProvider("known_hosts"))
-	// And now we do the other magic ones
 	for _, fnc := range magicProviders {
 		fnc(r)
 	}
