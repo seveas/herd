@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	katyusha.RegisterProvider("plain", newPlainTextProvider, plainTextMagic)
+	katyusha.RegisterProvider("plain", newProvider, magicProvider)
 }
 
 type plainTextProvider struct {
@@ -25,14 +25,14 @@ type plainTextProvider struct {
 	}
 }
 
-func newPlainTextProvider(name string) katyusha.HostProvider {
+func newProvider(name string) katyusha.HostProvider {
 	return &plainTextProvider{name: name}
 }
 
-func plainTextMagic(r *katyusha.Registry) {
+func magicProvider() katyusha.HostProvider {
 	p := &plainTextProvider{name: "inventory"}
 	p.config.File = "inventory"
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *plainTextProvider) Name() string {

@@ -13,7 +13,7 @@ import (
 func TestPrometheus(t *testing.T) {
 	data := `{"status":"success","data":{"activeTargets":[{"discoveredLabels":{"__address__":"node1.katyusha.ci:9100","__metrics_path__":"/metrics","__scheme__":"http","job":"node"},"labels":{"instance":"node1.katyusha.ci:9100","job":"node"},"scrapePool":"node","scrapeUrl":"http://node1.katyusha.ci:9100/metrics","globalUrl":"http://node1.katyusha.ci:9100/metrics","lastError":"","lastScrape":"2020-12-23T19:31:54.709546474Z","lastScrapeDuration":0.019804372,"health":"up"}]}}`
 
-	p := newPrometheusProvider("prometheus").(*prometheusProvider)
+	p := newProvider("prometheus").(*prometheusProvider)
 	p.config.Jobs = []string{"node"}
 	v := viper.New()
 	v.Set("url", "http://prometheus.katyusha.ci:9100/api/v1/targets")

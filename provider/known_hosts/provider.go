@@ -42,7 +42,7 @@ func newProvider(name string) katyusha.HostProvider {
 	return &knownHostsProvider{name: name}
 }
 
-func magicProvider(r *katyusha.Registry) {
+func magicProvider() katyusha.HostProvider {
 	files := []string{"/etc/ssh/ssh_known_hosts"}
 	if home, ok := os.LookupEnv("HOME"); ok {
 		files = append(files, filepath.Join(home, ".ssh", "known_hosts"))
@@ -54,7 +54,7 @@ func magicProvider(r *katyusha.Registry) {
 	}
 	p := &knownHostsProvider{name: "known_hosts", hashed: false}
 	p.config.Files = files
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *knownHostsProvider) Equivalent(o katyusha.HostProvider) bool {

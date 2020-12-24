@@ -14,7 +14,7 @@ import (
 )
 
 var availableProviders = make(map[string]func(string) HostProvider)
-var magicProviders = make(map[string]func(*Registry))
+var magicProviders = make(map[string]func() HostProvider)
 
 func Providers() []string {
 	ret := []string{}
@@ -25,7 +25,7 @@ func Providers() []string {
 	return ret
 }
 
-func RegisterProvider(name string, constructor func(string) HostProvider, magic func(*Registry)) {
+func RegisterProvider(name string, constructor func(string) HostProvider, magic func() HostProvider) {
 	availableProviders[name] = constructor
 	if magic != nil {
 		magicProviders[name] = magic
@@ -89,7 +89,9 @@ func NewProvider(pname, name string) (HostProvider, error) {
 
 func (r *Registry) LoadMagicProviders() {
 	for _, fnc := range magicProviders {
-		fnc(r)
+		if p := fnc(); p != nil {
+			r.AddMagicProvider(p)
+		}
 	}
 }
 

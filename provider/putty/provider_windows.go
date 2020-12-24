@@ -31,8 +31,8 @@ func newProvider(name string) katyusha.HostProvider {
 	return &puttyProvider{name: name}
 }
 
-func magicProvider(r *katyusha.Registry) {
-	r.AddMagicProvider(newProvider("putty"))
+func magicProvider() katyusha.HostProvider {
+	return newProvider("putty")
 }
 
 func (p *puttyProvider) Name() string {

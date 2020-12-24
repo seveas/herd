@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	katyusha.RegisterProvider("prometheus", newPrometheusProvider, nil)
+	katyusha.RegisterProvider("prometheus", newProvider, nil)
 }
 
 type prometheusProvider struct {
@@ -43,7 +43,7 @@ type PrometheusTarget struct {
 	Health             string            `json:"health"`
 }
 
-func newPrometheusProvider(name string) katyusha.HostProvider {
+func newProvider(name string) katyusha.HostProvider {
 	return &prometheusProvider{name: name, hp: http.NewProvider(name).(*http.HttpProvider)}
 }
 

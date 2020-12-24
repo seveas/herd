@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	katyusha.RegisterProvider("json", newJsonProvider, jsonProviderMagic)
+	katyusha.RegisterProvider("json", newProvider, magicProvider)
 }
 
 type jsonProvider struct {
@@ -26,14 +26,14 @@ type jsonProvider struct {
 	}
 }
 
-func newJsonProvider(name string) katyusha.HostProvider {
+func newProvider(name string) katyusha.HostProvider {
 	return &jsonProvider{name: name}
 }
 
-func jsonProviderMagic(r *katyusha.Registry) {
+func magicProvider() katyusha.HostProvider {
 	p := &jsonProvider{name: "inventory"}
 	p.config.File = "inventory.json"
-	r.AddMagicProvider(p)
+	return p
 }
 
 func (p *jsonProvider) Name() string {

@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	katyusha.RegisterProvider("consul", newConsulProvider, consulProviderMagic)
+	katyusha.RegisterProvider("consul", newProvider, magicProvider)
 }
 
 type consulProvider struct {
@@ -31,14 +31,14 @@ type consulProvider struct {
 	}
 }
 
-func newConsulProvider(name string) katyusha.HostProvider {
+func newProvider(name string) katyusha.HostProvider {
 	p := &consulProvider{name: name}
 	p.config.Timeout = 10 * time.Second
 	p.consulConfig = consul.DefaultConfig()
 	return p
 }
 
-func consulProviderMagic(r *katyusha.Registry) {
+func magicProvider() katyusha.HostProvider {
 	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
 	if addr == "" {
 		_, err := net.LookupHost("consul.service.consul")
@@ -47,10 +47,11 @@ func consulProviderMagic(r *katyusha.Registry) {
 		}
 	}
 	if addr != "" {
-		p := newConsulProvider("consul").(*consulProvider)
+		p := newProvider("consul").(*consulProvider)
 		p.config.Address = addr
-		r.AddMagicProvider(cache.NewFromProvider(p))
+		return cache.NewFromProvider(p)
 	}
+	return nil
 }
 
 func (p *consulProvider) Name() string {

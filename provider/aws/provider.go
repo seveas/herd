@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	katyusha.RegisterProvider("aws", newAwsProvider, awsProviderMagic)
+	katyusha.RegisterProvider("aws", newProvider, magicProvider)
 }
 
 type awsProvider struct {
@@ -35,14 +35,14 @@ type awsProvider struct {
 	}
 }
 
-func newAwsProvider(name string) katyusha.HostProvider {
+func newProvider(name string) katyusha.HostProvider {
 	p := &awsProvider{name: name}
 	p.config.Partition = "aws"
 	return p
 }
 
-func awsProviderMagic(r *katyusha.Registry) {
-	p := newAwsProvider("aws").(*awsProvider)
+func magicProvider() katyusha.HostProvider {
+	p := newProvider("aws").(*awsProvider)
 	if v, ok := os.LookupEnv("AWS_ACCESS_KEY_ID"); ok {
 		p.config.AccessKeyId = v
 	}
@@ -56,8 +56,9 @@ func awsProviderMagic(r *katyusha.Registry) {
 		p.config.SecretAccessKey = v
 	}
 	if p.config.AccessKeyId != "" && p.config.SecretAccessKey != "" {
-		r.AddMagicProvider(cache.NewFromProvider(p))
+		return cache.NewFromProvider(p)
 	}
+	return nil
 }
 
 func (p *awsProvider) Name() string {
