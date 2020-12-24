@@ -3,6 +3,8 @@ package main
 // These imports are explicitely ordered/grouped to make sure we register
 // providers in the desired order
 import (
+	_ "github.com/seveas/katyusha/provider/known_hosts"
+
 	_ "github.com/seveas/katyusha/provider/json"
 	_ "github.com/seveas/katyusha/provider/plain"
 
