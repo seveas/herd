@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -159,60 +160,52 @@ func (r *Registry) InvalidateCache() {
 	}
 }
 
-type loadresult struct {
-	provider HostProvider
-	hosts    []*Host
-	err      error
-}
-
 func (r *Registry) LoadHosts(lm LoadingMessage) error {
 	if len(r.hosts) > 0 {
 		return nil
 	}
 	ctx := context.Background()
-	rc := make(chan loadresult)
-	defer close(rc)
+	sg := scattergather.New(int64(len(r.providers)))
 
 	for _, p := range r.providers {
-		go func(pr HostProvider, ctx context.Context) {
-			hosts, err := pr.Load(ctx, lm)
-			lm(pr.Name(), true, err)
-			rc <- loadresult{provider: pr, hosts: hosts, err: err}
-		}(p, ctx)
+		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
+			p := args[0].(HostProvider)
+			hosts, err := p.Load(ctx, lm)
+			lm(p.Name(), true, err)
+			logrus.Debugf("%d hosts returned from %s", len(hosts), p.Name())
+			for _, host := range hosts {
+				if p.Prefix() != "" {
+					host.Attributes = host.Attributes.prefix(p.Prefix())
+				}
+				host.Attributes["katyusha_provider"] = []string{p.Name()}
+			}
+			return hosts, err
+		}, ctx, p)
 	}
 
-	rerr := &MultiError{Subject: "Errors querying providers"}
-	todo := len(r.providers)
-	seen := make(map[string]int)
-	hosts := make(Hosts, 0)
-
-	for todo > 0 {
-		r := <-rc
-		logrus.Debugf("%d hosts returned from %s", len(r.hosts), r.provider.Name())
-		if r.err != nil {
-			rerr.Add(r.err)
-		}
-		for _, host := range r.hosts {
-			if r.provider.Prefix() != "" {
-				host.Attributes = host.Attributes.prefix(r.provider.Prefix())
-			}
-			host.Attributes["katyusha_provider"] = []string{r.provider.Name()}
-			if existing, ok := seen[host.Name]; ok {
-				hosts[existing].Amend(host)
-			} else {
-				seen[host.Name] = len(hosts)
-				hosts = append(hosts, host)
-			}
-		}
-		todo -= 1
-	}
-	r.hosts = hosts
-	r.hosts.Sort(r.sort)
-	if !rerr.HasErrors() {
-		return nil
-	}
+	untypedHosts, err := sg.Wait()
 	lm("", true, nil)
-	return rerr
+	seen := make(map[string]int)
+	allHosts := make(Hosts, 0)
+
+	if err != nil {
+		return err
+	}
+
+	for _, uh := range untypedHosts {
+		hosts := uh.(Hosts)
+		for _, host := range hosts {
+			if existing, ok := seen[host.Name]; ok {
+				allHosts[existing].Amend(host)
+			} else {
+				seen[host.Name] = len(allHosts)
+				allHosts = append(allHosts, host)
+			}
+		}
+	}
+	r.hosts = allHosts
+	r.hosts.Sort(r.sort)
+	return nil
 }
 
 func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {

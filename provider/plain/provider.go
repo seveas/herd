@@ -62,7 +62,7 @@ func (p *plainTextProvider) Load(ctx context.Context, lm katyusha.LoadingMessage
 	hosts := make(katyusha.Hosts, 0)
 	data, err := ioutil.ReadFile(p.config.File)
 	if err != nil {
-		return hosts, err
+		return nil, err
 	}
 	for _, line := range strings.Split(string(data), "\n") {
 		line := strings.TrimSpace(line)

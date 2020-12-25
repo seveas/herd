@@ -61,14 +61,14 @@ func (p *jsonProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *jsonProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
-	hosts := make(katyusha.Hosts, 0)
 	data, err := ioutil.ReadFile(p.config.File)
 	if err != nil {
-		return hosts, err
+		return nil, err
 	}
 
+	var hosts katyusha.Hosts
 	err = json.Unmarshal(data, &hosts)
-	return hosts, err
+	return nil, err
 }
 
 var _ katyusha.DataLoader = &jsonProvider{}

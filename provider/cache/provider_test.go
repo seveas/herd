@@ -76,10 +76,10 @@ func TestCache(t *testing.T) {
 	c.Invalidate()
 	hosts, err = c.Load(nil, func(string, bool, error) {})
 	if err == nil {
-		panic("Test broken")
+		t.Errorf("Expected an error from the cache")
 	}
 	if c.source.(*fakeProvider).loaded != 2 {
-		panic("Test broken")
+		t.Errorf("Fake provider was not called")
 	}
 	if _, err := os.Stat(filepath.Join(c.config.File)); err == nil {
 		t.Errorf("Hosts were cached when the source provider errored out")

@@ -75,14 +75,14 @@ func (p *consulProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (
 	lm(p.name, false, nil)
 	client, err := consul.NewClient(p.consulConfig)
 	if err != nil {
-		return katyusha.Hosts{}, err
+		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
 	defer cancel()
 	catalog := client.Catalog()
 	datacenters, err := catalog.Datacenters()
 	if err != nil {
-		return katyusha.Hosts{}, err
+		return nil, err
 	}
 	logrus.Debugf("Consul datacenters: %v", datacenters)
 	sg := scattergather.New(int64(len(datacenters)))
@@ -99,7 +99,7 @@ func (p *consulProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (
 
 	untypedResults, err := sg.Wait()
 	if err != nil {
-		return katyusha.Hosts{}, err
+		return nil, err
 	}
 
 	hosts := make(katyusha.Hosts, 0)
@@ -114,12 +114,12 @@ func (p *consulProvider) loadDatacenter(dc string) (katyusha.Hosts, error) {
 	client, err := consul.NewClient(p.consulConfig)
 	catalog := client.Catalog()
 	if err != nil {
-		return katyusha.Hosts{}, err
+		return nil, err
 	}
 	opts := consul.QueryOptions{Datacenter: dc, WaitTime: 5 * time.Second}
 	catalognodes, _, err := catalog.Nodes(&opts)
 	if err != nil {
-		return katyusha.Hosts{}, err
+		return nil, err
 	}
 	hosts := make(katyusha.Hosts, len(catalognodes))
 	for i, node := range catalognodes {
@@ -128,12 +128,12 @@ func (p *consulProvider) loadDatacenter(dc string) (katyusha.Hosts, error) {
 	}
 	services, _, err := catalog.Services(&opts)
 	if err != nil {
-		return hosts, err
+		return nil, err
 	}
 	for service, _ := range services {
 		servicenodes, _, err := catalog.Service(service, "", &opts)
 		if err != nil {
-			return hosts, err
+			return nil, err
 		}
 		for _, service := range servicenodes {
 			h := hosts[nodePositions[service.Node]]
