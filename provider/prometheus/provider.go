@@ -68,8 +68,9 @@ func (p *prometheusProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *prometheusProvider) Load(ctx context.Context, mc chan katyusha.CacheMessage) (katyusha.Hosts, error) {
-	data, err := p.hp.Fetch(ctx, mc)
+func (p *prometheusProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
+	lm(p.name, false, nil)
+	data, err := p.hp.Fetch(ctx)
 	if err != nil {
 		return katyusha.Hosts{}, err
 	}

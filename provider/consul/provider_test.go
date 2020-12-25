@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jarcoal/httpmock"
-	"github.com/seveas/katyusha"
 )
 
 func TestProviderEquivalence(t *testing.T) {
@@ -55,16 +54,7 @@ func TestConsulMock(t *testing.T) {
 
 	p.config.Address = "http://consul.ci:8080"
 	ctx := context.Background()
-	mc := make(chan katyusha.CacheMessage)
-	go func() {
-		for {
-			if _, ok := <-mc; !ok {
-				break
-			}
-		}
-	}()
-
-	hosts, err := p.Load(ctx, mc)
+	hosts, err := p.Load(ctx, func(string, bool, error) {})
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)
 	}
@@ -100,8 +90,6 @@ func TestConsulMock(t *testing.T) {
 		}
 		_ = i
 	}
-
-	close(mc)
 }
 
 func mockHosts(site string) string {

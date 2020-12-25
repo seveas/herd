@@ -66,7 +66,7 @@ func (p *knownHostsProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *knownHostsProvider) Load(ctx context.Context, mc chan katyusha.CacheMessage) (katyusha.Hosts, error) {
+func (p *knownHostsProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
 	hosts := make(katyusha.Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.config.Files {
