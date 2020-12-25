@@ -62,7 +62,7 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 	defer cancel()
 	req, err := http.NewRequest("GET", p.config.Url, nil)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	req = req.WithContext(ctx)
 	if p.config.Username != "" {
@@ -75,18 +75,18 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 	}
 	resp, err := p.client.Do(req)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return []byte{}, fmt.Errorf("http response code %d: %s", resp.StatusCode, body)
+		return nil, fmt.Errorf("http response code %d: %s", resp.StatusCode, body)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
-	return body, err
+	return body, nil
 }
 
 func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
@@ -94,10 +94,10 @@ func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.H
 	lm(p.name, false, nil)
 	data, err := p.Fetch(ctx)
 	if err != nil {
-		return hosts, err
+		return nil, err
 	}
 	if err = json.Unmarshal(data, &hosts); err != nil {
-		err = fmt.Errorf("Could not parse %s data from %s: %s", p.name, p.config.Url, err)
+		return nil, err
 	}
-	return hosts, err
+	return hosts, nil
 }

@@ -56,12 +56,12 @@ func (p *puttyProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (he
 	ret := herd.Hosts{}
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\Sessions`, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
 	defer k.Close()
 	names, err := k.ReadSubKeyNames(-1)
 	if err != nil {
-		return ret, err
+		return nil, err
 	}
 	for _, name := range names {
 		k, err := registry.OpenKey(k, name, registry.QUERY_VALUE)

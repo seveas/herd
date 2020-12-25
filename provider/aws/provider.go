@@ -105,7 +105,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 	defer func() { lm(p.name, true, err) }()
 	if len(p.config.Regions) == 0 {
 		if err := p.setRegions(); err != nil {
-			return herd.Hosts{}, err
+			return nil, err
 		}
 	}
 	logrus.Debugf("AWS regions: %v", p.config.Regions)
@@ -123,20 +123,20 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 
 	untypedResults, err := sg.Wait()
 	if err != nil {
-		return herd.Hosts{}, err
+		return nil, err
 	}
 
 	hosts = make(herd.Hosts, 0)
 	for _, hu := range untypedResults {
 		hosts = append(hosts, hu.(herd.Hosts)...)
 	}
-	return hosts, err
+	return hosts, nil
 }
 
 func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
 	for _, r := range p.config.ExcludeRegions {
 		if region == r {
-			return herd.Hosts{}, nil
+			return nil, nil
 		}
 	}
 	sess, err := session.NewSession(&aws.Config{

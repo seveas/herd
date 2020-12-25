@@ -95,22 +95,25 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, e
 		hosts := make(herd.Hosts, 0)
 		data, err := ioutil.ReadFile(c.config.File)
 		if err != nil {
-			return hosts, err
+			return nil, err
 		}
-
-		err = json.Unmarshal(data, &hosts)
-		return hosts, err
+		if err = json.Unmarshal(data, &hosts); err != nil {
+			return nil, err
+		}
+		return hosts, nil
 	}
 	hosts, err := c.source.Load(ctx, lm)
 	if err == nil && len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.config.File)
 		if err = os.MkdirAll(dir, 0700); err != nil {
-			return hosts, fmt.Errorf("Unable to create cache directory %s: %s", dir, err.Error())
+			return nil, fmt.Errorf("Unable to create cache directory %s: %s", dir, err.Error())
 		}
-		data, err = json.Marshal(hosts)
-		if err == nil {
-			err = ioutil.WriteFile(c.config.File, data, 0644)
+		if data, err = json.Marshal(hosts); err != nil {
+			return nil, err
+		}
+		if err = ioutil.WriteFile(c.config.File, data, 0644); err != nil {
+			return nil, err
 		}
 	}
 	return hosts, err

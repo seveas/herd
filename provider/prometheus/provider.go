@@ -72,15 +72,15 @@ func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 	lm(p.name, false, nil)
 	data, err := p.hp.Fetch(ctx)
 	if err != nil {
-		return herd.Hosts{}, err
+		return nil, err
 	}
 	var targets PrometheusTargets
 	err = json.Unmarshal(data, &targets)
 	if err != nil {
-		return herd.Hosts{}, err
+		return nil, err
 	}
 	if targets.Status != "success" {
-		return herd.Hosts{}, fmt.Errorf("Prometheus API returned: %s", targets.Status)
+		return nil, fmt.Errorf("Prometheus API returned: %s", targets.Status)
 	}
 
 	ret := make(herd.Hosts, 0)
