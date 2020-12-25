@@ -31,7 +31,7 @@ func (p *fakeProvider) Equivalent(o herd.HostProvider) bool {
 	return false
 }
 
-func (p *fakeProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *fakeProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	p.loaded++
 	h := herd.NewHost("test-host", herd.HostAttributes{"foo": "bar"})
 	if p.doError {
@@ -45,7 +45,6 @@ func (p *fakeProvider) ParseViper(v *viper.Viper) error {
 }
 
 func TestCache(t *testing.T) {
-	mc := make(chan herd.CacheMessage, 20)
 	tmpdir, err := ioutil.TempDir("", "herd-test-cache-")
 	if err != nil {
 		t.Fatalf("Unable to create temporary directory: %s", err.Error())
@@ -54,7 +53,7 @@ func TestCache(t *testing.T) {
 	c := NewFromProvider(&fakeProvider{}).(*Cache)
 	c.config.Lifetime = 1 * time.Hour
 	c.SetCacheDir(filepath.Join(tmpdir, "cache"))
-	hosts, err := c.Load(nil, mc)
+	hosts, err := c.Load(nil, func(string, bool, error) {})
 	if len(hosts) != 1 || err != nil {
 		t.Errorf("First cache load did not succeed")
 	}
@@ -64,7 +63,7 @@ func TestCache(t *testing.T) {
 	if c.mustRefresh() {
 		t.Errorf("We must immediately refresh the cache")
 	}
-	hosts, err = c.Load(nil, mc)
+	hosts, err = c.Load(nil, func(string, bool, error) {})
 	if len(hosts) != 1 || err != nil {
 		t.Errorf("Second cache load did not succeed")
 	}
@@ -75,7 +74,7 @@ func TestCache(t *testing.T) {
 	c.source.(*fakeProvider).doError = true
 	c.config.File += "-failed"
 	c.Invalidate()
-	hosts, err = c.Load(nil, mc)
+	hosts, err = c.Load(nil, func(string, bool, error) {})
 	if err == nil {
 		panic("Test broken")
 	}
@@ -103,8 +102,7 @@ func TestRelativeFiles(t *testing.T) {
 		t.Errorf("Proper cache path not set, found %s", c.(*Cache).config.File)
 	}
 
-	mc := make(chan herd.CacheMessage, 20)
-	if err := r.LoadHosts(mc); err != nil {
+	if err := r.LoadHosts(func(string, bool, error) {}); err != nil {
 		t.Errorf("Registry load did not succeed")
 	}
 	hosts := r.GetHosts("", nil)

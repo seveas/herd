@@ -9,7 +9,6 @@ import (
 
 	"github.com/seveas/herd"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -59,11 +58,10 @@ func (p *plainTextProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *plainTextProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	hosts := make(herd.Hosts, 0)
 	data, err := ioutil.ReadFile(p.config.File)
 	if err != nil {
-		logrus.Errorf("Could not load %s data in %s: %s", p.name, p.config.File, err)
 		return hosts, err
 	}
 	for _, line := range strings.Split(string(data), "\n") {

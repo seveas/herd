@@ -5,8 +5,6 @@ import (
 	"github.com/spf13/viper"
 	"testing"
 
-	"github.com/seveas/herd"
-
 	"github.com/jarcoal/httpmock"
 )
 
@@ -20,19 +18,11 @@ func TestPrometheus(t *testing.T) {
 	p.ParseViper(v)
 
 	ctx := context.Background()
-	mc := make(chan herd.CacheMessage)
-	go func() {
-		for {
-			if _, ok := <-mc; !ok {
-				break
-			}
-		}
-	}()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder("GET", "http://prometheus.herd.ci:9100/api/v1/targets",
 		httpmock.NewStringResponder(200, data))
-	hosts, err := p.Load(ctx, mc)
+	hosts, err := p.Load(ctx, func(string, bool, error) {})
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)
 	}

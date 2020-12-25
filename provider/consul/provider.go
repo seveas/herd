@@ -70,8 +70,9 @@ func (p *consulProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	p.consulConfig.Address = p.config.Address
+	lm(p.name, false, nil)
 	client, err := consul.NewClient(p.consulConfig)
 	if err != nil {
 		return herd.Hosts{}, err
@@ -89,9 +90,9 @@ func (p *consulProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (h
 		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
 			dc := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, dc)
-			mc <- herd.CacheMessage{Name: name, Finished: false, Err: nil}
+			lm(name, false, nil)
 			hosts, err := p.loadDatacenter(dc)
-			mc <- herd.CacheMessage{Name: name, Finished: true, Err: err}
+			lm(name, true, err)
 			return hosts, err
 		}, ctx, dc)
 	}

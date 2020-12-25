@@ -9,7 +9,6 @@ import (
 
 	"github.com/seveas/herd"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -61,17 +60,14 @@ func (p *jsonProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *jsonProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *jsonProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	hosts := make(herd.Hosts, 0)
 	data, err := ioutil.ReadFile(p.config.File)
 	if err != nil {
-		logrus.Errorf("Could not load %s data in %s: %s", p.name, p.config.File, err)
 		return hosts, err
 	}
 
-	if err = json.Unmarshal(data, &hosts); err != nil {
-		logrus.Errorf("Could not parse %s data in %s: %s", p.name, p.config.File, err)
-	}
+	err = json.Unmarshal(data, &hosts)
 	return hosts, err
 }
 

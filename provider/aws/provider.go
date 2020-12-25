@@ -100,7 +100,9 @@ func (p *awsProvider) setRegions() error {
 	return nil
 }
 
-func (p *awsProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+	lm(p.name, false, nil)
+	defer func() { lm(p.name, true, err) }()
 	if len(p.config.Regions) == 0 {
 		if err := p.setRegions(); err != nil {
 			return herd.Hosts{}, err
@@ -112,9 +114,9 @@ func (p *awsProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd
 		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
 			region := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, region)
-			mc <- herd.CacheMessage{Name: name, Finished: false, Err: nil}
+			lm(name, false, nil)
 			hosts, err := p.loadRegion(region)
-			mc <- herd.CacheMessage{Name: name, Finished: true, Err: err}
+			lm(name, true, err)
 			return hosts, err
 		}, ctx, region)
 	}
@@ -124,7 +126,7 @@ func (p *awsProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd
 		return herd.Hosts{}, err
 	}
 
-	hosts := make(herd.Hosts, 0)
+	hosts = make(herd.Hosts, 0)
 	for _, hu := range untypedResults {
 		hosts = append(hosts, hu.(herd.Hosts)...)
 	}

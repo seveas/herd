@@ -46,7 +46,7 @@ type HostProvider interface {
 	Name() string
 	Prefix() string
 	ParseViper(v *viper.Viper) error
-	Load(ctx context.Context, mc chan CacheMessage) (Hosts, error)
+	Load(ctx context.Context, l LoadingMessage) (Hosts, error)
 	Equivalent(p HostProvider) bool
 }
 
@@ -58,12 +58,6 @@ type Cache interface {
 	Source() HostProvider
 	Invalidate()
 	SetCacheDir(string)
-}
-
-type CacheMessage struct {
-	Name     string
-	Finished bool
-	Err      error
 }
 
 func NewRegistry(dataDir, cacheDir string) *Registry {
@@ -171,25 +165,18 @@ type loadresult struct {
 	err      error
 }
 
-func (r *Registry) LoadHosts(mc chan CacheMessage) error {
+func (r *Registry) LoadHosts(lm LoadingMessage) error {
 	if len(r.hosts) > 0 {
 		return nil
 	}
 	ctx := context.Background()
 	rc := make(chan loadresult)
-	if mc == nil {
-		mc = make(chan CacheMessage)
-		go func() {
-			for range mc {
-			}
-		}()
-	}
-	defer close(mc)
 	defer close(rc)
 
 	for _, p := range r.providers {
 		go func(pr HostProvider, ctx context.Context) {
-			hosts, err := pr.Load(ctx, mc)
+			hosts, err := pr.Load(ctx, lm)
+			lm(pr.Name(), true, err)
 			rc <- loadresult{provider: pr, hosts: hosts, err: err}
 		}(p, ctx)
 	}
@@ -224,6 +211,7 @@ func (r *Registry) LoadHosts(mc chan CacheMessage) error {
 	if !rerr.HasErrors() {
 		return nil
 	}
+	lm("", true, nil)
 	return rerr
 }
 

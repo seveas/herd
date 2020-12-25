@@ -57,7 +57,7 @@ func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *HttpProvider) Fetch(ctx context.Context, mc chan herd.CacheMessage) ([]byte, error) {
+func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
 	defer cancel()
 	req, err := http.NewRequest("GET", p.config.Url, nil)
@@ -89,9 +89,10 @@ func (p *HttpProvider) Fetch(ctx context.Context, mc chan herd.CacheMessage) ([]
 	return body, err
 }
 
-func (p *HttpProvider) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	hosts := herd.Hosts{}
-	data, err := p.Fetch(ctx, mc)
+	lm(p.name, false, nil)
+	data, err := p.Fetch(ctx)
 	if err != nil {
 		return hosts, err
 	}

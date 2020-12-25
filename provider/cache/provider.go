@@ -89,24 +89,19 @@ func (c *Cache) mustRefresh() bool {
 	return err != nil || time.Since(info.ModTime()) > c.config.Lifetime
 }
 
-func (c *Cache) Load(ctx context.Context, mc chan herd.CacheMessage) (herd.Hosts, error) {
+func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
 		hosts := make(herd.Hosts, 0)
 		data, err := ioutil.ReadFile(c.config.File)
 		if err != nil {
-			logrus.Errorf("Could not load %s data in %s: %s", c.name, c.config.File, err)
 			return hosts, err
 		}
 
-		if err = json.Unmarshal(data, &hosts); err != nil {
-			logrus.Errorf("Could not parse %s data in %s: %s", c.name, c.config.File, err)
-		}
+		err = json.Unmarshal(data, &hosts)
 		return hosts, err
 	}
-	mc <- herd.CacheMessage{Name: c.name, Finished: false, Err: nil}
-	hosts, err := c.source.Load(ctx, mc)
-	mc <- herd.CacheMessage{Name: c.name, Finished: true, Err: err}
+	hosts, err := c.source.Load(ctx, lm)
 	if err == nil && len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.config.File)

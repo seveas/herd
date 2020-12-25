@@ -22,7 +22,7 @@ func (p *fakeProvider) Equivalent(o HostProvider) bool {
 	return false
 }
 
-func (p *fakeProvider) Load(ctx context.Context, mc chan CacheMessage) (Hosts, error) {
+func (p *fakeProvider) Load(ctx context.Context, lm LoadingMessage) (Hosts, error) {
 	h := NewHost("test-host", HostAttributes{"foo": "bar"})
 	return Hosts{h}, nil
 }
@@ -40,7 +40,7 @@ func TestNewRegistry(t *testing.T) {
 
 func TestGetHosts(t *testing.T) {
 	r := Registry{providers: []HostProvider{&fakeProvider{}, &fakeProvider{}}}
-	err := r.LoadHosts(nil)
+	err := r.LoadHosts(func(string, bool, error) {})
 	if err != nil {
 		t.Errorf("%t %v", err, err)
 		t.Errorf("Could not load hosts: %s", err.Error())

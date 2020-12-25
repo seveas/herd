@@ -200,11 +200,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 	if viper.GetBool("Refresh") {
 		registry.InvalidateCache()
 	}
-	var mc chan herd.CacheMessage
-	if logrus.IsLevelEnabled(logrus.InfoLevel) {
-		mc = ui.CacheUpdateChannel()
-	}
-	if err := registry.LoadHosts(mc); err != nil {
+	if err := registry.LoadHosts(ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
 		ui.End()
 		return nil, err

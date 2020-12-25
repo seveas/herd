@@ -23,6 +23,9 @@ import (
 )
 
 type OutputMode int
+type LoadingMessage func(string, bool, error)
+
+const clearLine string = "\r\033[2K"
 
 const (
 	OutputTail OutputMode = iota
@@ -47,7 +50,7 @@ type UI interface {
 	Write([]byte) (int, error)
 	Sync()
 	End()
-	CacheUpdateChannel() chan CacheMessage
+	LoadingMessage(what string, done bool, err error)
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
 	BindLogrus()
@@ -82,6 +85,11 @@ type SimpleUI struct {
 	lineBuf         string
 	isTerminal      bool
 	wg              *sync.WaitGroup
+	loading         []string
+	loadStart       time.Time
+	loadOnce        sync.Once
+	loadLock        sync.Mutex
+	loadTicker      *time.Ticker
 }
 
 var templateFuncs = template.FuncMap{
@@ -155,10 +163,10 @@ func (ui *SimpleUI) printer() {
 		// progress, wipe the progress message and reprint it after this
 		// message
 		if !ui.atStart && msg[0] != '\r' && msg[0] != '\n' {
-			ui.output.WriteString("\r\033[2K" + msg + ui.lastProgress)
+			ui.output.WriteString(clearLine + msg + ui.lastProgress)
 		} else {
 			ui.output.WriteString(msg)
-			if msg[len(msg)-1] == '\n' || msg == "\r\033[2K" {
+			if msg[len(msg)-1] == '\n' || msg == clearLine {
 				ui.atStart = true
 			} else {
 				ui.atStart = false
@@ -416,54 +424,55 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 	pgr.Wait()
 }
 
-func (ui *SimpleUI) CacheUpdateChannel() chan CacheMessage {
-	mc := make(chan CacheMessage)
-	ui.wg.Add(1)
-	go func() {
-		defer ui.wg.Done()
-		start := time.Now()
-		cached := false
-		ticker := time.NewTicker(time.Second / 2)
-		defer ticker.Stop()
-		caches := make([]string, 0)
-		for {
-			select {
-			case msg, ok := <-mc:
-				// Cache message channel closed, we're done caching
-				if !ok {
-					if cached {
-						ui.pchan <- fmt.Sprintf("\r\033[2KAll caches updated\n")
-					}
-					return
-				}
-				if msg.Err != nil {
-					logrus.Errorf("Error contacting %s: %s", msg.Name, msg.Err)
-				}
-				if msg.Finished {
-					logrus.Debugf("Cache updated for %s", msg.Name)
-					for i, v := range caches {
-						if v == msg.Name {
-							caches = append(caches[:i], caches[i+1:]...)
-							break
-						}
-					}
-				} else {
-					caches = append(caches, msg.Name)
-				}
-			case <-ticker.C:
+func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
+	if !logrus.IsLevelEnabled(logrus.InfoLevel) || !ui.isTerminal {
+		return
+	}
+
+	ui.loadLock.Lock()
+	defer ui.loadLock.Unlock()
+	if what == "" && done {
+		if ui.loadTicker != nil {
+			ui.pchan <- clearLine
+			ui.loadTicker.Stop()
+		}
+		return
+	}
+	ui.loadOnce.Do(func() {
+		ui.loadStart = time.Now()
+		ui.loading = []string{}
+		ui.loadTicker = time.NewTicker(time.Second / 2)
+		go func() {
+			for {
+				<-ui.loadTicker.C
+				ui.LoadingMessage("", false, nil)
 			}
-			if len(caches) > 0 {
-				since := time.Since(start).Truncate(time.Second)
-				cs := strings.Join(caches, ", ")
-				if len(cs) > ui.width-25 {
-					cs = cs[:ui.width-30] + "..."
-				}
-				ui.pchan <- fmt.Sprintf("\r\033[2K%s Refreshing caches %s", since, ansi.Color(cs, "green"))
-				cached = true
+		}()
+	})
+	if err != nil {
+		logrus.Errorf("Error loading data from %s: %s", what, err)
+	}
+	if done {
+		logrus.Debugf("Done loading %s", what)
+		for i, v := range ui.loading {
+			if v == what {
+				ui.loading = append(ui.loading[:i], ui.loading[i+1:]...)
+				break
 			}
 		}
-	}()
-	return mc
+		if len(ui.loading) == 0 {
+			return
+		}
+	} else if what != "" {
+		ui.loading = append(ui.loading, what)
+	}
+
+	since := time.Since(ui.loadStart).Truncate(time.Second)
+	cs := strings.Join(ui.loading, ", ")
+	if len(cs) > ui.width-25 {
+		cs = cs[:ui.width-30] + "..."
+	}
+	ui.pchan <- clearLine + fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, "green"))
 }
 
 func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
@@ -565,9 +574,9 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 			since := time.Since(start).Truncate(time.Second)
 			togo := r.timeout - since
 			if todo == 0 {
-				ui.pchan <- fmt.Sprintf("\r\033[2K%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
+				ui.pchan <- clearLine + fmt.Sprintf("%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
 			} else {
-				msg := fmt.Sprintf("\r\033[2KWaiting (%s/%s)... %d/%d done", since, togo, done, total)
+				msg := clearLine + fmt.Sprintf("Waiting (%s/%s)... %d/%d done", since, togo, done, total)
 				if queued > 0 {
 					msg += fmt.Sprintf(", %d queued", queued)
 				}
