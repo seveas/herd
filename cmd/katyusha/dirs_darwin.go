@@ -19,7 +19,7 @@ func getCurrentUser() (*userData, error) {
 		cacheDir:        filepath.Join(u.HomeDir, "Library", "Caches", "katyusha"),
 		configDir:       filepath.Join(u.HomeDir, "Library", "Preferences", "katyusha"),
 		systemConfigDir: "/etc/katyusha",
-		dataDir:         filepath.Join(u.HomeDir, "Library", "ApplicationSupport", "katyusha"),
-		historyDir:      filepath.Join(u.HomeDir, "Library", "ApplicationSupport", "katyusha", "history"),
+		dataDir:         filepath.Join(u.HomeDir, "Library", "Application Support", "katyusha"),
+		historyDir:      filepath.Join(u.HomeDir, "Library", "Application Support", "katyusha", "history"),
 	}, nil
 }
