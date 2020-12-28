@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os/exec"
 	"reflect"
 	"sort"
 	"strings"
@@ -77,6 +78,12 @@ func NewProvider(pname, name string) (HostProvider, error) {
 	}
 	c, ok := availableProviders[pname]
 	if !ok {
+		// Try finding a plugin by this name, if we have the provider plugin loaded
+		if c, ok := availableProviders["plugin"]; ok {
+			if _, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", name)); err == nil {
+				return c(name), nil
+			}
+		}
 		return nil, fmt.Errorf("No such provider: %s", pname)
 	}
 	return c(name), nil

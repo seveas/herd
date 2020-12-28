@@ -5,33 +5,25 @@ else
 	antlr_sources := scripting/parser/herd_base_listener.go scripting/parser/herd_lexer.go scripting/parser/herd_listener.go scripting/parser/herd_parser.go
 endif
 
-ifneq ($(origin HERD_TAGS), undefined)
-	TAGS := -tags $(HERD_TAGS)
-endif
+protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 
-ifeq ($(origin HERD_EXTRA_PROVIDERS), undefined)
-	tpp_sources :=
-else
-	tpp_sources := cmd/herd/extra_providers.go
-endif
+herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/*/*/*.go $(protobuf_sources) $(antlr_sources)
+	go build -o "$@" github.com/seveas/herd/cmd/herd
 
-herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go $(antlr_sources) $(tpp_sources)
-	go build $(TAGS) -o "$@" github.com/seveas/herd/cmd/herd
+%_grpc.pb.go: %.proto
+	protoc --go-grpc_out=. $^
+
+%.pb.go: %.proto
+	protoc --go_out=. $^
+
+herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/*
+	go build -o "$@" github.com/seveas/herd/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
 	go build -o "$@" github.com/seveas/herd/cmd/ssh-agent-proxy
 
 $(antlr_sources): scripting/Herd.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
-
-$(tpp_sources):
-	@echo "Enabling third party providers: $(HERD_EXTRA_PROVIDERS)"
-	@echo "// +build !no_extra_providers" > $@
-	@echo "" >> $@
-	@echo "package main" >> $@
-	@echo "import (" >> $@
-	@for provider in $(HERD_EXTRA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
-	@echo ")" >> $@
 
 fmt:
 	go fmt ./...
@@ -73,8 +65,8 @@ build_all:
 
 clean:
 	rm -f herd
+	rm -f herd-provider-example
 	rm -f ssh-agent-proxy
-	rm -f cmd/herd/extra_providers.go
 	go mod tidy
 
 fullclean: clean

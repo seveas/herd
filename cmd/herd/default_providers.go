@@ -14,4 +14,6 @@ import (
 	_ "github.com/seveas/herd/provider/consul"
 	_ "github.com/seveas/herd/provider/http"
 	_ "github.com/seveas/herd/provider/prometheus"
+
+	_ "github.com/seveas/herd/provider/plugin"
 )
