@@ -5,9 +5,18 @@ else
 	antlr_sources := scripting/parser/katyusha_base_listener.go scripting/parser/katyusha_lexer.go scripting/parser/katyusha_listener.go scripting/parser/katyusha_parser.go
 endif
 
-protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
+# Let's not rebuild the protobuf code if we don't have protobuf available
+ifeq ("", "$(strip $(shell which protoc))")
+	protobuf_sources :=
+else ifeq ("", "$(strip $(shell which protoc-gen-go))")
+	protobuf_sources :=
+else ifeq ("", "$(strip $(shell which protoc-gen-go-crpc))")
+	protobuf_sources :=
+else
+	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
+endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/*/*/*.go $(protobuf_sources) $(antlr_sources)
+katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 %_grpc.pb.go: %.proto
