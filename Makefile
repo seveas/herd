@@ -5,33 +5,25 @@ else
 	antlr_sources := scripting/parser/katyusha_base_listener.go scripting/parser/katyusha_lexer.go scripting/parser/katyusha_listener.go scripting/parser/katyusha_parser.go
 endif
 
-ifneq ($(origin KATYUSHA_TAGS), undefined)
-	TAGS := -tags $(KATYUSHA_TAGS)
-endif
+protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 
-ifeq ($(origin KATYUSHA_EXTRA_PROVIDERS), undefined)
-	tpp_sources :=
-else
-	tpp_sources := cmd/katyusha/extra_providers.go
-endif
+katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/*/*/*.go $(protobuf_sources) $(antlr_sources)
+	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
-katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go $(antlr_sources) $(tpp_sources)
-	go build $(TAGS) -o "$@" github.com/seveas/katyusha/cmd/katyusha
+%_grpc.pb.go: %.proto
+	protoc --go-grpc_out=. $^
+
+%.pb.go: %.proto
+	protoc --go_out=. $^
+
+katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/*
+	go build -o "$@" github.com/seveas/katyusha/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
 	go build -o "$@" github.com/seveas/katyusha/cmd/ssh-agent-proxy
 
 $(antlr_sources): scripting/Katyusha.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Katyusha.g4)
-
-$(tpp_sources):
-	@echo "Enabling third party providers: $(KATYUSHA_EXTRA_PROVIDERS)"
-	@echo "// +build !no_extra_providers" > $@
-	@echo "" >> $@
-	@echo "package main" >> $@
-	@echo "import (" >> $@
-	@for provider in $(KATYUSHA_EXTRA_PROVIDERS); do echo "	_ \"$$provider\"" >>$@; done
-	@echo ")" >> $@
 
 fmt:
 	go fmt ./...
@@ -73,8 +65,8 @@ build_all:
 
 clean:
 	rm -f katyusha
+	rm -f katyusha-provider-example
 	rm -f ssh-agent-proxy
-	rm -f cmd/katyusha/extra_providers.go
 	go mod tidy
 
 fullclean: clean

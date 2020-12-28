@@ -1,0 +1,35 @@
+syntax = "proto3";
+package common;
+import "google/protobuf/timestamp.proto";
+option go_package = "provider/plugin/common";
+
+message Empty {}
+
+message ConfigureRequest {
+    bytes data = 1;
+}
+
+message LoadRequest {
+    uint32 logger = 1;
+    google.protobuf.Timestamp deadline = 2;
+}
+
+message LoadResponse {
+    bytes data = 1;
+    string err = 2;
+}
+
+message LoadingMessageRequest {
+    string name = 1;
+    bool done = 2;
+    string err = 3;
+}
+
+service Provider {
+    rpc Configure(ConfigureRequest) returns (Empty);
+    rpc Load(LoadRequest) returns (LoadResponse);
+}
+
+service Logger {
+    rpc LoadingMessage(LoadingMessageRequest) returns (Empty);
+}

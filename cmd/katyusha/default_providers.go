@@ -14,4 +14,6 @@ import (
 	_ "github.com/seveas/katyusha/provider/consul"
 	_ "github.com/seveas/katyusha/provider/http"
 	_ "github.com/seveas/katyusha/provider/prometheus"
+
+	_ "github.com/seveas/katyusha/provider/plugin"
 )
