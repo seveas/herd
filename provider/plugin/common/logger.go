@@ -109,7 +109,7 @@ func (l *logrusLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Lo
 }
 
 func (l *logrusLogger) StandardWriter(opts *hclog.StandardLoggerOptions) io.Writer {
-	panic("we don't support StandardWriter")
+	return l.logger.Writer()
 }
 
 var _ hclog.Logger = &logrusLogger{logger: logrus.StandardLogger()}

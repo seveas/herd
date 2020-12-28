@@ -2,11 +2,14 @@ package server
 
 import (
 	"context"
+	"io/ioutil"
+	"os"
 
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/provider/plugin/common"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	_ "github.com/seveas/katyusha/provider/example"
@@ -25,6 +28,8 @@ func (p *providerImpl) Configure(values map[string]interface{}) error {
 }
 
 func (p *providerImpl) Load(ctx context.Context, logger common.Logger) (katyusha.Hosts, error) {
+	logrus.SetOutput(ioutil.Discard)
+	logrus.AddHook(&logrusHook{logger: logger})
 	return p.provider.Load(ctx, logger.LoadingMessage)
 }
 
@@ -47,6 +52,19 @@ func ProviderPluginServer(name string) error {
 		Plugins:         pluginMap,
 		GRPCServer:      plugin.DefaultGRPCServer,
 	})
+	return nil
+}
+
+type logrusHook struct {
+	logger common.Logger
+}
+
+func (h *logrusHook) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
+func (h *logrusHook) Fire(entry *logrus.Entry) error {
+	h.logger.EmitLogMessage(entry.Level, entry.Message)
 	return nil
 }
 

@@ -16,7 +16,7 @@ katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/*
+katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/*
 	go build -o "$@" github.com/seveas/katyusha/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go

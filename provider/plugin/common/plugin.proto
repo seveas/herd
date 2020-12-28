@@ -25,6 +25,11 @@ message LoadingMessageRequest {
     string err = 3;
 }
 
+message EmitLogMessageRequest {
+    uint32 level = 1;
+    string message = 2;
+}
+
 service Provider {
     rpc Configure(ConfigureRequest) returns (Empty);
     rpc Load(LoadRequest) returns (LoadResponse);
@@ -32,4 +37,5 @@ service Provider {
 
 service Logger {
     rpc LoadingMessage(LoadingMessageRequest) returns (Empty);
+    rpc EmitLogMessage(EmitLogMessageRequest) returns (Empty);
 }

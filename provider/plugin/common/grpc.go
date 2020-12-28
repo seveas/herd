@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	plugin "github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
@@ -108,6 +109,10 @@ func (c *GRPCLoggerClient) LoadingMessage(name string, done bool, err error) {
 	c.client.LoadingMessage(context.Background(), &LoadingMessageRequest{Name: name, Done: done, Err: errs})
 }
 
+func (c *GRPCLoggerClient) EmitLogMessage(level logrus.Level, message string) {
+	c.client.EmitLogMessage(context.Background(), &EmitLogMessageRequest{Level: uint32(level), Message: message})
+}
+
 type GRPCLoggerServer struct {
 	UnimplementedLoggerServer
 	Impl Logger
@@ -119,5 +124,10 @@ func (s *GRPCLoggerServer) LoadingMessage(ctx context.Context, req *LoadingMessa
 		err = errors.New(req.Err)
 	}
 	s.Impl.LoadingMessage(req.Name, req.Done, err)
+	return &Empty{}, nil
+}
+
+func (s *GRPCLoggerServer) EmitLogMessage(ctx context.Context, req *EmitLogMessageRequest) (*Empty, error) {
+	s.Impl.EmitLogMessage(logrus.Level(req.Level), req.Message)
 	return &Empty{}, nil
 }
