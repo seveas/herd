@@ -7,7 +7,6 @@
 *.csr
 *.srl
 *.test
-*.pb.go
 test-results
 extra_providers.go
 vendor

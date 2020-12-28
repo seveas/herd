@@ -5,9 +5,18 @@ else
 	antlr_sources := scripting/parser/herd_base_listener.go scripting/parser/herd_lexer.go scripting/parser/herd_listener.go scripting/parser/herd_parser.go
 endif
 
-protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
+# Let's not rebuild the protobuf code if we don't have protobuf available
+ifeq ("", "$(strip $(shell which protoc))")
+	protobuf_sources :=
+else ifeq ("", "$(strip $(shell which protoc-gen-go))")
+	protobuf_sources :=
+else ifeq ("", "$(strip $(shell which protoc-gen-go-crpc))")
+	protobuf_sources :=
+else
+	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
+endif
 
-herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/*/*/*.go $(protobuf_sources) $(antlr_sources)
+herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/herd
 
 %_grpc.pb.go: %.proto
