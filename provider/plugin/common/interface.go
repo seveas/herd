@@ -6,12 +6,13 @@ import (
 	"github.com/seveas/herd"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 type Logger interface {
 	LoadingMessage(name string, done bool, err error)
-	// XXX Log forwarding!
+	EmitLogMessage(level logrus.Level, message string)
 }
 
 type Provider interface {

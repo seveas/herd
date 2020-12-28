@@ -92,3 +92,7 @@ type logForwarder struct {
 func (l *logForwarder) LoadingMessage(name string, done bool, err error) {
 	l.lm(l.provider.name, done, err)
 }
+
+func (l *logForwarder) EmitLogMessage(level logrus.Level, message string) {
+	logrus.StandardLogger().Log(level, message)
+}

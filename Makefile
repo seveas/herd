@@ -16,7 +16,7 @@ herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/*/*/*.go
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/*
+herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/*
 	go build -o "$@" github.com/seveas/herd/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
