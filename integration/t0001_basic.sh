@@ -8,8 +8,4 @@ test_expect_success "We can run herd" "
 	herd --help
 "
 
-test_expect_success "All providers marked the base providers as squashable" "
-	! git grep '^\s*BaseProvider$'
-"
-
 test_done
