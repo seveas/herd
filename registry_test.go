@@ -32,7 +32,7 @@ func (p *fakeProvider) ParseViper(v *viper.Viper) error {
 }
 
 func TestNewRegistry(t *testing.T) {
-	r := NewRegistry(dataDir("0"), cacheDir("0"))
+	r := NewRegistry("/tmp", "/tmp")
 	if len(r.providers) > 0 {
 		t.Errorf("got %d providers, expected none", len(r.providers))
 	}
