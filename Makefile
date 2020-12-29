@@ -58,7 +58,7 @@ test-integration:
 		if [ -f "$$f" ]; then \
 			echo "$$f"; \
 			if  ! sh "$$f"; then \
-				sh "$$f" --verbose; \
+				sh -x "$$f" --verbose; \
 				ec=1; \
 			fi; \
 		fi; \

@@ -1,0 +1,2 @@
+[ san_env ]
+subjectAltName=${ENV::SAN}
