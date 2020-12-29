@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"math/big"
 	"strings"
 
@@ -51,12 +50,13 @@ func (p *puttyProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *puttyProvider) Load(ctx context.Context, mc chan katyusha.CacheMessage) (katyusha.Hosts, error) {
+func (p *puttyProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
 	keys := p.allKeys()
 	ret := katyusha.Hosts{}
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\Sessions`, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
-		return nil, err
+		logrus.Debugf("No putty sessions found")
+		return nil, nil
 	}
 	defer k.Close()
 	names, err := k.ReadSubKeyNames(-1)
@@ -95,13 +95,11 @@ func (p *puttyProvider) allKeys() map[string][]ssh.PublicKey {
 	ret := make(map[string][]ssh.PublicKey)
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\SshHostKeys`, registry.QUERY_VALUE)
 	if err != nil {
-		fmt.Println("Err 1")
 		return ret
 	}
 	defer k.Close()
 	keys, err := k.ReadValueNames(-1)
 	if err != nil {
-		fmt.Println("Err 2", err)
 		return ret
 	}
 	for _, kn := range keys {
