@@ -19,28 +19,30 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.9.3 // indirect
 	github.com/jarcoal/httpmock v1.0.6
-	github.com/lxn/win v0.0.0-20191128105842-2da648fda5b4
-	github.com/mattn/go-colorable v0.1.7 // indirect
+	github.com/lxn/win v0.0.0-20201111105847-2a20daff6a55
+	github.com/magiconair/properties v1.8.4 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/mitchellh/mapstructure v1.3.3 // indirect
-	github.com/pelletier/go-toml v1.8.0 // indirect
+	github.com/mitchellh/mapstructure v1.4.0 // indirect
+	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v0.0.0-20201127140643-f45b78bada02
-	github.com/sirupsen/logrus v1.6.0
-	github.com/spf13/afero v1.3.2 // indirect
+	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/afero v1.5.1 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/spf13/viper v1.7.0
-	golang.org/x/crypto v0.0.0-20200709230013-948cd5f35899
+	github.com/spf13/viper v1.7.1
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930
 	golang.org/x/text v0.3.4 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/ini.v1 v1.57.0 // indirect
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/ini.v1 v1.62.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0
 )
