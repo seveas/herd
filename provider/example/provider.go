@@ -13,7 +13,7 @@ func init() {
 	katyusha.RegisterProvider("example", newProvider, nil)
 }
 
-type plainTextProvider struct {
+type exampleProvider struct {
 	name   string
 	config struct {
 		Prefix string
@@ -22,26 +22,26 @@ type plainTextProvider struct {
 }
 
 func newProvider(name string) katyusha.HostProvider {
-	return &plainTextProvider{name: name}
+	return &exampleProvider{name: name}
 }
 
-func (p *plainTextProvider) Name() string {
+func (p *exampleProvider) Name() string {
 	return p.name
 }
 
-func (p *plainTextProvider) Prefix() string {
+func (p *exampleProvider) Prefix() string {
 	return p.config.Prefix
 }
 
-func (p *plainTextProvider) Equivalent(o katyusha.HostProvider) bool {
+func (p *exampleProvider) Equivalent(o katyusha.HostProvider) bool {
 	return true
 }
 
-func (p *plainTextProvider) ParseViper(v *viper.Viper) error {
+func (p *exampleProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *plainTextProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
+func (p *exampleProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
 	nhosts := 5
 	hosts := make(katyusha.Hosts, nhosts)
 	for i := 0; i < nhosts; i++ {
