@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -x
+set -e
+
+rm -f normal/.ssh/known_hosts
+i=1
+for host in $@; do
+    ssh-keyscan $host >> normal/.ssh/known_hosts
+    sed -e "s/^$host/host-$i.example.com/" -i normal/.ssh/known_hosts
+    i=$((i+1))
+done
+
+cp normal/.ssh/known_hosts hashed/.ssh/known_hosts
+ssh-keygen -H -f hashed/.ssh/known_hosts
+rm hashed/.ssh/known_hosts.old
+
+echo Malformed Line > malformed_start/.ssh/known_hosts
+cat normal/.ssh/known_hosts >> malformed_start/.ssh/known_hosts
+
+cp normal/.ssh/known_hosts malformed_end/.ssh/known_hosts
+echo Malformed Line >> malformed_end/.ssh/known_hosts
+
+cat hashed/.ssh/known_hosts normal/.ssh/known_hosts > mixed/.ssh/known_hosts
