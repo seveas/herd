@@ -74,8 +74,19 @@ type host Host
 
 func (h *Host) UnmarshalJSON(data []byte) error {
 	var h2 host
-	if err := json.Unmarshal(data, &h2); err != nil {
+	d := json.NewDecoder(bytes.NewReader(data))
+	d.UseNumber()
+	if err := d.Decode(&h2); err != nil {
 		return err
+	}
+	for k, v := range h2.Attributes {
+		if n, ok := v.(json.Number); ok {
+			if i, err := n.Int64(); err == nil {
+				h2.Attributes[k] = i
+			} else {
+				h2.Attributes[k], _ = n.Float64()
+			}
+		}
 	}
 	*h = Host(h2)
 	h.init()
