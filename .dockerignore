@@ -2,4 +2,5 @@
 dist
 herd
 ssh-agent-proxy
-cmd/herd/extra_providers.go
+/herd-provider-*
+/provider/plugin/testdata/bin/herd-provider-ci

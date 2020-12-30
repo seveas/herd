@@ -25,7 +25,7 @@ herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/plugin/c
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/*
+herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -43,7 +43,10 @@ vet:
 tidy:
 	go mod tidy
 
-test: fmt vet tidy
+provider/plugin/testdata/bin/herd-provider-ci: provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+	go build -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
+
+test: fmt vet tidy provider/plugin/testdata/bin/herd-provider-ci
 	go test ./...
 	go mod vendor
 	docker-compose down || true

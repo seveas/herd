@@ -32,6 +32,9 @@ func newPlugin(name string) herd.HostProvider {
 	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", name)); err == nil {
 		p.config.Command = path
 	}
+	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s.exe", name)); err == nil {
+		p.config.Command = path
+	}
 	p.settings = map[string]interface{}{"name": name}
 	return p
 }

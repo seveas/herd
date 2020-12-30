@@ -1,5 +1,6 @@
 /herd
 /herd-provider-*
+provider/plugin/testdata/bin/herd-provider-ci
 /ssh-agent-proxy
 /*.exe
 *.crt

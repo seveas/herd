@@ -14,6 +14,10 @@ message LoadRequest {
     google.protobuf.Timestamp deadline = 2;
 }
 
+message ConfigureResponse {
+    string err = 1;
+}
+
 message LoadResponse {
     bytes data = 1;
     string err = 2;
@@ -31,7 +35,7 @@ message EmitLogMessageRequest {
 }
 
 service Provider {
-    rpc Configure(ConfigureRequest) returns (Empty);
+    rpc Configure(ConfigureRequest) returns (ConfigureResponse);
     rpc Load(LoadRequest) returns (LoadResponse);
 }
 
