@@ -280,6 +280,14 @@ func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
+	if len(host.publicKeys) != 0 {
+		algos := []string{}
+		for _, k := range host.publicKeys {
+			algo := k.Type()
+			algos = append(algos, algo)
+		}
+		host.sshConfig.HostKeyAlgorithms = algos
+	}
 	ec := make(chan error)
 	go func() {
 		var err error
