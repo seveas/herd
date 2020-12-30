@@ -131,3 +131,6 @@ func (s *GRPCLoggerServer) EmitLogMessage(ctx context.Context, req *EmitLogMessa
 	s.Impl.EmitLogMessage(logrus.Level(req.Level), req.Message)
 	return &Empty{}, nil
 }
+
+var _ Logger = &GRPCLoggerClient{}
+var _ Provider = &GRPCClient{}

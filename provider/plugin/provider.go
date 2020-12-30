@@ -96,3 +96,5 @@ func (l *logForwarder) LoadingMessage(name string, done bool, err error) {
 func (l *logForwarder) EmitLogMessage(level logrus.Level, message string) {
 	logrus.StandardLogger().Log(level, message)
 }
+
+var _ common.Logger = &logForwarder{}
