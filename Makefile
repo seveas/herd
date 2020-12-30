@@ -48,24 +48,14 @@ provider/plugin/testdata/bin/herd-provider-ci: provider/plugin/testdata/provider
 
 test: fmt vet tidy provider/plugin/testdata/bin/herd-provider-ci
 	go test ./...
-	go mod vendor
-	docker-compose down || true
-	docker-compose build
-	make -C testdata/pki
-	docker-compose up --exit-code-from herd --abort-on-container-exit
-	docker-compose down
 
 test-integration:
-	(cd /etc/ssl/certs && ln -sf ca.crt $$(openssl x509 -in ca.crt -hash -noout).crt)
-	cd integration; for f in t*.sh; do \
-		if [ -f "$$f" ]; then \
-			echo "$$f"; \
-			if  ! sh "$$f"; then \
-				sh -x "$$f" --verbose; \
-				ec=1; \
-			fi; \
-		fi; \
-	done; exit $$ec
+	go mod vendor
+	make -C integration/pki
+	docker-compose down || true
+	docker-compose build
+	docker-compose up --exit-code-from herd --abort-on-container-exit
+	docker-compose down
 
 dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
 ssh_agent_oses := darwin dragonfly freebsd linux netbsd openbsd
