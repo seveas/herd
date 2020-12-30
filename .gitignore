@@ -5,6 +5,7 @@ provider/plugin/testdata/bin/herd-provider-ci
 /*.exe
 *.crt
 *.key
+*.key.pub
 *.csr
 *.srl
 *.test
