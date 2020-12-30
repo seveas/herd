@@ -16,6 +16,13 @@ services:
       - source: ./integration/nginx/www
         target: /www
         type: bind
+  openssh:
+    build:
+      context: integration/openssh
+    networks:
+      default:
+        aliases:
+          - ssh.example.com
   katyusha:
     build:
       context: "."
