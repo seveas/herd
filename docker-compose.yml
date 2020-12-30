@@ -23,6 +23,27 @@ services:
       default:
         aliases:
           - ssh.example.com
+  openssh-rsa:
+    image: katyusha_openssh
+    networks:
+      default:
+        aliases:
+          - ssh-rsa.example.com
+    command: -o HostKey=/etc/ssh/ssh_host_rsa_key
+  openssh-ecdsa:
+    image: katyusha_openssh
+    networks:
+      default:
+        aliases:
+          - ssh-ecdsa.example.com
+    command: -o HostKey=/etc/ssh/ssh_host_ecdsa_key
+  openssh-ed25519:
+    image: katyusha_openssh
+    networks:
+      default:
+        aliases:
+          - ssh-ed25519.example.com
+    command: -o HostKey=/etc/ssh/ssh_host_ed25519_key
   katyusha:
     build:
       context: "."
