@@ -31,7 +31,8 @@ func TestParser(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.path, func(t *testing.T) {
 			os.Setenv("HOME", filepath.Join(testdata, test.path))
-			p := magicProvider()
+			p := magicProvider().(*knownHostsProvider)
+			p.config.Files = p.config.Files[1:]
 			hosts, err := p.Load(nil, nil)
 			if err != nil {
 				t.Errorf("Error parsing known_hosts: %s", err)
