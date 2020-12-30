@@ -1,4 +1,4 @@
-package katyusha
+package known_hosts
 
 import (
 	"context"
@@ -23,7 +23,6 @@ func init() {
 
 type knownHostsProvider struct {
 	name   string
-	hashed bool
 	config struct {
 		Prefix string
 		Files  []string
@@ -52,14 +51,13 @@ func magicProvider() katyusha.HostProvider {
 			files = append(files, filepath.Join(u.HomeDir, ".ssh", "known_hosts"))
 		}
 	}
-	p := &knownHostsProvider{name: "known_hosts", hashed: false}
+	p := &knownHostsProvider{name: "known_hosts"}
 	p.config.Files = files
 	return p
 }
 
 func (p *knownHostsProvider) Equivalent(o katyusha.HostProvider) bool {
-	op, ok := o.(*knownHostsProvider)
-	return ok && reflect.DeepEqual(p.config.Files, op.config.Files)
+	return reflect.DeepEqual(p.config.Files, o.(*knownHostsProvider).config.Files)
 }
 
 func (p *knownHostsProvider) ParseViper(v *viper.Viper) error {
@@ -70,6 +68,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm katyusha.LoadingMessag
 	hosts := make(katyusha.Hosts, 0)
 	seen := make(map[string]int)
 	for _, f := range p.config.Files {
+		hashed := false
 		data, err := ioutil.ReadFile(f)
 		if err != nil {
 			continue
@@ -87,9 +86,9 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm katyusha.LoadingMessag
 			data = rest
 			name := matches[0]
 			if strings.HasPrefix(name, "|") {
-				if !p.hashed {
+				if !hashed {
 					logrus.Warnf("Hashed hostnames found in %s. Please set `HashknownHosts no` in your ssh config and delte the hashed entries", f)
-					p.hashed = true
+					hashed = true
 				}
 				continue
 

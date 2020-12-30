@@ -150,6 +150,10 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }
 
+func (h *Host) PublicKeys() []ssh.PublicKey {
+	return h.publicKeys
+}
+
 func (h *Host) address() string {
 	if h.Address == "" {
 		return fmt.Sprintf("%s:%d", h.Name, h.Port)
