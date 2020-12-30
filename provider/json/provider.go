@@ -1,4 +1,4 @@
-package herd
+package json
 
 import (
 	"context"
