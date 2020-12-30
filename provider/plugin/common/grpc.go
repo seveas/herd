@@ -25,8 +25,14 @@ func (c *GRPCClient) Configure(settings map[string]interface{}) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.client.Configure(c.ctx, &ConfigureRequest{Data: data})
-	return err
+	resp, err := c.client.Configure(c.ctx, &ConfigureRequest{Data: data})
+	if err != nil {
+		return err
+	}
+	if resp.Err != "" {
+		return errors.New(resp.Err)
+	}
+	return nil
 }
 
 func (c *GRPCClient) Load(ctx context.Context, logger Logger) (katyusha.Hosts, error) {
@@ -55,8 +61,13 @@ func (c *GRPCClient) Load(ctx context.Context, logger Logger) (katyusha.Hosts, e
 	if err != nil {
 		return nil, err
 	}
+	if resp.Err != "" {
+		return nil, errors.New(resp.Err)
+	}
 	var hosts katyusha.Hosts
-	err = json.Unmarshal(resp.Data, &hosts)
+	if err = json.Unmarshal(resp.Data, &hosts); err != nil {
+		return nil, err
+	}
 	return hosts, nil
 }
 
@@ -66,14 +77,15 @@ type GRPCServer struct {
 	broker *plugin.GRPCBroker
 }
 
-func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*Empty, error) {
+func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*ConfigureResponse, error) {
 	var data map[string]interface{}
-	err := json.Unmarshal(req.Data, &data)
-	if err != nil {
+	if err := json.Unmarshal(req.Data, &data); err != nil {
 		return nil, err
 	}
-	err = s.Impl.Configure(data)
-	return &Empty{}, err
+	if err := s.Impl.Configure(data); err != nil {
+		return &ConfigureResponse{Err: err.Error()}, nil
+	}
+	return &ConfigureResponse{}, nil
 }
 
 func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse, error) {
@@ -88,7 +100,7 @@ func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse,
 	l := &GRPCLoggerClient{NewLoggerClient(conn)}
 	hosts, err := s.Impl.Load(ctx, l)
 	if err != nil {
-		return nil, err
+		return &LoadResponse{Err: err.Error()}, nil
 	}
 	data, err := json.Marshal(hosts)
 	if err != nil {

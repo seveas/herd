@@ -2,4 +2,5 @@
 dist
 katyusha
 ssh-agent-proxy
-cmd/katyusha/extra_providers.go
+/katyusha-provider-*
+/provider/plugin/testdata/bin/katyusha-provider-ci

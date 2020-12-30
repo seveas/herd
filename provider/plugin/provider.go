@@ -32,6 +32,9 @@ func newPlugin(name string) katyusha.HostProvider {
 	if path, err := exec.LookPath(fmt.Sprintf("katyusha-provider-%s", name)); err == nil {
 		p.config.Command = path
 	}
+	if path, err := exec.LookPath(fmt.Sprintf("katyusha-provider-%s.exe", name)); err == nil {
+		p.config.Command = path
+	}
 	p.settings = map[string]interface{}{"name": name}
 	return p
 }

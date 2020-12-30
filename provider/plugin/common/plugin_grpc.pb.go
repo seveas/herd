@@ -17,7 +17,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ProviderClient interface {
-	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*Empty, error)
+	Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error)
 	Load(ctx context.Context, in *LoadRequest, opts ...grpc.CallOption) (*LoadResponse, error)
 }
 
@@ -29,8 +29,8 @@ func NewProviderClient(cc grpc.ClientConnInterface) ProviderClient {
 	return &providerClient{cc}
 }
 
-func (c *providerClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*Empty, error) {
-	out := new(Empty)
+func (c *providerClient) Configure(ctx context.Context, in *ConfigureRequest, opts ...grpc.CallOption) (*ConfigureResponse, error) {
+	out := new(ConfigureResponse)
 	err := c.cc.Invoke(ctx, "/common.Provider/Configure", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *providerClient) Load(ctx context.Context, in *LoadRequest, opts ...grpc
 // All implementations must embed UnimplementedProviderServer
 // for forward compatibility
 type ProviderServer interface {
-	Configure(context.Context, *ConfigureRequest) (*Empty, error)
+	Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error)
 	Load(context.Context, *LoadRequest) (*LoadResponse, error)
 	mustEmbedUnimplementedProviderServer()
 }
@@ -60,7 +60,7 @@ type ProviderServer interface {
 type UnimplementedProviderServer struct {
 }
 
-func (UnimplementedProviderServer) Configure(context.Context, *ConfigureRequest) (*Empty, error) {
+func (UnimplementedProviderServer) Configure(context.Context, *ConfigureRequest) (*ConfigureResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Configure not implemented")
 }
 func (UnimplementedProviderServer) Load(context.Context, *LoadRequest) (*LoadResponse, error) {

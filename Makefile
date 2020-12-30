@@ -25,7 +25,7 @@ katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/*
+katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/$@
 
 ssh-agent-proxy: go.mod cmd/ssh-agent-proxy/*.go
@@ -43,7 +43,10 @@ vet:
 tidy:
 	go mod tidy
 
-test: fmt vet tidy
+provider/plugin/testdata/bin/katyusha-provider-ci: provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/katyusha-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+	go build -o "$@" github.com/seveas/katyusha/provider/plugin/testdata/cmd/katyusha-provider-ci
+
+test: fmt vet tidy provider/plugin/testdata/bin/katyusha-provider-ci
 	go test ./...
 	go mod vendor
 	docker-compose down || true
