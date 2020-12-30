@@ -1,4 +1,4 @@
-package katyusha
+package json
 
 import (
 	"context"
