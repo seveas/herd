@@ -1,0 +1,26 @@
+language: bash
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - libio-pty-perl # for test-terminal.perl
+
+env:
+  - TEST_OPTS=-v
+  - DEFAULT_TEST_TARGET=prove
+
+before_install:
+  - make lint
+
+install:
+  - make install prefix=$HOME/local
+
+script:
+  - make test
+  - make -C $HOME/local/share/doc/sharness/examples
+
+branches:
+  only:
+    - master

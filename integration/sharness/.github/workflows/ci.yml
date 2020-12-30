@@ -1,0 +1,24 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - windows-latest
+        - ubuntu-latest
+        - macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install IO::Pty
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get update -y && sudo apt-get install -y libio-pty-perl
+    - name: Run Tests
+      env:
+        TEST_OPTS: -v
+        MSYS: winsymlinks:nativestrict
+      run: make test
