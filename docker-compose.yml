@@ -7,26 +7,19 @@ services:
         aliases:
           - inventory.example.com
     volumes:
-      - source: ./testdata/integration/etc/nginx/conf.d
+      - source: ./integration/nginx/etc/nginx/conf.d
         target: /etc/nginx/conf.d
         type: bind
-      - source: ./testdata/pki
+      - source: ./integration/pki
         target: /etc/ssl
         type: bind
-      - source: ./testdata/integration/www
+      - source: ./integration/nginx/www
         target: /www
         type: bind
   katyusha:
     build:
       context: "."
       dockerfile: Dockerfile
-    command: make test-integration
+    command: make -C integration test
     depends_on:
       - nginx
-    volumes:
-      - source: ./testdata/pki/ca.crt
-        target: /etc/ssl/certs/ca.crt
-        type: bind
-      - source: ./testdata/homes
-        target: /home
-        type: bind
