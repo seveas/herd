@@ -49,13 +49,14 @@ provider/plugin/testdata/bin/katyusha-provider-ci: provider/plugin/testdata/prov
 test: fmt vet tidy provider/plugin/testdata/bin/katyusha-provider-ci
 	go test ./...
 
+ABORT ?= --exit-code-from katyusha --abort-on-container-exit
 test-integration:
 	go mod vendor
 	make -C integration/pki
 	test -e integration/openssh/user.key || ssh-keygen -t ecdsa -f integration/openssh/user.key -N ""
 	docker-compose down || true
 	docker-compose build
-	docker-compose up --exit-code-from katyusha --abort-on-container-exit
+	docker-compose up $(ABORT)
 	docker-compose down
 
 dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
