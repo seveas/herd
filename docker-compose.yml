@@ -16,6 +16,7 @@ services:
       - source: ./integration/nginx/www
         target: /www
         type: bind
+    stop_signal: SIGKILL
   openssh:
     build:
       context: integration/openssh
@@ -23,6 +24,7 @@ services:
       default:
         aliases:
           - ssh.example.com
+    stop_signal: SIGKILL
   openssh-rsa:
     image: herd_openssh
     networks:
@@ -37,6 +39,7 @@ services:
         aliases:
           - ssh-ecdsa.example.com
     command: -o HostKey=/etc/ssh/ssh_host_ecdsa_key
+    stop_signal: SIGKILL
   openssh-ed25519:
     image: herd_openssh
     networks:
@@ -44,10 +47,68 @@ services:
         aliases:
           - ssh-ed25519.example.com
     command: -o HostKey=/etc/ssh/ssh_host_ed25519_key
+    stop_signal: SIGKILL
+  consul-server-dc1:
+    image: consul:latest
+    networks:
+      default:
+        aliases:
+          - consul-server-dc1.example.com
+          - consul.service.consul
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - 'CONSUL_LOCAL_CONFIG={"datacenter": "dc1", "retry_join_wan": ["consul-server-dc2.example.com"]}'
+    stop_signal: SIGKILL
+  consul-server-dc2:
+    image: consul:latest
+    networks:
+      default:
+        aliases:
+          - consul-server-dc2.example.com
+    environment:
+      - 'CONSUL_BIND_INTERFACE=eth0'
+      - 'CONSUL_LOCAL_CONFIG={"datacenter": "dc2", "retry_join_wan": ["consul-server-dc1.example.com"]}'
+    stop_signal: SIGKILL
+  consul-agent-dc1:
+    image: consul:latest
+    command: agent
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - 'CONSUL_LOCAL_CONFIG={"datacenter": "dc1", "retry_join": ["consul-server-dc1.example.com"]}'
+    deploy:
+      replicas: 5
+    depends_on:
+      - consul-server-dc1
+    stop_signal: SIGKILL
+  consul-agent-dc2:
+    image: consul:latest
+    command: agent
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+      - 'CONSUL_LOCAL_CONFIG={"datacenter": "dc2", "retry_join": ["consul-server-dc2.example.com"]}'
+    deploy:
+      replicas: 5
+    depends_on:
+      - consul-server-dc2
+    stop_signal: SIGKILL
   herd:
     build:
       context: "."
       dockerfile: Dockerfile
-    command: make -C integration test
+    command: make -C integration test TEST_OPTS=--verbose
     depends_on:
       - nginx
+      - openssh
+      - openssh-rsa
+      - openssh-ecdsa
+      - openssh-ed25519
+      - consul-server-dc1
+      - consul-server-dc2
+      - consul-agent-dc1
+      - consul-agent-dc2
+  debug:
+    image: herd_herd
+    command: sleep 3600
+    depends_on:
+      - herd
+    stop_signal: SIGKILL
