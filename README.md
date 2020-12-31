@@ -46,5 +46,5 @@ https://herd.seveas.net
 Installing
 ----------
 There are pre-built binaries on the [download page](https://herd.seveas.net/download.html). If
-you prefer to install from source, install [go 1.14](https://golang.org), clone this repository and
+you prefer to install from source, install [go](https://golang.org), clone this repository and
 just run `make`.
