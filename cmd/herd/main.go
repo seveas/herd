@@ -106,12 +106,16 @@ Providers: %s
 		currentUser.historyDir,
 		currentUser.cacheDir,
 		strings.Join(herd.Providers(), ",")))
+	defaultAgentTimeout := 50 * time.Millisecond
+	if _, ok := os.LookupEnv("SSH_CONNECTION"); ok {
+		defaultAgentTimeout = 200 * time.Millisecond
+	}
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
 	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
-	rootCmd.PersistentFlags().Duration("ssh-agent-timeout", 50*time.Millisecond, "SSH agent timeout when checking functionality")
+	rootCmd.PersistentFlags().Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
 	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	rootCmd.PersistentFlags().Bool("no-pager", false, "Disable the use of the pager")
