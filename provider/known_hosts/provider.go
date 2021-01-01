@@ -87,7 +87,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 			name := matches[0]
 			if strings.HasPrefix(name, "|") {
 				if !hashed {
-					logrus.Warnf("Hashed hostnames found in %s. Please set `HashknownHosts no` in your ssh config and delte the hashed entries", f)
+					logrus.Warnf("Hashed hostnames found in %s. Please set `HashknownHosts no` in your ssh config and delete the hashed entries", f)
 					hashed = true
 				}
 				continue
