@@ -48,6 +48,10 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	engine.Runner.Run("herd:connect", nil, nil)
 	engine.Runner.RemoveHosts("*", []herd.MatchAttribute{{Name: "sshKey", Value: nil}})
-	engine.Ui.PrintHostList(engine.Runner.GetHosts(), herd.HostListOptions{Attributes: []string{"sshKey"}})
+	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}
+{{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
+{{ end -}}
+`
+	engine.Ui.PrintHostList(engine.Runner.GetHosts(), herd.HostListOptions{Template: template})
 	return nil
 }

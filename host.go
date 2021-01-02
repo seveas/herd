@@ -62,7 +62,6 @@ type Host struct {
 	Attributes HostAttributes
 	publicKeys []ssh.PublicKey
 	sshBanner  string
-	sshKey     ssh.PublicKey
 	sshConfig  *ssh.ClientConfig
 	extConfig  map[string]string
 	connection *ssh.Client
@@ -196,8 +195,6 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 		r = &Result{ExitStatus: -1}
 	}
 	switch key {
-	case "sshKey":
-		return h.sshKey, true
 	case "stdout":
 		return string(r.Stdout), true
 	case "stderr":
@@ -227,7 +224,6 @@ func (h *Host) Amend(h2 *Host) {
 }
 
 func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
-	h.sshKey = key
 	check, ok := h.extConfig["stricthostkeychecking"]
 	if !ok || check == "" {
 		// We default to accept-new instead of ask, as we cannot ask the user a
@@ -237,9 +233,11 @@ func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 	if len(h.publicKeys) == 0 {
 		switch strings.ToLower(check) {
 		case "no":
+			h.AddPublicKey(key)
 			return nil
 		case "accept-new":
 			logrus.Warnf("ssh: no known host key for %s, accepting new key", h.Name)
+			h.AddPublicKey(key)
 			return nil
 		default:
 			return fmt.Errorf("ssh: no host key found for %s", h.Name)
@@ -253,6 +251,7 @@ func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 	}
 	switch strings.ToLower(check) {
 	case "no":
+		h.AddPublicKey(key)
 		return nil
 	default:
 		return fmt.Errorf("ssh: no matching host key found for %s", h.Name)
@@ -280,7 +279,7 @@ func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
-	if len(host.publicKeys) != 0 {
+	if len(host.publicKeys) != 0 && len(host.sshConfig.HostKeyAlgorithms) == 0 {
 		algos := []string{}
 		for _, k := range host.publicKeys {
 			algo := k.Type()
