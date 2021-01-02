@@ -48,6 +48,10 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	engine.Runner.Run("katyusha:connect", nil, nil)
 	engine.Runner.RemoveHosts("*", []katyusha.MatchAttribute{{Name: "sshKey", Value: nil}})
-	engine.Ui.PrintHostList(engine.Runner.GetHosts(), katyusha.HostListOptions{Attributes: []string{"sshKey"}})
+	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}
+{{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
+{{ end -}}
+`
+	engine.Ui.PrintHostList(engine.Runner.GetHosts(), katyusha.HostListOptions{Template: template})
 	return nil
 }

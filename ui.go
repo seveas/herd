@@ -97,6 +97,16 @@ var templateFuncs = template.FuncMap{
 		b, err := yaml.Marshal(data)
 		return "---\n" + string(b), err
 	},
+	"sshkey": func(data interface{}) (string, error) {
+		key, ok := data.(ssh.PublicKey)
+		if !ok {
+			return "", fmt.Errorf("sshkey only knows how to show ssh keys")
+		}
+		k := key.Marshal()
+		b := make([]byte, base64.StdEncoding.EncodedLen(len(k)))
+		base64.StdEncoding.Encode(b, k)
+		return fmt.Sprintf("%s %s", key.Type(), string(b)), nil
+	},
 }
 
 func NewSimpleUI() *SimpleUI {
