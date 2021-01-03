@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/seveas/katyusha"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var keyScanCmd = &cobra.Command{
-	Use:                   "keyscan glob [filters] [<+|-> glob [filters]...]",
+	Use:                   "keyscan [options] glob [filters] [<+|-> glob [filters]...]",
 	Short:                 "Scan ssh keys and output them in known_hosts format, similar to ssh-keyscan",
 	Example:               "  katyusha keyscan *.site2.example.com os=Debian",
 	DisableFlagsInUseLine: true,
@@ -22,6 +24,8 @@ var keyScanCmd = &cobra.Command{
 }
 
 func init() {
+	keyScanCmd.Flags().StringSlice("type", []string{"ssh-rsa", "ecdsa-sha2-nistp256", "ssh-ed25519"}, "Which key algorithm(s) to scan for")
+	viper.BindPFlag("KeyType", keyScanCmd.Flags().Lookup("type"))
 	rootCmd.AddCommand(keyScanCmd)
 }
 
@@ -32,6 +36,28 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
+
+	knownTypes := map[string]string{
+		"dsa":                 "ssh-dss",
+		"dss":                 "ssh-dss",
+		"ssh-dss":             "ssh-dss",
+		"rsa":                 "ssh-rsa",
+		"ssh-rsa":             "ssh-rsa",
+		"ecdsa":               "ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521",
+		"ecdsa-sha2-nistp256": "ecdsa-sha2-nistp256",
+		"ecdsa-sha2-nistp384": "ecdsa-sha2-nistp384",
+		"ecdsa-sha2-nistp521": "ecdsa-sha2-nistp521",
+		"ed25519":             "ssh-ed25519",
+		"ssh-ed25519":         "ssh-ed25519",
+	}
+	keyTypes := make([]string, 0)
+	for _, keyType := range viper.GetStringSlice("KeyType") {
+		if expandedKeyType, ok := knownTypes[keyType]; ok {
+			keyTypes = append(keyTypes, expandedKeyType)
+		} else {
+			return fmt.Errorf("Unknown public key type: %s", keyType)
+		}
+	}
 
 	engine, err := setupScriptEngine()
 	if err != nil {
@@ -46,8 +72,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 {
 		engine.Runner.AddHosts("*", []katyusha.MatchAttribute{})
 	}
-	engine.Runner.Run("katyusha:connect", nil, nil)
-	engine.Runner.RemoveHosts("*", []katyusha.MatchAttribute{{Name: "sshKey", Value: nil}})
+	engine.Runner.Run(fmt.Sprintf("katyusha:keyscan:%s", strings.Join(keyTypes, ",")), nil, nil)
 	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}
 {{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
 {{ end -}}

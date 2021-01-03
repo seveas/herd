@@ -146,7 +146,13 @@ func (host Host) String() string {
 // Adds a public key to a host. Used by the ssh know hosts provider, but can be
 // used by any other code as well.
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
+	logrus.Debugf("Adding %s key for %s", k.Type(), h.Name)
 	h.publicKeys = append(h.publicKeys, k)
+	algos := []string{}
+	for _, k := range h.publicKeys {
+		algos = append(algos, k.Type())
+	}
+	h.sshConfig.HostKeyAlgorithms = algos
 }
 
 func (h *Host) PublicKeys() []ssh.PublicKey {
@@ -271,6 +277,38 @@ func (e TimeoutError) Error() string {
 	return e.message
 }
 
+func (host *Host) keyScan(ctx context.Context, keyTypes []string) *Result {
+	logrus.Debugf("Scanning keys on %s (%s)", host.Name, host.address())
+	host.extConfig["stricthostkeychecking"] = "no"
+	conf := *host.sshConfig
+	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
+	defer cancel()
+	go func() {
+		for _, keyType := range keyTypes {
+			found := false
+			for _, k := range host.publicKeys {
+				if k.Type() == keyType {
+					found = true
+					break
+				}
+			}
+			if !found {
+				logrus.Debugf("Don't have a %s key for %s, checking whether the host has it", keyType, host.Name)
+				conf.HostKeyAlgorithms = []string{keyType}
+				client, err := ssh.Dial("tcp", host.address(), &conf)
+				if err != nil {
+					logrus.Debugf("Error checking %s key on %s: %s", keyType, host.Name, err)
+				} else {
+					client.Close()
+				}
+			}
+		}
+		cancel()
+	}()
+	<-ctx.Done()
+	return &Result{Host: host}
+}
+
 func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 	if host.connection != nil {
 		return host.connection, nil
@@ -279,14 +317,6 @@ func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
-	if len(host.publicKeys) != 0 && len(host.sshConfig.HostKeyAlgorithms) == 0 {
-		algos := []string{}
-		for _, k := range host.publicKeys {
-			algo := k.Type()
-			algos = append(algos, algo)
-		}
-		host.sshConfig.HostKeyAlgorithms = algos
-	}
 	ec := make(chan error)
 	go func() {
 		var err error
@@ -353,6 +383,11 @@ func (buf *lineWriterBuffer) Bytes() []byte {
 }
 
 func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *Result {
+	if strings.HasPrefix(command, "katyusha:keyscan:") {
+		parts := strings.Split(command, ":")
+		keyTypes := strings.Split(parts[2], ",")
+		return host.keyScan(ctx, keyTypes)
+	}
 	now := time.Now()
 	r := &Result{Host: host, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
 	var stdout, stderr byteWriter
@@ -373,13 +408,6 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 		r.EndTime = time.Now()
 		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
 		r.Err = err
-		return r
-	}
-	// Special command that just connects
-	if command == "katyusha:connect" {
-		r.EndTime = time.Now()
-		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()
-		r.ExitStatus = 0
 		return r
 	}
 	sess, err := client.NewSession()

@@ -95,7 +95,7 @@ services:
     build:
       context: "."
       dockerfile: Dockerfile
-    command: make -C integration test TEST_OPTS=--verbose
+    command: make -C integration test TEST_OPTS='--verbose --chain-lint'
     depends_on:
       - nginx
       - openssh
