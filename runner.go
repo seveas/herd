@@ -129,7 +129,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		defer close(oc)
 	}
 	hi := newHistoryItem(command, r.hosts)
-	if r.agent == nil {
+	if r.agent == nil && !strings.HasPrefix(command, "herd:keyscan:") {
 		sock, err := agentConnection()
 		if err != nil {
 			logrus.Errorf("Unable to connect to ssh agent: %s", err)
