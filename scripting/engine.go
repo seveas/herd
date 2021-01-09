@@ -129,6 +129,7 @@ func (e *ScriptEngine) Execute() {
 		command.execute(e)
 		e.position++
 	}
+	e.Ui.Sync()
 }
 
 func (e *ScriptEngine) End() {
