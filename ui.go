@@ -553,10 +553,15 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				}
 				switch msg.State {
 				case Waiting:
+					show_waiting = true
 					queued--
 					waiting++
 				case Running:
-					waiting--
+					if show_waiting {
+						waiting--
+					} else {
+						queued--
+					}
 					running++
 				case Finished:
 					running--
@@ -590,8 +595,7 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 				if queued > 0 {
 					msg += fmt.Sprintf(", %d queued", queued)
 				}
-				if waiting > 0 || show_waiting {
-					show_waiting = true
+				if show_waiting {
 					msg += fmt.Sprintf(", %d waiting", waiting)
 				}
 				msg += fmt.Sprintf(", %d in progress, %d ok, %d fail, %d error", running, nok, nfail, nerr)
