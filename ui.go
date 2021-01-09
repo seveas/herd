@@ -75,7 +75,6 @@ type SimpleUI struct {
 	atStart         bool
 	lastProgress    string
 	pchan           chan string
-	dchan           chan interface{}
 	formatter       formatter
 	outputMode      OutputMode
 	outputTimestamp bool
@@ -84,7 +83,7 @@ type SimpleUI struct {
 	height          int
 	lineBuf         string
 	isTerminal      bool
-	wg              *sync.WaitGroup
+	syncCond        *sync.Cond
 	loading         []string
 	loadStart       time.Time
 	loadOnce        sync.Once
@@ -123,10 +122,9 @@ func NewSimpleUI() *SimpleUI {
 		atStart:      true,
 		lastProgress: "",
 		pchan:        make(chan string),
-		dchan:        make(chan interface{}),
+		syncCond:     &sync.Cond{L: new(sync.Mutex)},
 		formatter:    f,
 		isTerminal:   isatty.IsTerminal(os.Stdout.Fd()),
-		wg:           &sync.WaitGroup{},
 	}
 	if ui.isTerminal {
 		ui.getSize()
@@ -169,6 +167,12 @@ func (ui *SimpleUI) SetPagerEnabled(e bool) {
 
 func (ui *SimpleUI) printer() {
 	for msg := range ui.pchan {
+		if msg == "\000" {
+			ui.syncCond.L.Lock()
+			ui.syncCond.Broadcast()
+			ui.syncCond.L.Unlock()
+			continue
+		}
 		// If we're getting a normal message in the middle of printing
 		// progress, wipe the progress message and reprint it after this
 		// message
@@ -185,7 +189,6 @@ func (ui *SimpleUI) printer() {
 		}
 		ui.output.Sync()
 	}
-	close(ui.dchan)
 }
 
 func (ui *SimpleUI) BindLogrus() {
@@ -203,14 +206,15 @@ func (ui *SimpleUI) Write(msg []byte) (int, error) {
 }
 
 func (ui *SimpleUI) Sync() {
-	ui.wg.Wait()
+	ui.syncCond.L.Lock()
+	ui.pchan <- "\000"
+	defer ui.syncCond.L.Unlock()
+	ui.syncCond.Wait()
 }
 
 func (ui *SimpleUI) End() {
-	ui.wg.Wait()
-	ui.wg = &sync.WaitGroup{}
+	ui.Sync()
 	close(ui.pchan)
-	<-ui.dchan
 }
 
 func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
@@ -490,14 +494,12 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 		return nil
 	}
 	oc := make(chan OutputLine)
-	ui.wg.Add(1)
 	hlen := r.hosts.maxLen()
 	lastcolor := []byte{}
 	reset := []byte("\033[0m")
 	cr := regexp.MustCompile("\033\\[[0-9;]+m")
 	ts := ""
 	go func() {
-		defer ui.wg.Done()
 		for msg := range oc {
 			if ui.outputTimestamp {
 				ts = time.Now().Format("15:04:05.000 ")
@@ -533,9 +535,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 
 func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 	pc := make(chan ProgressMessage)
-	ui.wg.Add(1)
 	go func() {
-		defer ui.wg.Done()
 		start := time.Now()
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()

@@ -84,6 +84,7 @@ func (l *interactiveLoop) run() {
 		}
 		if err := l.engine.ParseCodeLine(line + "\n"); err != nil {
 			logrus.Error(err.Error())
+			l.engine.Ui.Sync()
 			continue
 		}
 		l.engine.Execute()
