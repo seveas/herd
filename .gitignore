@@ -1,7 +1,6 @@
 /katyusha
 /katyusha-provider-*
 provider/plugin/testdata/bin/katyusha-provider-ci
-/ssh-agent-proxy
 /*.exe
 *.crt
 *.key

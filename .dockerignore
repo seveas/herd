@@ -1,6 +1,5 @@
 .git
 dist
 katyusha
-ssh-agent-proxy
 /katyusha-provider-*
 /provider/plugin/testdata/bin/katyusha-provider-ci
