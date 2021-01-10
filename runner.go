@@ -2,6 +2,7 @@ package katyusha
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -11,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
@@ -170,72 +172,61 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			r.signersByPath[comment] = signer
 		}
 	}
-	c := make(chan *Result)
-	defer close(c)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	var sg *scattergather.ScatterGather
 	if r.parallel > 0 {
-		hqueue := make(chan *Host)
-		go func() {
-			for _, host := range hi.Hosts {
-				hqueue <- host
-			}
-			close(hqueue)
-		}()
-		for i := 0; i < r.parallel; i++ {
-			logrus.Debugf("Starting worker %d/%d", i+1, r.parallel)
-			go func() {
-				for host := range hqueue {
-					if r.splay > 0 {
-						pc <- ProgressMessage{Host: host, State: Waiting}
-						r.splayDelay(ctx)
-					}
-					pc <- ProgressMessage{Host: host, State: Running}
-					host.sshConfig.Timeout = r.connectTimeout
-					if len(host.sshConfig.Auth) == 0 {
-						host.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(host), nil })}
-					}
-					hctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
-					c <- host.Run(hctx, command, oc)
-					hcancel()
-				}
-			}()
-		}
+		sg = scattergather.New(int64(r.parallel))
 	} else {
-		for _, host := range hi.Hosts {
-			go func(ctx context.Context, h *Host) {
-				if r.splay > 0 {
-					pc <- ProgressMessage{Host: h, State: Waiting}
-					r.splayDelay(ctx)
-				}
-				pc <- ProgressMessage{Host: h, State: Running}
-				ctx, hcancel := context.WithTimeout(ctx, r.hostTimeout)
-				h.sshConfig.Timeout = r.connectTimeout
-				if len(h.sshConfig.Auth) == 0 {
-					h.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(h), nil })}
-				}
-				c <- h.Run(ctx, command, oc)
-				hcancel()
-			}(ctx, host)
-		}
+		sg = scattergather.New(int64(len(r.hosts)))
 	}
-	timeout := time.After(r.timeout)
-	signals := make(chan os.Signal)
-	signal.Notify(signals, os.Interrupt)
-	defer signal.Reset(os.Interrupt)
-	todo := len(r.hosts)
-	for todo > 0 {
+	for _, host := range hi.Hosts {
+		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
+			host := args[0].(*Host)
+			if r.splay > 0 {
+				pc <- ProgressMessage{Host: host, State: Waiting}
+				r.splayDelay(ctx)
+			}
+			pc <- ProgressMessage{Host: host, State: Running}
+			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
+			defer cancel()
+			host.sshConfig.Timeout = r.connectTimeout
+			if len(host.sshConfig.Auth) == 0 {
+				host.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(host), nil })}
+			}
+			result := host.Run(ctx, command, oc)
+			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
+			return result, nil
+		}, ctx, host)
+	}
+	go func() {
+		timeout := time.After(r.timeout)
+		signals := make(chan os.Signal)
+		signal.Notify(signals, os.Interrupt)
+		defer signal.Reset(os.Interrupt)
 		select {
 		case <-timeout:
-			logrus.Errorf("Run canceled with %d unfinished tasks!", todo)
+			logrus.Errorf("Run canceled with unfinished tasks!")
 			cancel()
 		case <-signals:
-			logrus.Errorf("Interrupted, canceling with %d unfinished tasks", todo)
+			logrus.Errorf("Interrupted, canceling with unfinished tasks")
 			cancel()
-		case r := <-c:
-			pc <- ProgressMessage{Host: r.Host, State: Finished, Result: r}
-			hi.Results[r.Host.Name] = r
-			todo--
+		case <-ctx.Done():
+			return
+		}
+	}()
+	results, _ := sg.Wait()
+	cancel()
+	for _, rawResult := range results {
+		result := rawResult.(*Result)
+		hi.Results[result.Host.Name] = result
+	}
+	for _, host := range r.hosts {
+		if _, ok := hi.Results[host.Name]; !ok {
+			result := &Result{Host: host, ExitStatus: -1, Err: errors.New("context canceled")}
+			host.lastResult = result
+			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
+			hi.Results[host.Name] = result
 		}
 	}
 	hi.end()
