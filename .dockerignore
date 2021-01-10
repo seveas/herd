@@ -1,6 +1,5 @@
 .git
 dist
 herd
-ssh-agent-proxy
 /herd-provider-*
 /provider/plugin/testdata/bin/herd-provider-ci
