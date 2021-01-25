@@ -45,7 +45,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	engine, err := setupScriptEngine()
+	engine, err := setupScriptEngine(false)
 	if err != nil {
 		return err
 	}

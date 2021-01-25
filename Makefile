@@ -16,7 +16,7 @@ else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
+katyusha: go.mod *.go cmd/katyusha/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 %_grpc.pb.go: %.proto

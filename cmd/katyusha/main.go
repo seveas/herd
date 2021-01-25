@@ -13,6 +13,7 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/seveas/katyusha"
 	"github.com/seveas/katyusha/scripting"
+	"github.com/seveas/katyusha/sshagent"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -183,7 +184,12 @@ func bail(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func setupScriptEngine() (*scripting.ScriptEngine, error) {
+func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
+	agent, err := sshagent.New(viper.GetDuration("SshAgentTimeout"))
+	if needsAgent && err != nil {
+		logrus.Error(err.Error())
+		return nil, err
+	}
 	ui := katyusha.NewSimpleUI()
 	ui.SetOutputMode(viper.Get("Output").(katyusha.OutputMode))
 	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
@@ -210,7 +216,7 @@ func setupScriptEngine() (*scripting.ScriptEngine, error) {
 		return nil, err
 	}
 	ui.Sync()
-	runner := katyusha.NewRunner(registry)
+	runner := katyusha.NewRunner(registry, agent)
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))

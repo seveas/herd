@@ -34,7 +34,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	engine, err := setupScriptEngine()
+	engine, err := setupScriptEngine(true)
 	if err != nil {
 		return err
 	}

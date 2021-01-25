@@ -19,6 +19,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"golang.org/x/crypto/ssh"
+
+	"github.com/seveas/katyusha/sshagent"
 )
 
 var localUser string
@@ -67,6 +69,7 @@ type Host struct {
 	connection *ssh.Client
 	lastResult *Result
 	csum       uint32
+	sshAgent   *sshagent.Agent
 }
 
 type host Host
@@ -104,6 +107,16 @@ func NewHost(name string, attributes HostAttributes) *Host {
 	return h
 }
 
+func (h *Host) sshKeys() ([]ssh.Signer, error) {
+	path, _ := h.extConfig["identityfile"]
+	path, err := h.expandSshTokens(path)
+	if err != nil {
+		logrus.Errorf("Could not parse identify file path %s: %s", path, err)
+		return []ssh.Signer{}, err
+	}
+	return h.sshAgent.SignersForPath(path), nil
+}
+
 // Set all the defults and initialize ssh configuration for the host
 func (h *Host) init() {
 	h.extConfig = extConfig.configForHost(h.Name)
@@ -115,6 +128,7 @@ func (h *Host) init() {
 		HostKeyCallback: h.hostKeyCallback,
 		BannerCallback:  h.bannerCallback,
 	}
+	h.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(h.sshKeys)}
 	h.csum = crc32.ChecksumIEEE([]byte(h.Name))
 	parts := strings.SplitN(h.Name, ".", 2)
 	if h.Attributes == nil {
@@ -141,6 +155,58 @@ func (h *Host) init() {
 
 func (host Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s, Config: %v}", host.Name, len(host.publicKeys), host.Attributes, host.sshConfig)
+}
+
+func (host Host) expandSshTokens(input string) (string, error) {
+	if !strings.ContainsRune(input, '%') {
+		return input, nil
+	}
+	u, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+	home, ok := os.LookupEnv("HOME")
+	if !ok {
+		home = u.HomeDir
+	}
+	if input[0] == '~' {
+		input = home + input[1:]
+	}
+	re := regexp.MustCompile("%[%CdhikLlnprTu]")
+	output := re.ReplaceAllStringFunc(input, func(token string) string {
+		switch token {
+		case "%":
+			return "%"
+		case "C":
+			panic("OOPS")
+		case "d":
+			return home
+		// Does not quite match openssh, but the best we can do
+		case "h", "k", "n":
+			return host.Name
+		case "i":
+			return u.Uid
+		case "L":
+			var name string
+			name, err = os.Hostname()
+			return strings.Split(name, ".")[0]
+		case "l":
+			var name string
+			name, err = os.Hostname()
+			return name
+		case "p":
+			return fmt.Sprintf("%d", host.Port)
+		case "r":
+			return host.sshConfig.User
+		case "%T":
+			return "NONE"
+		case "%u":
+			return localUser
+		}
+		err = fmt.Errorf("Don't know what to return for %s", token)
+		return ""
+	})
+	return output, err
 }
 
 // Adds a public key to a host. Used by the ssh know hosts provider, but can be
