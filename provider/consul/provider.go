@@ -25,9 +25,11 @@ type consulProvider struct {
 	name         string
 	consulConfig *consul.Config
 	config       struct {
-		Address string
-		Prefix  string
-		Timeout time.Duration
+		Address            string
+		Prefix             string
+		Timeout            time.Duration
+		Datacenters        []string
+		ExcludeDatacenters []string
 	}
 }
 
@@ -70,6 +72,15 @@ func (p *consulProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
+func stringInList(haystack []string, needle string) bool {
+	for _, twig := range haystack {
+		if twig == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	p.consulConfig.Address = p.config.Address
 	lm(p.name, false, nil)
@@ -87,6 +98,12 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 	logrus.Debugf("Consul datacenters: %v", datacenters)
 	sg := scattergather.New(int64(len(datacenters)))
 	for _, dc := range datacenters {
+		if len(p.config.Datacenters) != 0 && !stringInList(p.config.Datacenters, dc) {
+			continue
+		}
+		if len(p.config.ExcludeDatacenters) != 0 && stringInList(p.config.ExcludeDatacenters, dc) {
+			continue
+		}
 		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
 			dc := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, dc)
