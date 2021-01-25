@@ -16,7 +16,7 @@ else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 endif
 
-herd: go.mod *.go cmd/herd/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
+herd: go.mod *.go cmd/herd/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/herd
 
 %_grpc.pb.go: %.proto

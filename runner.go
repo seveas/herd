@@ -6,16 +6,15 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net"
 	"os"
 	"os/signal"
 	"strings"
 	"time"
 
+	"github.com/seveas/herd/sshagent"
+
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/crypto/ssh/agent"
 )
 
 type OutputLine struct {
@@ -39,9 +38,7 @@ type Runner struct {
 	hostTimeout     time.Duration
 	connectTimeout  time.Duration
 	sshAgentTimeout time.Duration
-	agent           agent.Agent
-	signers         []ssh.Signer
-	signersByPath   map[string]ssh.Signer
+	sshAgent        *sshagent.Agent
 }
 
 type ProgressState int
@@ -53,13 +50,14 @@ const (
 	Finished
 )
 
-func NewRunner(registry *Registry) *Runner {
+func NewRunner(registry *Registry, agent *sshagent.Agent) *Runner {
 	return &Runner{
 		hosts:           make(Hosts, 0),
 		registry:        registry,
 		timeout:         60 * time.Second,
 		hostTimeout:     10 * time.Second,
 		connectTimeout:  3 * time.Second,
+		sshAgent:        agent,
 		sshAgentTimeout: 50 * time.Millisecond,
 	}
 }
@@ -131,47 +129,6 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		defer close(oc)
 	}
 	hi := newHistoryItem(command, r.hosts)
-	if r.agent == nil && !strings.HasPrefix(command, "herd:keyscan:") {
-		sock, err := agentConnection()
-		if err != nil {
-			logrus.Errorf("Unable to connect to ssh agent: %s", err)
-			return hi
-		}
-		if _, ok := sock.(*net.UnixConn); ok {
-			// Determine whether we can use the faster pipelined ssh agent protocol
-			sock2, _ := agentConnection()
-			sock3, _ := agentConnection()
-			fastAgent := NewSshAgentClient(sock2, sock3)
-			if fastAgent.functional(r.sshAgentTimeout) {
-				sock.(*net.UnixConn).Close()
-				r.agent = fastAgent
-			} else {
-				// Pity.
-				logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
-				sock2.(*net.UnixConn).Close()
-				sock3.(*net.UnixConn).Close()
-				r.agent = agent.NewClient(sock)
-			}
-		} else {
-			r.agent = agent.NewClient(sock)
-		}
-
-		r.signers, err = r.agent.Signers()
-		r.signersByPath = make(map[string]ssh.Signer)
-		if err != nil {
-			logrus.Errorf("Unable to retrieve keys from SSH agent: %s", err)
-			return hi
-		}
-		if len(r.signers) == 0 {
-			logrus.Errorf("No keys found in ssh agent")
-			return hi
-		}
-
-		for _, signer := range r.signers {
-			comment := signer.PublicKey().(*agent.Key).Comment
-			r.signersByPath[comment] = signer
-		}
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	var sg *scattergather.ScatterGather
@@ -181,6 +138,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		sg = scattergather.New(int64(len(r.hosts)))
 	}
 	for _, host := range hi.Hosts {
+		host.sshAgent = r.sshAgent
 		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
 			host := args[0].(*Host)
 			if r.splay > 0 {
@@ -191,9 +149,6 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
 			defer cancel()
 			host.sshConfig.Timeout = r.connectTimeout
-			if len(host.sshConfig.Auth) == 0 {
-				host.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(func() ([]ssh.Signer, error) { return r.signersForHost(host), nil })}
-			}
 			result := host.Run(ctx, command, oc)
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil
@@ -252,15 +207,4 @@ func (r *Runner) splayDelay(ctx context.Context) {
 	case <-tctx.Done():
 		return
 	}
-}
-
-func (r *Runner) signersForHost(h *Host) []ssh.Signer {
-	if path := h.extConfig["identityfile"]; path != "" {
-		if k, ok := r.signersByPath[path]; ok {
-			return []ssh.Signer{k}
-		} else {
-			return []ssh.Signer{}
-		}
-	}
-	return r.signers
 }

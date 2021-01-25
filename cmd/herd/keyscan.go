@@ -59,7 +59,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	engine, err := setupScriptEngine()
+	engine, err := setupScriptEngine(false)
 	if err != nil {
 		return err
 	}
