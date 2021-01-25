@@ -50,6 +50,9 @@ func runList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	defer engine.End()
+	if len(args) == 0 {
+		args = append(args, "*")
+	}
 	if err = engine.ParseCommandLine(args, splitAt); err != nil {
 		logrus.Error(err.Error())
 		return err

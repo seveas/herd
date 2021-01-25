@@ -11,3 +11,4 @@ provider/plugin/testdata/bin/katyusha-provider-ci
 test-results
 extra_providers.go
 vendor
+trash*
