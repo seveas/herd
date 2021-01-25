@@ -1,0 +1,5 @@
+---
+Providers:
+  plain:
+    provider: plain
+    file: plain.txt
