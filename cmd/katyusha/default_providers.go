@@ -10,6 +10,7 @@ import (
 	_ "github.com/seveas/katyusha/provider/plain"
 
 	_ "github.com/seveas/katyusha/provider/aws"
+	_ "github.com/seveas/katyusha/provider/azure"
 	_ "github.com/seveas/katyusha/provider/cache"
 	_ "github.com/seveas/katyusha/provider/consul"
 	_ "github.com/seveas/katyusha/provider/http"
