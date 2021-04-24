@@ -107,7 +107,14 @@ func (c runCommand) execute(e *ScriptEngine) {
 	oc := e.Ui.OutputChannel(e.Runner)
 	pc := e.Ui.ProgressChannel(e.Runner)
 	hi := e.Runner.Run(c.command, pc, oc)
+	if oc != nil {
+		close(oc)
+	}
+	close(pc)
 	e.Ui.Sync()
+	if hi == nil {
+		return
+	}
 	e.History = append(e.History, hi)
 	if !strings.HasPrefix(c.command, "katyusha:") {
 		e.Ui.PrintHistoryItem(hi)

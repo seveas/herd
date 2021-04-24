@@ -70,3 +70,8 @@ clean:
 fullclean: clean
 	rm -rf dist/
 	rm -f $(antlr_sources)
+
+install:
+	go install github.com/seveas/katyusha/cmd/katyusha
+
+.PHONY: fmt vet tidy test build_all clean fullclean install
