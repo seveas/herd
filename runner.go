@@ -117,16 +117,17 @@ func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 }
 
 func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) *HistoryItem {
+	if len(r.hosts) == 0 {
+		logrus.Errorf("No hosts selected")
+		return nil
+	}
 	if pc == nil {
 		pc = make(chan ProgressMessage)
+		defer close(pc)
 		go func() {
 			for range pc {
 			}
 		}()
-	}
-	defer close(pc)
-	if oc != nil {
-		defer close(oc)
 	}
 	hi := newHistoryItem(command, r.hosts)
 	ctx, cancel := context.WithCancel(context.Background())
