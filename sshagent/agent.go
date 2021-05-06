@@ -31,20 +31,17 @@ func New(timeout time.Duration) (*Agent, error) {
 	}
 	a := &Agent{sshAgent: agent.NewClient(sock), waiters: make([]chan agentResponse, 0, 64)}
 
-	if usock, ok := sock.(*net.UnixConn); ok {
+	if _, ok := sock.(*net.UnixConn); ok {
 		// Determine whether we can use the faster pipelined ssh agent protocol
-		sock, _ := agentConnection()
-		a.pipelinedConnection = sock
-		if a.canDoPipelinedSigning(timeout) {
-			go a.readLoop()
-		} else {
-			usock.Close()
+		a.pipelinedConnection, _ = agentConnection()
+		go a.readLoop()
+		if !a.canDoPipelinedSigning(timeout) {
+			a.pipelinedConnection.(*net.UnixConn).Close()
 			a.pipelinedConnection = nil
 			logrus.Warnf("Using slow ssh agent, see https://katyusha.seveas.net/documentation/ssh_agent.html to fix this")
 		}
 	}
-	a.signers, err = a.sshAgent.Signers()
-	a.signersByPath = make(map[string]ssh.Signer)
+	a.signers, err = a.Signers()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to retrieve keys from SSH agent: %s", err)
 	}
@@ -52,6 +49,7 @@ func New(timeout time.Duration) (*Agent, error) {
 		return nil, fmt.Errorf("No keys found in ssh agent")
 	}
 
+	a.signersByPath = make(map[string]ssh.Signer)
 	for _, signer := range a.signers {
 		comment := signer.PublicKey().(*agent.Key).Comment
 		a.signersByPath[comment] = signer
@@ -121,6 +119,9 @@ func (a *Agent) readLoop() {
 		a.waiters = a.waiters[1:]
 		a.lock.Unlock()
 		ch <- agentResponse{data: data, err: err}
+		if err != nil {
+			break
+		}
 	}
 }
 
@@ -148,7 +149,7 @@ type agentSignRequest struct {
 }
 
 func (a *Agent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
-	if a.pipelinedConnection != nil {
+	if a.pipelinedConnection == nil {
 		return a.sshAgent.Sign(key, data)
 	}
 	req := ssh.Marshal(agentSignRequest{Key: key.Marshal(), Data: data, Flags: uint32(0)})
@@ -208,7 +209,7 @@ func (a *Agent) Signers() ([]ssh.Signer, error) {
 	if err != nil {
 		return nil, err
 	}
-	if a.pipelinedConnection != nil {
+	if a.pipelinedConnection == nil {
 		return signers, nil
 	}
 
