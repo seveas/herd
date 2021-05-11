@@ -66,8 +66,8 @@ type HostListOptions struct {
 	Align         bool
 	Header        bool
 	Template      string
-	Stats         []string
-	StatsSort     bool
+	Count         []string
+	SortByCount   bool
 }
 
 type SimpleUI struct {
@@ -365,39 +365,39 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 				logrus.Errorf("Error executing template: %s", err)
 			}
 		}
-	} else if len(opts.Stats) != 0 {
-		// First we generate the statistics
+	} else if len(opts.Count) != 0 {
+		// First we generate the counts
 		valueKeys := make([]string, 0)
 		values := make(map[string][]string)
-		stats := make(map[string]int)
+		counts := make(map[string]int)
 
 		for _, host := range hosts {
-			v := make([]string, len(opts.Stats)+1)
-			for i, attr := range opts.Stats {
+			v := make([]string, len(opts.Count)+1)
+			for i, attr := range opts.Count {
 				iv, _ := host.Attributes[attr]
 				v[i] = fmt.Sprintf("%v", iv)
 			}
 			vs := strings.Join(v, "\000")
-			if _, ok := stats[vs]; ok {
-				stats[vs]++
+			if _, ok := counts[vs]; ok {
+				counts[vs]++
 			} else {
 				values[vs] = v
-				stats[vs] = 1
+				counts[vs] = 1
 				valueKeys = append(valueKeys, vs)
 			}
 		}
-		end := len(opts.Stats)
-		if opts.StatsSort {
+		end := len(opts.Count)
+		if opts.SortByCount {
 			// We sort by count, keeping the order of entries with the same count intact
 			positions := make(map[string]int)
 			for i, k := range valueKeys {
 				positions[k] = i
 			}
 			sort.Slice(valueKeys, func(i, j int) bool {
-				if stats[valueKeys[i]] == stats[valueKeys[j]] {
+				if counts[valueKeys[i]] == counts[valueKeys[j]] {
 					return positions[valueKeys[i]] < positions[valueKeys[j]]
 				}
-				return stats[valueKeys[i]] > stats[valueKeys[j]]
+				return counts[valueKeys[i]] > counts[valueKeys[j]]
 			})
 		}
 
@@ -413,13 +413,13 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			writer = newPassthrough(out)
 		}
 		if opts.Header {
-			attrline := make([]string, len(opts.Stats)+1)
-			copy(attrline, opts.Stats)
-			attrline[len(opts.Stats)] = "count"
+			attrline := make([]string, len(opts.Count)+1)
+			copy(attrline, opts.Count)
+			attrline[len(opts.Count)] = "count"
 			writer.Write(attrline)
 		}
 		for _, k := range valueKeys {
-			values[k][end] = fmt.Sprintf("%v", stats[k])
+			values[k][end] = fmt.Sprintf("%v", counts[k])
 			writer.Write(values[k])
 		}
 		// Start the pager after all if we are getting too wide
