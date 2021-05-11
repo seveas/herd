@@ -25,7 +25,7 @@ func init() {
 	listCmd.Flags().Bool("csv", false, "Output in csv format")
 	listCmd.Flags().Bool("header", true, "Print attribute names in a header line before printing host data")
 	listCmd.Flags().String("template", "", "Template to use for showing hosts")
-	listCmd.Flags().StringSlice("stats", []string{}, "Show statistics for the values of these attributes")
+	listCmd.Flags().StringSlice("count", []string{}, "Show counts for the values of these attributes")
 	viper.BindPFlag("OneLine", listCmd.Flags().Lookup("oneline"))
 	viper.BindPFlag("Separator", listCmd.Flags().Lookup("separator"))
 	viper.BindPFlag("AllAttributes", listCmd.Flags().Lookup("all-attributes"))
@@ -33,7 +33,7 @@ func init() {
 	viper.BindPFlag("Csv", listCmd.Flags().Lookup("csv"))
 	viper.BindPFlag("Header", listCmd.Flags().Lookup("header"))
 	viper.BindPFlag("Template", listCmd.Flags().Lookup("template"))
-	viper.BindPFlag("Stats", listCmd.Flags().Lookup("stats"))
+	viper.BindPFlag("Count", listCmd.Flags().Lookup("count"))
 	rootCmd.AddCommand(listCmd)
 }
 
@@ -67,16 +67,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		Header:        viper.GetBool("Header"),
 		Align:         true,
 		Template:      viper.GetString("Template"),
-		Stats:         viper.GetStringSlice("Stats"),
-		StatsSort:     false,
-	}
-	sort := viper.GetStringSlice("Sort")
-	for i, key := range sort {
-		if key == "count" {
-			viper.Set("sort", append(sort[:i], sort[i+1:]...))
-			opts.StatsSort = true
-			break
-		}
+		Count:         viper.GetStringSlice("Count"),
+		SortByCount:   !viper.IsSet("Sort"),
 	}
 	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
 	return nil

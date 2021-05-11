@@ -9,7 +9,7 @@ test_expect_success "We see hosts using the consul provider" "
     echo 'datacenter   count' > expected &&
     echo 'dc1          6    ' >> expected &&
     echo 'dc2          6    ' >> expected &&
-    herd list herd_provider=consul --stats datacenter --sort datacenter > actual &&
+    herd list herd_provider=consul --count datacenter --sort datacenter > actual &&
     test_cmp expected actual
 "
 
@@ -18,7 +18,7 @@ test_expect_success "We see services using the consul provider" "
     echo 'service    count' > expected &&
     echo '[consul]   2    ' >> expected &&
     echo '<nil>      10   ' >> expected &&
-    herd list herd_provider=consul --stats service --sort service > actual &&
+    herd list herd_provider=consul --count service --sort service > actual &&
     test_cmp expected actual
 "
 
