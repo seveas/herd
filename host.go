@@ -456,6 +456,7 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	}
 	now := time.Now()
 	r := &Result{Host: host, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
+	host.lastResult = r
 	var stdout, stderr byteWriter
 	if oc != nil {
 		stdout = newLineWriterBuffer(host, false, oc)
@@ -513,7 +514,6 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
-	host.lastResult = r
 	return r
 }
 
