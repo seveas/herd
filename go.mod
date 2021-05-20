@@ -1,6 +1,6 @@
 module github.com/seveas/katyusha
 
-go 1.13
+go 1.16
 
 require (
 	github.com/Azure/azure-sdk-for-go v50.2.0+incompatible
@@ -24,27 +24,26 @@ require (
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/serf v0.9.3 // indirect
 	github.com/jarcoal/httpmock v1.0.6
-	github.com/lxn/win v0.0.0-20201111105847-2a20daff6a55
-	github.com/magiconair/properties v1.8.4 // indirect
+	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
+	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/mitchellh/mapstructure v1.4.0 // indirect
-	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/pelletier/go-toml v1.9.1 // indirect
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v0.0.0-20210110122831-adaf8cbaca34
-	github.com/sirupsen/logrus v1.7.0
-	github.com/spf13/afero v1.5.1 // indirect
+	github.com/sirupsen/logrus v1.8.1
+	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
-	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a // indirect
-	golang.org/x/sys v0.0.0-20201223074533-0d417f636930
-	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015
+	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
