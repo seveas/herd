@@ -30,44 +30,44 @@ func TestParseCommandLine(t *testing.T) {
 	}
 	expected := [][]command{
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{}, sampling: map[string]int{}},
 		},
 		{},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
 			removeHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
 			removeHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 		{},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}},
-			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: herd.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
 		},
 	}
 	errors := []string{
@@ -105,6 +105,7 @@ func TestParseCommandLine(t *testing.T) {
 			t.Errorf("Unexpected error %v, expected %v", err, errors[i])
 		}
 		if diff := deep.Equal(e.commands, append(expected[i], runCommand{command: "id seveas"})); diff != nil {
+			t.Errorf("%v", test)
 			t.Error(diff)
 		}
 	}

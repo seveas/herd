@@ -98,12 +98,16 @@ func (r *Runner) PrintSettings(ui io.Writer) {
 	fmt.Fprintf(ui, "ConnectTimeout: %s\n", r.connectTimeout)
 }
 
-func (r *Runner) AddHosts(glob string, attrs MatchAttributes) {
+func (r *Runner) AddHosts(glob string, attrs MatchAttributes, sampling map[string]int) {
 	hosts := append(r.hosts, r.registry.GetHosts(glob, attrs)...)
+	if sampling != nil && len(sampling) != 0 {
+		hosts = hosts.Sample(sampling)
+	}
 	if !strings.HasPrefix(glob, "file:") {
 		hosts.Sort(r.registry.sort)
 	}
-	r.hosts = hosts.Uniq()
+	hosts = hosts.Uniq()
+	r.hosts = hosts
 }
 
 func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
