@@ -62,10 +62,11 @@ func (c showVariablesCommand) String() string {
 type addHostsCommand struct {
 	glob       string
 	attributes katyusha.MatchAttributes
+	sampling   map[string]int
 }
 
 func (c addHostsCommand) execute(e *ScriptEngine) {
-	e.Runner.AddHosts(c.glob, c.attributes)
+	e.Runner.AddHosts(c.glob, c.attributes, c.sampling)
 }
 
 func (c addHostsCommand) String() string {

@@ -305,6 +305,46 @@ func (h Hosts) Uniq() Hosts {
 	return h[:dst+1]
 }
 
+func (h Hosts) Sample(sampling map[string]int) Hosts {
+	ret := make(Hosts, 0)
+	attributes := make([]string, 0)
+	for attr, _ := range sampling {
+		attributes = append(attributes, attr)
+	}
+	buckets := make(map[string]Hosts)
+	count := 1
+	for _, v := range sampling {
+		count *= v
+	}
+host:
+	for _, host := range h {
+		bucket := ""
+		for _, attr := range attributes {
+			value, ok := host.Attributes[attr]
+			if !ok {
+				continue host
+			}
+			bucket = fmt.Sprintf("%s\000%v", bucket, value)
+		}
+		hosts, ok := buckets[bucket]
+		if !ok {
+			buckets[bucket] = Hosts{host}
+		} else {
+			buckets[bucket] = append(hosts, host)
+		}
+	}
+	for _, bucket := range buckets {
+		ret = append(ret, bucket[:min(count, len(bucket))]...)
+	}
+	return ret
+}
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func (h Hosts) maxLen() int {
 	hlen := 0
 	for _, host := range h {

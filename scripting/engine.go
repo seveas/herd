@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/seveas/katyusha"
@@ -33,7 +34,7 @@ func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {
 	if splitAt != -1 {
 		filters = filters[:splitAt]
 	}
-	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~)(.*)$")
+	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~|:)(.*)$")
 	// First we add hosts from the command line, in all modes
 	commands := make([]command, 0)
 	add := true
@@ -47,11 +48,12 @@ hostspecLoop:
 			filters = filters[1:]
 		}
 		attrs := make(katyusha.MatchAttributes, 0)
+		sampling := make(map[string]int)
 		for i, arg := range filters[:] {
 			if arg == "+" || arg == "-" {
 				filters = filters[i+1:]
 				if add {
-					commands = append(commands, addHostsCommand{glob: glob, attributes: attrs})
+					commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampling: sampling})
 				} else {
 					commands = append(commands, removeHostsCommand{glob: glob, attributes: attrs})
 				}
@@ -67,6 +69,14 @@ hostspecLoop:
 				return fmt.Errorf("incorrect filter: %s", arg)
 			}
 			key, comp, val := parts[1], parts[2], parts[3]
+			if comp == ":" {
+				v, err := strconv.ParseInt(val, 0, 64)
+				if err != nil {
+					return fmt.Errorf("incorrect sampling: %s", arg)
+				}
+				sampling[key] = int(v)
+				continue
+			}
 			attr := katyusha.MatchAttribute{Name: key, Value: val, FuzzyTyping: true}
 			if strings.HasPrefix(comp, "!") {
 				attr.Negate = true
@@ -85,7 +95,7 @@ hostspecLoop:
 		}
 		// We've fallen through, so no more hostspecs
 		if add {
-			commands = append(commands, addHostsCommand{glob: glob, attributes: attrs})
+			commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampling: sampling})
 		} else {
 			commands = append(commands, removeHostsCommand{glob: glob, attributes: attrs})
 		}
