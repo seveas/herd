@@ -25,7 +25,7 @@ type transipProvider struct {
 }
 
 func newProvider(name string) herd.HostProvider {
-	return &transipProvider{}
+	return &transipProvider{name: name}
 }
 
 func (p *transipProvider) Name() string {
