@@ -26,12 +26,13 @@ func init() {
 type awsProvider struct {
 	name   string
 	config struct {
-		Prefix          string
-		AccessKeyId     string
-		SecretAccessKey string
-		Partition       string
-		Regions         []string
-		ExcludeRegions  []string
+		Prefix           string
+		AccessKeyId      string
+		SecretAccessKey  string
+		Partition        string
+		Regions          []string
+		ExcludeRegions   []string
+		UsePublicAddress bool
 	}
 }
 
@@ -175,6 +176,7 @@ func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
 					"private_dns_name":        sv(instance.PrivateDnsName),
 					"private_ip":              sv(instance.PrivateIpAddress),
 					"public_dns_name":         sv(instance.PublicDnsName),
+					"public_ip":               sv(instance.PublicIpAddress),
 					"root_device_name":        sv(instance.RootDeviceName),
 					"root_device_type":        sv(instance.RootDeviceType),
 					"state":                   sv(instance.State.Name),
@@ -197,7 +199,11 @@ func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
 						attrs[*tag.Key] = *tag.Value
 					}
 				}
-				ret = append(ret, herd.NewHost(name, sv(instance.PrivateIpAddress), attrs))
+				addr := sv(instance.PrivateIpAddress)
+				if p.config.UsePublicAddress {
+					addr = sv(instance.PublicIpAddress)
+				}
+				ret = append(ret, herd.NewHost(name, addr, attrs))
 			}
 		}
 		if out.NextToken == nil {

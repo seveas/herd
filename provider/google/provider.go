@@ -24,10 +24,11 @@ type googleProvider struct {
 	name   string
 	zones  map[string]*computepb.Zone
 	config struct {
-		Prefix  string
-		Key     string
-		Project string
-		Zones   []string
+		Prefix           string
+		Key              string
+		Project          string
+		Zones            []string
+		UsePublicAddress bool
 	}
 }
 
@@ -183,7 +184,16 @@ func (p *googleProvider) loadZone(zone string) (herd.Hosts, error) {
 		if inst.Hostname != nil {
 			name = *inst.Hostname
 		}
-		ret = append(ret, herd.NewHost(name, *inst.NetworkInterfaces[0].NetworkIP, attrs))
+		iface := inst.NetworkInterfaces[0]
+		addr := ""
+		if !p.config.UsePublicAddress {
+			addr = *iface.NetworkIP
+		} else {
+			if iface.AccessConfigs != nil {
+				addr = *iface.AccessConfigs[0].NatIP
+			}
+		}
+		ret = append(ret, herd.NewHost(name, addr, attrs))
 	}
 
 	return ret, nil
