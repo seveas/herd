@@ -305,17 +305,9 @@ func (h Hosts) Uniq() Hosts {
 	return h[:dst+1]
 }
 
-func (h Hosts) Sample(sampling map[string]int) Hosts {
+func (h Hosts) Sample(attributes []string, count int) Hosts {
 	ret := make(Hosts, 0)
-	attributes := make([]string, 0)
-	for attr, _ := range sampling {
-		attributes = append(attributes, attr)
-	}
 	buckets := make(map[string]Hosts)
-	count := 1
-	for _, v := range sampling {
-		count *= v
-	}
 host:
 	for _, host := range h {
 		bucket := ""

@@ -34,7 +34,8 @@ func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {
 	if splitAt != -1 {
 		filters = filters[:splitAt]
 	}
-	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~|:)(.*)$")
+	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~)(.*)$")
+	sampling := regexp.MustCompile("((?:(?:[^:]*):)+)([0-9]+)")
 	// First we add hosts from the command line, in all modes
 	commands := make([]command, 0)
 	add := true
@@ -42,18 +43,19 @@ hostspecLoop:
 	for len(filters) > 0 {
 		glob := filters[0]
 		// Do we have a glob or not?
-		if comparison.MatchString(glob) {
+		if comparison.MatchString(glob) || sampling.MatchString(glob) {
 			glob = "*"
 		} else {
 			filters = filters[1:]
 		}
 		attrs := make(herd.MatchAttributes, 0)
-		sampling := make(map[string]int)
+		sampled := make([]string, 0)
+		count := 0
 		for i, arg := range filters[:] {
 			if arg == "+" || arg == "-" {
 				filters = filters[i+1:]
 				if add {
-					commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampling: sampling})
+					commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampled: sampled, count: count})
 				} else {
 					commands = append(commands, removeHostsCommand{glob: glob, attributes: attrs})
 				}
@@ -64,38 +66,50 @@ hostspecLoop:
 				}
 				continue hostspecLoop
 			}
-			parts := comparison.FindStringSubmatch(arg)
-			if len(parts) == 0 {
-				return fmt.Errorf("incorrect filter: %s", arg)
-			}
-			key, comp, val := parts[1], parts[2], parts[3]
-			if comp == ":" {
-				v, err := strconv.ParseInt(val, 0, 64)
-				if err != nil {
-					return fmt.Errorf("incorrect sampling: %s", arg)
+			if sampledAndCount := sampling.FindStringSubmatch(arg); sampledAndCount != nil {
+				if len(sampled) != 0 {
+					return fmt.Errorf("only one sampling per hostspec allowed")
 				}
-				sampling[key] = int(v)
-				continue
-			}
-			attr := herd.MatchAttribute{Name: key, Value: val, FuzzyTyping: true}
-			if strings.HasPrefix(comp, "!") {
-				attr.Negate = true
-			}
-			if strings.HasSuffix(comp, "~") {
-				re, err := regexp.Compile(val)
-				if err != nil {
-					return fmt.Errorf("Invalid regexp /%s/: %s", val, err)
-				} else {
-					attr.Value = re
-					attr.Regex = true
-					attr.FuzzyTyping = false
+				add := false
+				for _, s := range strings.Split(sampledAndCount[1], ":") {
+					if s == "" {
+						add = true
+					} else if add && len(sampled) > 0 {
+						sampled[len(sampled)-1] = fmt.Sprintf("%s:%s", sampled[len(sampled)-1], s)
+						add = false
+					} else {
+						sampled = append(sampled, s)
+						add = false
+					}
 				}
+				count64, _ := strconv.ParseInt(sampledAndCount[2], 0, 64)
+				count = int(count64)
+			} else {
+				parts := comparison.FindStringSubmatch(arg)
+				if len(parts) == 0 {
+					return fmt.Errorf("incorrect filter: %s", arg)
+				}
+				key, comp, val := parts[1], parts[2], parts[3]
+				attr := herd.MatchAttribute{Name: key, Value: val, FuzzyTyping: true}
+				if strings.HasPrefix(comp, "!") {
+					attr.Negate = true
+				}
+				if strings.HasSuffix(comp, "~") {
+					re, err := regexp.Compile(val)
+					if err != nil {
+						return fmt.Errorf("Invalid regexp /%s/: %s", val, err)
+					} else {
+						attr.Value = re
+						attr.Regex = true
+						attr.FuzzyTyping = false
+					}
+				}
+				attrs = append(attrs, attr)
 			}
-			attrs = append(attrs, attr)
 		}
 		// We've fallen through, so no more hostspecs
 		if add {
-			commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampling: sampling})
+			commands = append(commands, addHostsCommand{glob: glob, attributes: attrs, sampled: sampled, count: count})
 		} else {
 			commands = append(commands, removeHostsCommand{glob: glob, attributes: attrs})
 		}

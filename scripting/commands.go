@@ -62,11 +62,12 @@ func (c showVariablesCommand) String() string {
 type addHostsCommand struct {
 	glob       string
 	attributes herd.MatchAttributes
-	sampling   map[string]int
+	sampled    []string
+	count      int
 }
 
 func (c addHostsCommand) execute(e *ScriptEngine) {
-	e.Runner.AddHosts(c.glob, c.attributes, c.sampling)
+	e.Runner.AddHosts(c.glob, c.attributes, c.sampled, c.count)
 }
 
 func (c addHostsCommand) String() string {
