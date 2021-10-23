@@ -161,7 +161,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	}
 	go func() {
 		timeout := time.After(r.timeout)
-		signals := make(chan os.Signal)
+		signals := make(chan os.Signal, 5)
 		signal.Notify(signals, os.Interrupt)
 		defer signal.Reset(os.Interrupt)
 		select {
