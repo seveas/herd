@@ -16,7 +16,7 @@ else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 endif
 
-herd: go.mod *.go cmd/herd/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
+herd: go.mod go.sum *.go cmd/herd/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/herd
 
 %_grpc.pb.go: %.proto
@@ -25,7 +25,7 @@ herd: go.mod *.go cmd/herd/*.go sshagent/*.go scripting/*.go provider/*/*.go pro
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-herd-provider-%: cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+herd-provider-%: go.mod go.sum cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/herd/cmd/$@
 
 $(antlr_sources): scripting/Herd.g4
@@ -40,7 +40,7 @@ vet:
 tidy:
 	go mod tidy
 
-provider/plugin/testdata/bin/herd-provider-ci: provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+provider/plugin/testdata/bin/herd-provider-ci: go.mod go.sum provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
 
 test: fmt vet tidy provider/plugin/testdata/bin/herd-provider-ci
