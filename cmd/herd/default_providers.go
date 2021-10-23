@@ -20,6 +20,7 @@ import (
 	// Cloud providers
 	_ "github.com/seveas/herd/provider/aws"
 	_ "github.com/seveas/herd/provider/azure"
+	_ "github.com/seveas/herd/provider/google"
 	_ "github.com/seveas/herd/provider/transip"
 
 	// The sky is the limit!
