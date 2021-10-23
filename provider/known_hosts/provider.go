@@ -101,7 +101,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm katyusha.LoadingMessag
 				}
 				continue
 			}
-			host := katyusha.NewHost(name, katyusha.HostAttributes{"PublicKeyComment": comment})
+			host := katyusha.NewHost(name, "", katyusha.HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
 			seen[host.Name] = len(hosts)
 			hosts = append(hosts, host)

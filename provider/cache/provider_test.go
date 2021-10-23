@@ -33,7 +33,7 @@ func (p *fakeProvider) Equivalent(o katyusha.HostProvider) bool {
 
 func (p *fakeProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katyusha.Hosts, error) {
 	p.loaded++
-	h := katyusha.NewHost("test-host", katyusha.HostAttributes{"foo": "bar"})
+	h := katyusha.NewHost("test-host", "", katyusha.HostAttributes{"foo": "bar"})
 	if p.doError {
 		return katyusha.Hosts{h}, fmt.Errorf("You wanted an error")
 	}

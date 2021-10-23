@@ -129,7 +129,7 @@ func (p *azureProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (h
 		attrs["ProvisioningState"] = *vm.ProvisioningState
 		attrs["VMID"] = *vm.VMID
 		attrs["Location"] = *vm.Location
-		hosts[i] = katyusha.NewHost(*vm.Name, attrs)
+		hosts[i] = katyusha.NewHost(*vm.Name, "", attrs)
 	}
 
 	return hosts, nil

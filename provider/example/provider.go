@@ -50,7 +50,7 @@ func (p *exampleProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) 
 			"dynamic_attribute": fmt.Sprintf("dynamic_value_%d", i),
 			"config_color":      p.config.Color,
 		}
-		hosts[i] = katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), attrs)
+		hosts[i] = katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs)
 	}
 	return hosts, nil
 }

@@ -49,7 +49,7 @@ func mockData() (katyusha.Hosts, string) {
 	nhosts := 10
 	hosts := make(katyusha.Hosts, nhosts)
 	for i := 0; i < nhosts; i++ {
-		h := katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), katyusha.HostAttributes{"number": int64(i)})
+		h := katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), "", katyusha.HostAttributes{"number": int64(i)})
 		hosts[i] = h
 	}
 	j, _ := json.Marshal(hosts)

@@ -82,7 +82,7 @@ func (p *transipProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) 
 			"availabilityzone": vps.AvailabilityZone,
 			"tags":             vps.Tags,
 		}
-		ret[i] = katyusha.NewHost(vps.Name, attrs)
+		ret[i] = katyusha.NewHost(vps.Name, vps.IPAddress, attrs)
 	}
 	return ret, nil
 }

@@ -69,7 +69,7 @@ func (p *plainTextProvider) Load(ctx context.Context, lm katyusha.LoadingMessage
 		if len(line) == 0 {
 			continue
 		}
-		host := katyusha.NewHost(line, katyusha.HostAttributes{})
+		host := katyusha.NewHost(line, "", katyusha.HostAttributes{})
 		hosts = append(hosts, host)
 	}
 	return hosts, nil

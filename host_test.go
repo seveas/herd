@@ -41,10 +41,10 @@ func TestHostDeserialization(t *testing.T) {
 }
 
 func TestHostSorting(t *testing.T) {
-	h1 := NewHost("host-a.example.com", HostAttributes{"site": "site1", "role": "db"})
-	h2 := NewHost("host-b.example.com", HostAttributes{"site": "site2", "role": "db"})
-	h3 := NewHost("host-c.example.com", HostAttributes{"site": "site1", "role": "app"})
-	h4 := NewHost("host-d.example.com", HostAttributes{"site": "site2", "role": "app"})
+	h1 := NewHost("host-a.example.com", "", HostAttributes{"site": "site1", "role": "db"})
+	h2 := NewHost("host-b.example.com", "", HostAttributes{"site": "site2", "role": "db"})
+	h3 := NewHost("host-c.example.com", "", HostAttributes{"site": "site1", "role": "app"})
+	h4 := NewHost("host-d.example.com", "", HostAttributes{"site": "site2", "role": "app"})
 	hosts := Hosts{h1, h2, h3, h4}
 
 	if !h1.less(h2, []string{}) {

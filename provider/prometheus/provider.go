@@ -124,7 +124,7 @@ func (p *prometheusProvider) Load(ctx context.Context, lm katyusha.LoadingMessag
 		for k, v := range target.Labels {
 			attributes[k] = v
 		}
-		ret = append(ret, katyusha.NewHost(name, attributes))
+		ret = append(ret, katyusha.NewHost(name, "", attributes))
 	}
 
 	return ret, nil

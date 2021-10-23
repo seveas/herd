@@ -197,7 +197,7 @@ func (p *awsProvider) loadRegion(region string) (katyusha.Hosts, error) {
 						attrs[*tag.Key] = *tag.Value
 					}
 				}
-				ret = append(ret, katyusha.NewHost(name, attrs))
+				ret = append(ret, katyusha.NewHost(name, sv(instance.PrivateIpAddress), attrs))
 			}
 		}
 		if out.NextToken == nil {

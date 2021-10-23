@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/seveas/katyusha"
@@ -141,7 +142,8 @@ func (p *consulProvider) loadDatacenter(dc string) (katyusha.Hosts, error) {
 	hosts := make(katyusha.Hosts, len(catalognodes))
 	for i, node := range catalognodes {
 		nodePositions[node.Node] = i
-		hosts[i] = katyusha.NewHost(node.Node, katyusha.HostAttributes{"datacenter": node.Datacenter})
+		ap := strings.Split(node.Address, ":")
+		hosts[i] = katyusha.NewHost(node.Node, ap[0], katyusha.HostAttributes{"datacenter": node.Datacenter})
 	}
 	services, _, err := catalog.Services(&opts)
 	if err != nil {
