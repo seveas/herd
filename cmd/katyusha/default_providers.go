@@ -20,6 +20,7 @@ import (
 	// Cloud providers
 	_ "github.com/seveas/katyusha/provider/aws"
 	_ "github.com/seveas/katyusha/provider/azure"
+	_ "github.com/seveas/katyusha/provider/google"
 	_ "github.com/seveas/katyusha/provider/transip"
 
 	// The sky is the limit!
