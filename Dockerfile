@@ -1,5 +1,7 @@
 FROM golang:1.16
 
+RUN apt-get update && apt-get -y install consul
+
 WORKDIR /herd
 COPY . .
 RUN touch provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
