@@ -70,7 +70,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	engine.Execute()
 	if len(args) == 0 {
-		engine.Runner.AddHosts("*", []katyusha.MatchAttribute{}, nil)
+		engine.Runner.AddHosts("*", []katyusha.MatchAttribute{}, []string{}, 0)
 	}
 	engine.Runner.Run(fmt.Sprintf("katyusha:keyscan:%s", strings.Join(keyTypes, ",")), nil, nil)
 	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}

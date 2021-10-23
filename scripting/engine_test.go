@@ -30,44 +30,44 @@ func TestParseCommandLine(t *testing.T) {
 	}
 	expected := [][]command{
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{}, sampled: []string{}},
 		},
 		{},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}, {Name: "baz", Value: "quux", FuzzyTyping: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
 			removeHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
 			removeHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}},
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "zoinks", Value: "floop", FuzzyTyping: true}}, sampled: []string{}},
 		},
 		{},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true, Negate: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: regexp.MustCompile("bar"), Regex: true, Negate: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
 		},
 		{
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampling: map[string]int{}},
-			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampling: map[string]int{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "foo", Value: "bar", FuzzyTyping: true}}, sampled: []string{}},
+			addHostsCommand{glob: "*", attributes: katyusha.MatchAttributes{{Name: "baz", Value: "quux", FuzzyTyping: true}}, sampled: []string{}},
 		},
 	}
 	errors := []string{
