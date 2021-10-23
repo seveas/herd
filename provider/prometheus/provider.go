@@ -124,7 +124,7 @@ func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 		for k, v := range target.Labels {
 			attributes[k] = v
 		}
-		ret = append(ret, herd.NewHost(name, attributes))
+		ret = append(ret, herd.NewHost(name, "", attributes))
 	}
 
 	return ret, nil

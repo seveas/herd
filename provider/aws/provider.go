@@ -197,7 +197,7 @@ func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
 						attrs[*tag.Key] = *tag.Value
 					}
 				}
-				ret = append(ret, herd.NewHost(name, attrs))
+				ret = append(ret, herd.NewHost(name, sv(instance.PrivateIpAddress), attrs))
 			}
 		}
 		if out.NextToken == nil {

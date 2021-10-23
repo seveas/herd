@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/seveas/herd"
@@ -141,7 +142,8 @@ func (p *consulProvider) loadDatacenter(dc string) (herd.Hosts, error) {
 	hosts := make(herd.Hosts, len(catalognodes))
 	for i, node := range catalognodes {
 		nodePositions[node.Node] = i
-		hosts[i] = herd.NewHost(node.Node, herd.HostAttributes{"datacenter": node.Datacenter})
+		ap := strings.Split(node.Address, ":")
+		hosts[i] = herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter})
 	}
 	services, _, err := catalog.Services(&opts)
 	if err != nil {

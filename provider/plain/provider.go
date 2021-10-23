@@ -69,7 +69,7 @@ func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (h
 		if len(line) == 0 {
 			continue
 		}
-		host := herd.NewHost(line, herd.HostAttributes{})
+		host := herd.NewHost(line, "", herd.HostAttributes{})
 		hosts = append(hosts, host)
 	}
 	return hosts, nil

@@ -97,9 +97,10 @@ func (h *Host) UnmarshalJSON(data []byte) error {
 
 // Hosts should be initialized with this function, which also initializes any
 // internal data, without which SSH connections will not be possible.
-func NewHost(name string, attributes HostAttributes) *Host {
+func NewHost(name, address string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
+		Address:    address,
 		Port:       22,
 		Attributes: attributes,
 	}
@@ -267,6 +268,8 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 		r = &Result{ExitStatus: -1}
 	}
 	switch key {
+	case "address":
+		return h.Address, true
 	case "stdout":
 		return string(r.Stdout), true
 	case "stderr":

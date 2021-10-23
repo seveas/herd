@@ -129,7 +129,7 @@ func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts
 		attrs["ProvisioningState"] = *vm.ProvisioningState
 		attrs["VMID"] = *vm.VMID
 		attrs["Location"] = *vm.Location
-		hosts[i] = herd.NewHost(*vm.Name, attrs)
+		hosts[i] = herd.NewHost(*vm.Name, "", attrs)
 	}
 
 	return hosts, nil

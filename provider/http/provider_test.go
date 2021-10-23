@@ -49,7 +49,7 @@ func mockData() (herd.Hosts, string) {
 	nhosts := 10
 	hosts := make(herd.Hosts, nhosts)
 	for i := 0; i < nhosts; i++ {
-		h := herd.NewHost(fmt.Sprintf("host-%d.example.com", i), herd.HostAttributes{"number": int64(i)})
+		h := herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", herd.HostAttributes{"number": int64(i)})
 		hosts[i] = h
 	}
 	j, _ := json.Marshal(hosts)

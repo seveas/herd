@@ -227,7 +227,7 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hos
 	}
 	if len(ret) == 0 && len(attributes) == 0 {
 		if _, err := net.LookupHost(hostnameGlob); err == nil {
-			ret = append(ret, NewHost(hostnameGlob, HostAttributes{}))
+			ret = append(ret, NewHost(hostnameGlob, "", HostAttributes{}))
 		}
 	}
 	return ret

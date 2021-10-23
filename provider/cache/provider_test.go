@@ -33,7 +33,7 @@ func (p *fakeProvider) Equivalent(o herd.HostProvider) bool {
 
 func (p *fakeProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	p.loaded++
-	h := herd.NewHost("test-host", herd.HostAttributes{"foo": "bar"})
+	h := herd.NewHost("test-host", "", herd.HostAttributes{"foo": "bar"})
 	if p.doError {
 		return herd.Hosts{h}, fmt.Errorf("You wanted an error")
 	}

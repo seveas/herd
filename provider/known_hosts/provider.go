@@ -101,7 +101,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 				}
 				continue
 			}
-			host := herd.NewHost(name, herd.HostAttributes{"PublicKeyComment": comment})
+			host := herd.NewHost(name, "", herd.HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
 			seen[host.Name] = len(hosts)
 			hosts = append(hosts, host)

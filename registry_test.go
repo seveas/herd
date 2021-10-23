@@ -23,7 +23,7 @@ func (p *fakeProvider) Equivalent(o HostProvider) bool {
 }
 
 func (p *fakeProvider) Load(ctx context.Context, lm LoadingMessage) (Hosts, error) {
-	h := NewHost("test-host", HostAttributes{"foo": "bar"})
+	h := NewHost("test-host", "", HostAttributes{"foo": "bar"})
 	return Hosts{h}, nil
 }
 

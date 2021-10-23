@@ -82,7 +82,7 @@ func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hos
 			"availabilityzone": vps.AvailabilityZone,
 			"tags":             vps.Tags,
 		}
-		ret[i] = herd.NewHost(vps.Name, attrs)
+		ret[i] = herd.NewHost(vps.Name, vps.IPAddress, attrs)
 	}
 	return ret, nil
 }
