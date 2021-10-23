@@ -69,7 +69,7 @@ func (p *ciProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (katy
 				"static_attribute":  "static_value",
 				"dynamic_attribute": fmt.Sprintf("dynamic_value_%d", i),
 			}
-			hosts[i] = katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), attrs)
+			hosts[i] = katyusha.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs)
 		}
 		return hosts, nil
 	case "empty":

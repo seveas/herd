@@ -44,10 +44,10 @@ func TestPluginConnection(t *testing.T) {
 	}{
 		{"normal", "<nil>", 5, true},
 		{"config-error", "Simulated configuration error", 0, false},
-		{"config-panic", "rpc error: code = Unavailable desc = transport is closing", 0, false},
+		{"config-panic", "rpc error: code = Unavailable desc = error reading from server: EOF", 0, false},
 		{"empty", "<nil>", 0, true},
 		{"error", "Simulated load error", 0, true},
-		{"panic", "rpc error: code = Unavailable desc = transport is closing", 0, true},
+		{"panic", "rpc error: code = Unavailable desc = error reading from server: EOF", 0, true},
 	}
 	for _, test := range testcases {
 		t.Run(test.mode, func(t *testing.T) {

@@ -16,7 +16,7 @@ else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 endif
 
-katyusha: go.mod *.go cmd/katyusha/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
+katyusha: go.mod go.sum *.go cmd/katyusha/*.go sshagent/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/katyusha
 
 %_grpc.pb.go: %.proto
@@ -25,7 +25,7 @@ katyusha: go.mod *.go cmd/katyusha/*.go sshagent/*.go scripting/*.go provider/*/
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-katyusha-provider-%: cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+katyusha-provider-%: go.mod go.sum cmd/katyusha-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/katyusha/cmd/$@
 
 $(antlr_sources): scripting/Katyusha.g4
@@ -40,7 +40,7 @@ vet:
 tidy:
 	go mod tidy
 
-provider/plugin/testdata/bin/katyusha-provider-ci: provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/katyusha-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+provider/plugin/testdata/bin/katyusha-provider-ci: go.mod go.sum provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/katyusha-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/katyusha/provider/plugin/testdata/cmd/katyusha-provider-ci
 
 test: fmt vet tidy provider/plugin/testdata/bin/katyusha-provider-ci
