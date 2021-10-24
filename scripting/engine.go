@@ -73,13 +73,17 @@ hostspecLoop:
 				add := false
 				for _, s := range strings.Split(sampledAndCount[1], ":") {
 					if s == "" {
-						add = true
-					} else if add && len(sampled) > 0 {
-						sampled[len(sampled)-1] = fmt.Sprintf("%s:%s", sampled[len(sampled)-1], s)
+						if add {
+							sampled[len(sampled)-1] += ":"
+							add = false
+						} else if len(sampled) > 0 {
+							add = true
+						}
+					} else if add {
+						sampled[len(sampled)-1] += ":" + s
 						add = false
 					} else {
 						sampled = append(sampled, s)
-						add = false
 					}
 				}
 				count64, _ := strconv.ParseInt(sampledAndCount[2], 0, 64)
