@@ -58,10 +58,10 @@ test-integration:
 	docker-compose down
 
 dist_oses := darwin dragonfly freebsd linux netbsd openbsd windows
-ssh_agent_oses := darwin dragonfly freebsd linux netbsd openbsd
+VERSION = $(shell go run cmd/version.go)
 build_all:
 	@echo Building herd
-	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_extra -ldflags '-s -w' -o dist/$(os)-amd64/ github.com/seveas/herd/cmd/herd;)
+	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os)-amd64 && GOOS=$(os) GOARCH=amd64 go build -tags no_extra -ldflags '-s -w' -o dist/$(os)-amd64/herd-$(VERSION)/  github.com/seveas/herd/cmd/herd && tar -C dist/$(os)-amd64/ -zcvf herd-$(VERSION)-$(os)-amd64.tar.gz herd-$(VERSION)/;)
 
 clean:
 	rm -f herd
