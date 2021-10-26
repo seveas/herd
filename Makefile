@@ -45,6 +45,7 @@ provider/plugin/testdata/bin/herd-provider-ci: go.mod go.sum provider/plugin/tes
 
 test: fmt vet tidy provider/plugin/testdata/bin/herd-provider-ci
 	go test ./...
+	GOOS=windows go build github.com/seveas/herd/cmd/herd
 
 ABORT ?= --exit-code-from herd --abort-on-container-exit
 test-integration:

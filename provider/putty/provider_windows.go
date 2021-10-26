@@ -74,7 +74,7 @@ func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.
 		if err != nil || hn == "" {
 			continue
 		}
-		h := herd.NewHost(hn, herd.HostAttributes{})
+		h := herd.NewHost(hn, "", herd.HostAttributes{})
 		for _, k := range keys[hn] {
 			h.AddPublicKey(k)
 		}
@@ -82,7 +82,7 @@ func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.
 		ret = append(ret, h)
 	}
 	for hn, hkeys := range keys {
-		h := herd.NewHost(hn, herd.HostAttributes{})
+		h := herd.NewHost(hn, "", herd.HostAttributes{})
 		for _, k := range hkeys {
 			h.AddPublicKey(k)
 		}
