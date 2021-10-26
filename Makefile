@@ -45,6 +45,7 @@ provider/plugin/testdata/bin/katyusha-provider-ci: go.mod go.sum provider/plugin
 
 test: fmt vet tidy provider/plugin/testdata/bin/katyusha-provider-ci
 	go test ./...
+	GOOS=windows go build github.com/seveas/katyusha/cmd/katyusha
 
 ABORT ?= --exit-code-from katyusha --abort-on-container-exit
 test-integration:

@@ -74,7 +74,7 @@ func (p *puttyProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (k
 		if err != nil || hn == "" {
 			continue
 		}
-		h := katyusha.NewHost(hn, katyusha.HostAttributes{})
+		h := katyusha.NewHost(hn, "", katyusha.HostAttributes{})
 		for _, k := range keys[hn] {
 			h.AddPublicKey(k)
 		}
@@ -82,7 +82,7 @@ func (p *puttyProvider) Load(ctx context.Context, lm katyusha.LoadingMessage) (k
 		ret = append(ret, h)
 	}
 	for hn, hkeys := range keys {
-		h := katyusha.NewHost(hn, katyusha.HostAttributes{})
+		h := katyusha.NewHost(hn, "", katyusha.HostAttributes{})
 		for _, k := range hkeys {
 			h.AddPublicKey(k)
 		}
