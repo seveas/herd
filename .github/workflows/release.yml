@@ -11,7 +11,7 @@ on:
         required: true
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.x
@@ -31,3 +31,8 @@ jobs:
           files: herd*.tar.gz
           draft: true
           tag_name: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Trigger a homebrew update pr
+        run: "jq -n  '{\"ref\": \"main\", \"inputs\": { \"tag\": \"${{ github.event.inputs.tag || github.ref }}\" } }' | gh  api repos/seveas/homebrew-herd/actions/workflows/auto-update.yml/dispatches --input -"
+        env:
+          GITHUB_TOKEN: ${{ secrets.EXTRA_GITHUB_TOKEN }}
