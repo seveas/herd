@@ -26,11 +26,12 @@ type consulProvider struct {
 	name         string
 	consulConfig *consul.Config
 	config       struct {
-		Address            string
-		Prefix             string
-		Timeout            time.Duration
-		Datacenters        []string
-		ExcludeDatacenters []string
+		Address                      string
+		Prefix                       string
+		Timeout                      time.Duration
+		Datacenters                  []string
+		ExcludeDatacenters           []string
+		IgnoreUnreachableDatacenters bool
 	}
 }
 
@@ -109,8 +110,11 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 			dc := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, dc)
 			lm(name, false, nil)
-			hosts, err := p.loadDatacenter(dc)
+			hosts, err := p.loadDatacenter(ctx, dc)
 			lm(name, true, err)
+			if err != nil && strings.Contains(err.Error(), "Remote DC has no server currently reachable") && p.config.IgnoreUnreachableDatacenters {
+				err = nil
+			}
 			return hosts, err
 		}, ctx, dc)
 	}
@@ -127,14 +131,15 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 	return hosts, nil
 }
 
-func (p *consulProvider) loadDatacenter(dc string) (herd.Hosts, error) {
+func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Hosts, error) {
 	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(p.consulConfig)
 	catalog := client.Catalog()
 	if err != nil {
 		return nil, err
 	}
-	opts := consul.QueryOptions{Datacenter: dc, WaitTime: 5 * time.Second}
+	deadline, _ := ctx.Deadline()
+	opts := consul.QueryOptions{Datacenter: dc, WaitTime: time.Until(deadline)}
 	catalognodes, _, err := catalog.Nodes(&opts)
 	if err != nil {
 		return nil, err
