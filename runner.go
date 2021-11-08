@@ -180,6 +180,14 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	for _, rawResult := range results {
 		result := rawResult.(*Result)
 		hi.Results[result.Host.Name] = result
+		switch result.ExitStatus {
+		case -1:
+			hi.Summary.Err++
+		case 0:
+			hi.Summary.Ok++
+		default:
+			hi.Summary.Fail++
+		}
 	}
 	for _, host := range r.hosts {
 		if _, ok := hi.Results[host.Name]; !ok {
@@ -187,6 +195,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			host.lastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			hi.Results[host.Name] = result
+			hi.Summary.Err++
 		}
 	}
 	hi.end()

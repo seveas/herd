@@ -14,9 +14,14 @@ import (
 type History []*HistoryItem
 
 type HistoryItem struct {
-	Hosts       Hosts
-	Command     string
-	Results     map[string]*Result
+	Hosts   Hosts
+	Command string
+	Results map[string]*Result
+	Summary struct {
+		Ok   int
+		Fail int
+		Err  int
+	}
 	StartTime   time.Time
 	EndTime     time.Time
 	ElapsedTime float64

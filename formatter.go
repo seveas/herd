@@ -11,6 +11,7 @@ import (
 
 type formatter interface {
 	formatCommand(c string) string
+	formatSummary(ok, fail, err int) string
 	formatResult(r *Result, l int) string
 	formatStatus(r *Result, l int) string
 	formatOutput(r *Result, l int) string
@@ -23,6 +24,10 @@ type prettyFormatter struct {
 
 func (f prettyFormatter) formatCommand(command string) string {
 	return ansi.Color(command, "cyan") + "\n"
+}
+
+func (f prettyFormatter) formatSummary(ok, fail, err int) string {
+	return ansi.Color(fmt.Sprintf("%d ok, %d fail, %d error", ok, fail, err), "black+h") + "\n"
 }
 
 func (f prettyFormatter) formatResult(r *Result, l int) string {

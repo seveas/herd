@@ -227,10 +227,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	buffer := ""
 	var pgr *pager
 	if usePager {
-		buffer = ui.formatter.formatCommand(hi.Command)
-		linecount = 1
-	} else {
-		ui.pchan <- ui.formatter.formatCommand(hi.Command)
+		linecount = 2
 	}
 
 	for _, h := range hi.Hosts {
@@ -259,6 +256,8 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 					usePager = false
 				} else {
 					defer pgr.Wait()
+					pgr.WriteString(ui.formatter.formatCommand(hi.Command))
+					pgr.WriteString(ui.formatter.formatSummary(hi.Summary.Ok, hi.Summary.Fail, hi.Summary.Err))
 					pgr.WriteString(buffer)
 				}
 				buffer = ""
