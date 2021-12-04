@@ -62,6 +62,7 @@ func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		"provider": &common.ProviderPlugin{},
 	}
 	client := plugin.NewClient(&plugin.ClientConfig{
+		Managed:          true,
 		HandshakeConfig:  common.Handshake,
 		Plugins:          pluginMap,
 		Cmd:              exec.Command(p.config.Command),
@@ -70,7 +71,6 @@ func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		SyncStderr:       os.Stderr,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 	})
-	defer client.Kill()
 
 	rpcClient, err := client.Client()
 	if err != nil {

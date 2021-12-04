@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
+	"os/signal"
 	"reflect"
 	"sort"
 	"strings"
+	"syscall"
 
+	"github.com/hashicorp/go-plugin"
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -171,6 +175,25 @@ func (r *Registry) LoadHosts(lm LoadingMessage) error {
 	if len(r.hosts) > 0 {
 		return nil
 	}
+	ch := make(chan os.Signal, 2)
+	signal.Notify(ch, os.Interrupt)
+	go func() {
+		for sig := range ch {
+			plugin.CleanupClients()
+			if sn, ok := sig.(syscall.Signal); ok {
+				os.Exit(128 + int(sn))
+			} else {
+				os.Exit(1)
+			}
+		}
+	}()
+	defer func() {
+		plugin.CleanupClients()
+		signal.Stop(ch)
+		close(ch)
+		signal.Reset()
+	}()
+
 	ctx := context.Background()
 	sg := scattergather.New(int64(len(r.providers)))
 
