@@ -96,6 +96,8 @@ services:
       context: "."
       dockerfile: Dockerfile
     command: make -C integration test TEST_OPTS='--verbose --chain-lint'
+    environment:
+      - TEST_OPTS=--verbose
     depends_on:
       - nginx
       - openssh
@@ -106,6 +108,10 @@ services:
       - consul-server-dc2
       - consul-agent-dc1
       - consul-agent-dc2
+    volumes:
+      - source: ./integration/
+        target: /herd/integration/
+        type: bind
   debug:
     image: herd_herd
     command: sleep 3600
