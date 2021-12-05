@@ -7,7 +7,6 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
@@ -28,7 +27,6 @@ type consulProvider struct {
 	config       struct {
 		Address                      string
 		Prefix                       string
-		Timeout                      time.Duration
 		Datacenters                  []string
 		ExcludeDatacenters           []string
 		IgnoreUnreachableDatacenters bool
@@ -37,7 +35,6 @@ type consulProvider struct {
 
 func newProvider(name string) herd.HostProvider {
 	p := &consulProvider{name: name}
-	p.config.Timeout = 10 * time.Second
 	p.consulConfig = consul.DefaultConfig()
 	return p
 }
@@ -90,10 +87,9 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
-	defer cancel()
-	catalog := client.Catalog()
-	datacenters, err := catalog.Datacenters()
+	opts := (&consul.QueryOptions{}).WithContext(ctx)
+	var datacenters []string
+	_, err = client.Raw().Query("/v1/catalog/datacenters", &datacenters, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +134,8 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 	if err != nil {
 		return nil, err
 	}
-	deadline, _ := ctx.Deadline()
-	opts := consul.QueryOptions{Datacenter: dc, WaitTime: time.Until(deadline)}
-	catalognodes, _, err := catalog.Nodes(&opts)
+	opts := (&consul.QueryOptions{Datacenter: dc}).WithContext(ctx)
+	catalognodes, _, err := catalog.Nodes(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +145,12 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 		ap := strings.Split(node.Address, ":")
 		hosts[i] = herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter})
 	}
-	services, _, err := catalog.Services(&opts)
+	services, _, err := catalog.Services(opts)
 	if err != nil {
 		return nil, err
 	}
 	for service, _ := range services {
-		servicenodes, _, err := catalog.Service(service, "", &opts)
+		servicenodes, _, err := catalog.Service(service, "", opts)
 		if err != nil {
 			return nil, err
 		}

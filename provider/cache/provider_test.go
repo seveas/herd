@@ -102,7 +102,7 @@ func TestRelativeFiles(t *testing.T) {
 		t.Errorf("Proper cache path not set, found %s", c.(*Cache).config.File)
 	}
 
-	if err := r.LoadHosts(func(string, bool, error) {}); err != nil {
+	if err := r.LoadHosts(context.Background(), func(string, bool, error) {}); err != nil {
 		t.Errorf("Registry load did not succeed")
 	}
 	hosts := r.GetHosts("", nil)

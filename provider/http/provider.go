@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/seveas/herd"
 
@@ -27,14 +26,11 @@ type HttpProvider struct {
 		Username string
 		Password string
 		Headers  map[string]string
-		Timeout  time.Duration
 	}
 }
 
 func NewProvider(name string) herd.HostProvider {
-	p := &HttpProvider{name: name, client: http.DefaultClient}
-	p.config.Timeout = 5 * time.Second
-	return p
+	return &HttpProvider{name: name, client: http.DefaultClient}
 }
 
 func (p *HttpProvider) Name() string {
@@ -58,8 +54,6 @@ func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, p.config.Timeout)
-	defer cancel()
 	req, err := http.NewRequest("GET", p.config.Url, nil)
 	if err != nil {
 		return nil, err

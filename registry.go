@@ -171,7 +171,7 @@ func (r *Registry) InvalidateCache() {
 	}
 }
 
-func (r *Registry) LoadHosts(lm LoadingMessage) error {
+func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	if len(r.hosts) > 0 {
 		return nil
 	}
@@ -194,7 +194,6 @@ func (r *Registry) LoadHosts(lm LoadingMessage) error {
 		signal.Reset()
 	}()
 
-	ctx := context.Background()
 	sg := scattergather.New(int64(len(r.providers)))
 
 	for _, p := range r.providers {

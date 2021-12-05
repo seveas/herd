@@ -116,7 +116,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 			region := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, region)
 			lm(name, false, nil)
-			hosts, err := p.loadRegion(region)
+			hosts, err := p.loadRegion(ctx, region)
 			lm(name, true, err)
 			return hosts, err
 		}, ctx, region)
@@ -134,7 +134,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 	return hosts, nil
 }
 
-func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
+func (p *awsProvider) loadRegion(ctx context.Context, region string) (herd.Hosts, error) {
 	for _, r := range p.config.ExcludeRegions {
 		if region == r {
 			return nil, nil
@@ -153,7 +153,7 @@ func (p *awsProvider) loadRegion(region string) (herd.Hosts, error) {
 	sv := aws.StringValue
 	iv := aws.Int64Value
 	for {
-		out, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{NextToken: token, MaxResults: aws.Int64(1000)})
+		out, err := svc.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{NextToken: token, MaxResults: aws.Int64(1000)})
 		if err != nil {
 			return nil, err
 		}

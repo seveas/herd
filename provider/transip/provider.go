@@ -3,6 +3,7 @@ package transip
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/seveas/herd"
 
@@ -45,13 +46,24 @@ func (p *transipProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
+type ctxRoundTripper struct {
+	ctx context.Context
+	rt  http.RoundTripper
+}
+
+func (r *ctxRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return r.rt.RoundTrip(req.WithContext(r.ctx))
+}
+
 func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 
+	hc := &http.Client{Transport: &ctxRoundTripper{ctx: ctx, rt: http.DefaultTransport}}
 	client, err := gotransip.NewClient(gotransip.ClientConfiguration{
 		AccountName:    p.config.User,
 		PrivateKeyPath: p.config.Key,
+		HTTPClient:     hc,
 	})
 	if err != nil {
 		return nil, err

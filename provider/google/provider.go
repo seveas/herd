@@ -3,6 +3,7 @@ package google
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 
 	"github.com/seveas/herd"
@@ -13,6 +14,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/api/option/internaloption"
+	httptransport "google.golang.org/api/transport/http"
 	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
@@ -58,12 +61,32 @@ func (p *googleProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
+type ctxRoundTripper struct {
+	ctx context.Context
+	rt  http.RoundTripper
+}
+
+func (r *ctxRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return r.rt.RoundTrip(req.WithContext(r.ctx))
+}
+
 func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+	// Contrary to the documentation, this library does _not_ take context timeouts into account, hence this dodgy hack
+	clientOpts := []option.ClientOption{
+		internaloption.WithDefaultEndpoint("https://compute.googleapis.com"),
+		internaloption.WithDefaultMTLSEndpoint("https://compute.mtls.googleapis.com"),
+		internaloption.WithDefaultAudience("https://compute.googleapis.com/"),
+		internaloption.WithDefaultScopes(compute.DefaultAuthScopes()...),
+		option.WithCredentialsFile(p.config.Key),
+	}
+	hc, _, _ := httptransport.NewClient(ctx, clientOpts...)
+	hc.Transport = &ctxRoundTripper{ctx: ctx, rt: hc.Transport}
+
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 
 	if len(p.config.Zones) == 0 {
-		if err := p.setZones(); err != nil {
+		if err := p.setZones(ctx, hc); err != nil {
 			return nil, err
 		}
 	}
@@ -74,7 +97,7 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 			zone := args[0].(string)
 			name := fmt.Sprintf("%s@%s", p.name, zone)
 			lm(name, false, nil)
-			hosts, err := p.loadZone(zone)
+			hosts, err := p.loadZone(ctx, hc, zone)
 			lm(name, true, err)
 			return hosts, err
 		}, ctx, region)
@@ -92,9 +115,8 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 	return hosts, nil
 }
 
-func (p *googleProvider) setZones() error {
-	ctx := context.Background()
-	client, err := compute.NewZonesRESTClient(ctx, option.WithCredentialsFile(p.config.Key))
+func (p *googleProvider) setZones(ctx context.Context, hc *http.Client) error {
+	client, err := compute.NewZonesRESTClient(ctx, option.WithCredentialsFile(p.config.Key), option.WithHTTPClient(hc))
 	if err != nil {
 		return err
 	}
@@ -132,10 +154,9 @@ func iv(i *uint64) int {
 	}
 	return int(*i)
 }
-func (p *googleProvider) loadZone(zone string) (herd.Hosts, error) {
-	ctx := context.Background()
+func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone string) (herd.Hosts, error) {
 	region := p.zones[zone].Region
-	client, err := compute.NewInstancesRESTClient(ctx, option.WithCredentialsFile(p.config.Key))
+	client, err := compute.NewInstancesRESTClient(ctx, option.WithCredentialsFile(p.config.Key), option.WithHTTPClient(hc))
 	if err != nil {
 		return nil, err
 	}

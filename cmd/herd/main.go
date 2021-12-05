@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/user"
@@ -114,6 +115,7 @@ Providers: %s
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
 	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
+	rootCmd.PersistentFlags().Duration("load-timeout", 30*time.Second, "Timeout for loading host data from providers")
 	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
 	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
 	rootCmd.PersistentFlags().Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
@@ -128,6 +130,7 @@ Providers: %s
 	rootCmd.PersistentFlags().Bool("refresh", false, "Force caches to be refreshed")
 	viper.BindPFlag("Splay", rootCmd.PersistentFlags().Lookup("splay"))
 	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
+	viper.BindPFlag("LoadTimeout", rootCmd.PersistentFlags().Lookup("load-timeout"))
 	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
 	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
 	viper.BindPFlag("SshAgentTimeout", rootCmd.PersistentFlags().Lookup("ssh-agent-timeout"))
@@ -210,7 +213,9 @@ func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
 	if viper.GetBool("Refresh") {
 		registry.InvalidateCache()
 	}
-	if err := registry.LoadHosts(ui.LoadingMessage); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("LoadTimeout"))
+	defer cancel()
+	if err := registry.LoadHosts(ctx, ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
 		ui.End()
 		return nil, err
