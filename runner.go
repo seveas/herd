@@ -198,6 +198,12 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			hi.Summary.Err++
 		}
 	}
+	for _, key := range r.registry.sort {
+		if key == "stdout" || key == "stderr" || key == "exitstatus" {
+			hi.Hosts.Sort(r.registry.sort)
+			break
+		}
+	}
 	hi.end()
 	return hi
 }
