@@ -268,6 +268,10 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 		r = &Result{ExitStatus: -1}
 	}
 	switch key {
+	case "name":
+		return h.Name, true
+	case "random":
+		return h.csum, true
 	case "address":
 		return h.Address, true
 	case "stdout":
@@ -522,36 +526,29 @@ func (host *Host) Run(ctx context.Context, command string, oc chan OutputLine) *
 
 func (h1 *Host) less(h2 *Host, attributes []string) bool {
 	for _, attr := range attributes {
-		switch attr {
-		case "name":
-			return h1.Name < h2.Name
-		case "random":
-			return h1.csum < h2.csum
-		default:
-			v1, ok1 := h1.Attributes[attr]
-			v2, ok2 := h2.Attributes[attr]
-			// Sort nodes that are missing the attribute last
-			if ok1 && !ok2 {
-				return true
-			}
-			if !ok1 && ok2 {
-				return false
-			}
-			if !ok1 && !ok2 {
-				continue
-			}
-			// Compare the string values, this way we don't need to check a matrix of types
-			s1, err1 := cast.ToStringE(v1)
-			s2, err2 := cast.ToStringE(v2)
-			if err1 != nil || err2 != nil {
-				continue
-			}
-			// When equal, continue to the next field
-			if s1 == s2 {
-				continue
-			}
-			return s1 < s2
+		v1, ok1 := h1.GetAttribute(attr)
+		v2, ok2 := h2.GetAttribute(attr)
+		// Sort nodes that are missing the attribute last
+		if ok1 && !ok2 {
+			return true
 		}
+		if !ok1 && ok2 {
+			return false
+		}
+		if !ok1 && !ok2 {
+			continue
+		}
+		// Compare the string values, this way we don't need to check a matrix of types
+		s1, err1 := cast.ToStringE(v1)
+		s2, err2 := cast.ToStringE(v2)
+		if err1 != nil || err2 != nil {
+			continue
+		}
+		// When equal, continue to the next field
+		if s1 == s2 {
+			continue
+		}
+		return s1 < s2
 	}
 	return h1.Name < h2.Name
 }
