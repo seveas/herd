@@ -200,7 +200,6 @@ func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
 	ui.BindLogrus()
 
 	registry := herd.NewRegistry(currentUser.dataDir, currentUser.cacheDir)
-	registry.SetSortFields(viper.GetStringSlice("Sort"))
 	conf := viper.Sub("Providers")
 	if conf != nil {
 		if err := registry.LoadProviders(conf); err != nil {
@@ -221,12 +220,13 @@ func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
 		return nil, err
 	}
 	ui.Sync()
-	runner := herd.NewRunner(registry, agent)
+	runner := herd.NewRunner(agent)
+	runner.SetSortFields(viper.GetStringSlice("Sort"))
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
 	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
 	runner.SetSshAgentTimeout(viper.GetDuration("SshAgentTimeout"))
-	return scripting.NewScriptEngine(ui, runner), nil
+	return scripting.NewScriptEngine(ui, registry, runner), nil
 }

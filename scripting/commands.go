@@ -67,7 +67,11 @@ type addHostsCommand struct {
 }
 
 func (c addHostsCommand) execute(e *ScriptEngine) {
-	e.Runner.AddHosts(c.glob, c.attributes, c.sampled, c.count)
+	hosts := e.Registry.GetHosts(c.glob, c.attributes, c.sampled, c.count)
+	if strings.HasPrefix(c.glob, "file:") {
+		e.Runner.SetSortFields([]string{})
+	}
+	e.Runner.AddHosts(hosts)
 }
 
 func (c addHostsCommand) String() string {

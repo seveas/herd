@@ -105,7 +105,7 @@ func TestRelativeFiles(t *testing.T) {
 	if err := r.LoadHosts(context.Background(), func(string, bool, error) {}); err != nil {
 		t.Errorf("Registry load did not succeed")
 	}
-	hosts := r.GetHosts("", nil)
+	hosts := r.GetHosts("", nil, nil, 0)
 	if len(hosts) != 1 {
 		panic("Test broken")
 	}

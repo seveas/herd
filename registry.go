@@ -70,7 +70,6 @@ func NewRegistry(dataDir, cacheDir string) *Registry {
 	return &Registry{
 		providers: []HostProvider{},
 		hosts:     Hosts{},
-		sort:      []string{"name"},
 		dataDir:   dataDir,
 		cacheDir:  cacheDir,
 	}
@@ -233,11 +232,10 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 		}
 	}
 	r.hosts = allHosts
-	r.hosts.Sort(r.sort)
 	return nil
 }
 
-func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hosts {
+func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes, sampled []string, count int) Hosts {
 	ret := make(Hosts, 0)
 	if strings.HasPrefix(hostnameGlob, "file:") {
 		return r.getHostsFromFile(hostnameGlob[5:], attributes)
@@ -247,10 +245,13 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes) Hos
 			ret = append(ret, host)
 		}
 	}
-	if len(ret) == 0 && len(attributes) == 0 {
+	if len(ret) == 0 && attributes != nil && len(attributes) == 0 {
 		if _, err := net.LookupHost(hostnameGlob); err == nil {
 			ret = append(ret, NewHost(hostnameGlob, "", HostAttributes{}))
 		}
+	}
+	if sampled != nil && len(sampled) != 0 {
+		ret = ret.Sample(sampled, count)
 	}
 	return ret
 }
@@ -279,10 +280,6 @@ func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) Hosts
 		}
 	}
 	return ret
-}
-
-func (r *Registry) SetSortFields(s []string) {
-	r.sort = s
 }
 
 func (hosts Hosts) String() string {

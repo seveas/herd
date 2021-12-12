@@ -13,15 +13,17 @@ import (
 
 type ScriptEngine struct {
 	Ui       herd.UI
+	Registry *herd.Registry
 	Runner   *herd.Runner
 	History  herd.History
 	commands []command
 	position int
 }
 
-func NewScriptEngine(ui herd.UI, runner *herd.Runner) *ScriptEngine {
+func NewScriptEngine(ui herd.UI, registry *herd.Registry, runner *herd.Runner) *ScriptEngine {
 	return &ScriptEngine{
 		Ui:       ui,
+		Registry: registry,
 		Runner:   runner,
 		History:  make(herd.History, 0),
 		commands: []command{},

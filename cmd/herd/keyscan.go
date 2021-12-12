@@ -70,7 +70,8 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	engine.Execute()
 	if len(args) == 0 {
-		engine.Runner.AddHosts("*", []herd.MatchAttribute{}, []string{}, 0)
+		hosts := engine.Registry.GetHosts("*", []herd.MatchAttribute{}, []string{}, 0)
+		engine.Runner.AddHosts(hosts)
 	}
 	engine.Runner.Run(fmt.Sprintf("herd:keyscan:%s", strings.Join(keyTypes, ",")), nil, nil)
 	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}

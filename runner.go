@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	"github.com/seveas/herd/sshagent"
@@ -30,8 +29,8 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	registry        *Registry
 	hosts           Hosts
+	sort            []string
 	parallel        int
 	splay           time.Duration
 	timeout         time.Duration
@@ -50,10 +49,10 @@ const (
 	Finished
 )
 
-func NewRunner(registry *Registry, agent *sshagent.Agent) *Runner {
+func NewRunner(agent *sshagent.Agent) *Runner {
 	return &Runner{
 		hosts:           make(Hosts, 0),
-		registry:        registry,
+		sort:            []string{"name"},
 		timeout:         60 * time.Second,
 		hostTimeout:     10 * time.Second,
 		connectTimeout:  3 * time.Second,
@@ -64,6 +63,10 @@ func NewRunner(registry *Registry, agent *sshagent.Agent) *Runner {
 
 func (r *Runner) GetHosts() Hosts {
 	return r.hosts[:]
+}
+
+func (r *Runner) SetSortFields(s []string) {
+	r.sort = s
 }
 
 func (r *Runner) SetParallel(p int) {
@@ -98,16 +101,10 @@ func (r *Runner) PrintSettings(ui io.Writer) {
 	fmt.Fprintf(ui, "ConnectTimeout: %s\n", r.connectTimeout)
 }
 
-func (r *Runner) AddHosts(glob string, attrs MatchAttributes, sampled []string, count int) {
-	hosts := append(r.hosts, r.registry.GetHosts(glob, attrs)...)
-	if sampled != nil && len(sampled) != 0 {
-		hosts = hosts.Sample(sampled, count)
-	}
-	if !strings.HasPrefix(glob, "file:") {
-		hosts.Sort(r.registry.sort)
-	}
-	hosts = hosts.Uniq()
-	r.hosts = hosts
+func (r *Runner) AddHosts(hosts Hosts) {
+	h := append(r.hosts, hosts...)
+	h.Sort(r.sort)
+	r.hosts = h.Uniq()
 }
 
 func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
@@ -198,9 +195,9 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			hi.Summary.Err++
 		}
 	}
-	for _, key := range r.registry.sort {
+	for _, key := range r.sort {
 		if key == "stdout" || key == "stderr" || key == "exitstatus" {
-			hi.Hosts.Sort(r.registry.sort)
+			hi.Hosts.Sort(r.sort)
 			break
 		}
 	}
