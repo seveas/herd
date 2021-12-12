@@ -41,9 +41,12 @@ var outputModeString map[OutputMode]string = map[OutputMode]string{
 	OutputAll:     "all",
 }
 
+type SettingsFunc func() (string, map[string]interface{})
+
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
 	PrintHostList(hosts Hosts, opts HostListOptions)
+	PrintSettings(...SettingsFunc)
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
@@ -54,7 +57,7 @@ type UI interface {
 	OutputChannel(r *Runner) chan OutputLine
 	ProgressChannel(r *Runner) chan ProgressMessage
 	BindLogrus()
-	PrintSettings()
+	Settings() (string, map[string]interface{})
 }
 
 type HostListOptions struct {
@@ -605,9 +608,32 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 	return pc
 }
 
-func (ui *SimpleUI) PrintSettings() {
-	ui.pchan <- fmt.Sprintf("Output:         %s\n", outputModeString[ui.outputMode])
-	ui.pchan <- fmt.Sprintf("Timestamp:      %t\n", ui.outputTimestamp)
-	ui.pchan <- fmt.Sprintf("NoPager:        %t\n", !ui.pagerEnabled)
-	ui.pchan <- fmt.Sprintf("NoColor:        %t\n", ansi.Black == "")
+func (ui *SimpleUI) PrintSettings(funcs ...SettingsFunc) {
+	for _, f := range funcs {
+		name, settings := f()
+		ui.pchan <- name + "\n"
+		l := 0
+		keys := make([]string, 0, len(settings))
+		for k := range settings {
+			keys = append(keys, k)
+			if len(k) > l {
+				l = len(k)
+			}
+		}
+		l += 5
+		sort.Strings(keys)
+		for _, k := range keys {
+			ui.pchan <- fmt.Sprintf("    %-*s %v\n", l, k+":", settings[k])
+		}
+	}
+}
+
+func (ui *SimpleUI) Settings() (string, map[string]interface{}) {
+	return "User Interface", map[string]interface{}{
+		"Type":      "Simple",
+		"Output":    outputModeString[ui.outputMode],
+		"Timestamp": ui.outputTimestamp,
+		"NoPager":   !ui.pagerEnabled,
+		"NoColor":   ansi.Black == "",
+	}
 }

@@ -282,6 +282,16 @@ func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) Hosts
 	return ret
 }
 
+func (r *Registry) Settings() (string, map[string]interface{}) {
+	providers := make([]string, len(r.providers))
+	for i, p := range r.providers {
+		providers[i] = p.Name()
+	}
+	return "Registry", map[string]interface{}{
+		"Providers": providers,
+	}
+}
+
 func (hosts Hosts) String() string {
 	var ret strings.Builder
 	for i, h := range hosts {

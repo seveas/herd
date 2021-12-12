@@ -3,8 +3,6 @@ package herd
 import (
 	"context"
 	"errors"
-	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -93,12 +91,14 @@ func (r *Runner) SetSshAgentTimeout(t time.Duration) {
 	r.sshAgentTimeout = t
 }
 
-func (r *Runner) PrintSettings(ui io.Writer) {
-	fmt.Fprintf(ui, "Parallel:       %d\n", r.parallel)
-	fmt.Fprintf(ui, "Splay:          %s\n", r.splay)
-	fmt.Fprintf(ui, "Timeout:        %s\n", r.timeout)
-	fmt.Fprintf(ui, "HostTimeout:    %s\n", r.hostTimeout)
-	fmt.Fprintf(ui, "ConnectTimeout: %s\n", r.connectTimeout)
+func (r *Runner) Settings() (string, map[string]interface{}) {
+	return "Runner", map[string]interface{}{
+		"Parallel":       r.parallel,
+		"Splay":          r.splay,
+		"Timeout":        r.timeout,
+		"HostTimeout":    r.hostTimeout,
+		"ConnectTimeout": r.connectTimeout,
+	}
 }
 
 func (r *Runner) AddHosts(hosts Hosts) {

@@ -51,8 +51,7 @@ type showVariablesCommand struct {
 }
 
 func (c showVariablesCommand) execute(e *ScriptEngine) {
-	e.Ui.PrintSettings()
-	e.Runner.PrintSettings(e.Ui)
+	e.Ui.PrintSettings(e.Ui.Settings, e.Registry.Settings, e.Runner.Settings)
 }
 
 func (c showVariablesCommand) String() string {
