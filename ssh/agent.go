@@ -1,4 +1,4 @@
-package sshagent
+package ssh
 
 import (
 	"encoding/binary"
@@ -24,7 +24,7 @@ type Agent struct {
 	signersByPath       map[string]ssh.Signer
 }
 
-func New(timeout time.Duration) (*Agent, error) {
+func NewAgent(timeout time.Duration) (*Agent, error) {
 	sock, err := agentConnection()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to SSH agent: %s", err)

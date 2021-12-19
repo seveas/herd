@@ -1,4 +1,4 @@
-package sshagent
+package ssh
 
 import (
 	"bytes"

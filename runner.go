@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/seveas/herd/sshagent"
+	"github.com/seveas/herd/ssh"
 
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
@@ -35,7 +35,7 @@ type Runner struct {
 	hostTimeout     time.Duration
 	connectTimeout  time.Duration
 	sshAgentTimeout time.Duration
-	sshAgent        *sshagent.Agent
+	sshAgent        *ssh.Agent
 }
 
 type ProgressState int
@@ -47,7 +47,7 @@ const (
 	Finished
 )
 
-func NewRunner(agent *sshagent.Agent) *Runner {
+func NewRunner(agent *ssh.Agent) *Runner {
 	return &Runner{
 		hosts:           make(Hosts, 0),
 		sort:            []string{"name"},

@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package sshagent
+package ssh
 
 import "io"
 

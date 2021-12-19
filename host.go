@@ -22,7 +22,6 @@ import (
 	"golang.org/x/crypto/ssh"
 
 	kssh "github.com/seveas/herd/ssh"
-	"github.com/seveas/herd/sshagent"
 )
 
 var localUser string
@@ -58,7 +57,7 @@ type Host struct {
 	connection *ssh.Client
 	lastResult *Result
 	csum       uint32
-	sshAgent   *sshagent.Agent
+	sshAgent   *kssh.Agent
 }
 
 type host Host

@@ -14,7 +14,7 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
-	"github.com/seveas/herd/sshagent"
+	"github.com/seveas/herd/ssh"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -188,7 +188,7 @@ func bail(format string, args ...interface{}) {
 }
 
 func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
-	agent, err := sshagent.New(viper.GetDuration("SshAgentTimeout"))
+	agent, err := ssh.NewAgent(viper.GetDuration("SshAgentTimeout"))
 	if needsAgent && err != nil {
 		logrus.Error(err.Error())
 		return nil, err
