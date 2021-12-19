@@ -285,7 +285,7 @@ func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 	}
 
 	// We don't have the key, but is it in DNS?
-	if h.sshConfig.VerifyHostKeyDns && dnsVerify(h.Name, key) {
+	if h.sshConfig.VerifyHostKeyDns && kssh.VerifyHostKeyDns(h.Name, key) {
 		h.AddPublicKey(key)
 		return nil
 	}

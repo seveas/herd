@@ -1,4 +1,4 @@
-package herd
+package ssh
 
 import (
 	"crypto/sha1"
@@ -51,7 +51,7 @@ var sshfpAlgorithms = map[string]uint8{
 	ssh.KeyAlgoED25519:  4,
 }
 
-func dnsVerify(hostname string, key ssh.PublicKey) bool {
+func VerifyHostKeyDns(hostname string, key ssh.PublicKey) bool {
 	if sshfpResolver == nil {
 		return false
 	}

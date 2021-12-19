@@ -1,4 +1,7 @@
-package herd
+//go:build !windows
+// +build !windows
+
+package ssh
 
 import (
 	"github.com/miekg/dns"
