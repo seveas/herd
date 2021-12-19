@@ -213,7 +213,6 @@ func (host Host) expandSshTokens(input string) (string, error) {
 // Adds a public key to a host. Used by the ssh know hosts provider, but can be
 // used by any other code as well.
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
-	logrus.Debugf("Adding %s key for %s", k.Type(), h.Name)
 	h.publicKeys = append(h.publicKeys, k)
 	algos := []string{}
 	for _, k := range h.publicKeys {
@@ -228,9 +227,9 @@ func (h *Host) PublicKeys() []ssh.PublicKey {
 
 func (h *Host) address() string {
 	if h.Address == "" {
-		return fmt.Sprintf("%s:%d", h.Name, h.Port)
+		return net.JoinHostPort(h.Name, strconv.Itoa(h.Port))
 	}
-	return fmt.Sprintf("%s:%d", h.Address, h.Port)
+	return net.JoinHostPort(h.Address, strconv.Itoa(h.Port))
 }
 
 var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
@@ -303,37 +302,39 @@ func (h *Host) Amend(h2 *Host) {
 }
 
 func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicKey) error {
-	check, ok := h.extConfig["stricthostkeychecking"]
-	if !ok || check == "" {
-		// We default to accept-new instead of ask, as we cannot ask the user a
-		// question and thus treat ask the same as yes
-		check = "accept-new"
-	}
-	if len(h.publicKeys) == 0 {
-		switch strings.ToLower(check) {
-		case "no":
-			h.AddPublicKey(key)
-			return nil
-		case "accept-new":
-			logrus.Warnf("ssh: no known host key for %s, accepting new key", h.Name)
-			h.AddPublicKey(key)
-			return nil
-		default:
-			return fmt.Errorf("ssh: no host key found for %s", h.Name)
-		}
-	}
+	// Do we have the key?
 	bkey := key.Marshal()
 	for _, pkey := range h.publicKeys {
 		if bytes.Equal(bkey, pkey.Marshal()) {
 			return nil
 		}
 	}
+
+	// We don't have the key, but is it in DNS?
+	if x, ok := h.extConfig["verifyhostkeydns"]; ok && strings.ToLower(x) == "yes" {
+		if dnsVerify(h.Name, key) {
+			h.AddPublicKey(key)
+			return nil
+		}
+	}
+
+	// We couldn't verify the key, what should we do?
+	check, ok := h.extConfig["stricthostkeychecking"]
+	if !ok || check == "" {
+		// We default to accept-new instead of ask, as we cannot ask the user a
+		// question and thus treat ask the same as yes
+		check = "accept-new"
+	}
+
 	switch strings.ToLower(check) {
+	case "accept-new":
+		logrus.Warnf("ssh: no known host key for %s, accepting new key", h.Name)
+		fallthrough
 	case "no":
 		h.AddPublicKey(key)
 		return nil
 	default:
-		return fmt.Errorf("ssh: no matching host key found for %s", h.Name)
+		return fmt.Errorf("ssh: no host key found for %s", h.Name)
 	}
 }
 

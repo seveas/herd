@@ -19,6 +19,7 @@ require (
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
+	github.com/miekg/dns v1.1.26
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v0.0.0-20210110122831-adaf8cbaca34
 	github.com/sirupsen/logrus v1.8.1
