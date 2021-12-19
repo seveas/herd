@@ -16,6 +16,7 @@ import (
 	_ "github.com/seveas/herd/provider/consul"
 	_ "github.com/seveas/herd/provider/http"
 	_ "github.com/seveas/herd/provider/prometheus"
+	_ "github.com/seveas/herd/provider/tailscale"
 
 	// Cloud providers
 	_ "github.com/seveas/herd/provider/aws"
