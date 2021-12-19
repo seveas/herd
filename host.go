@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/crc32"
 	"net"
@@ -20,26 +21,16 @@ import (
 	"github.com/spf13/cast"
 	"golang.org/x/crypto/ssh"
 
+	kssh "github.com/seveas/herd/ssh"
 	"github.com/seveas/herd/sshagent"
 )
 
 var localUser string
-var extConfig *sshConfig
 
-// Parse SSH configuration during startup, so the host initializer can access
-// it always.
 func init() {
-	var fn string
-	if home, ok := os.LookupEnv("HOME"); ok {
-		fn = filepath.Join(home, ".ssh", "config")
-	}
 	if u, err := user.Current(); err == nil {
 		localUser = u.Username
-		if fn == "" && u.HomeDir != "" {
-			fn = filepath.Join(u.HomeDir, ".ssh", "config")
-		}
 	}
-	extConfig, _ = parseSshConfig(fn)
 }
 
 // Hosts can have attributes of any types, but querying is limited to strings,
@@ -60,12 +51,10 @@ func (h HostAttributes) prefix(prefix string) HostAttributes {
 type Host struct {
 	Name       string
 	Address    string
-	Port       int
 	Attributes HostAttributes
 	publicKeys []ssh.PublicKey
 	sshBanner  string
-	sshConfig  *ssh.ClientConfig
-	extConfig  map[string]string
+	sshConfig  *kssh.Config
 	connection *ssh.Client
 	lastResult *Result
 	csum       uint32
@@ -101,7 +90,6 @@ func NewHost(name, address string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
 		Address:    address,
-		Port:       22,
 		Attributes: attributes,
 	}
 	h.init()
@@ -109,8 +97,7 @@ func NewHost(name, address string, attributes HostAttributes) *Host {
 }
 
 func (h *Host) sshKeys() ([]ssh.Signer, error) {
-	path, _ := h.extConfig["identityfile"]
-	path, err := h.expandSshTokens(path)
+	path, err := h.expandSshTokens(h.sshConfig.IdentityFile)
 	if err != nil {
 		logrus.Errorf("Could not parse identify file path %s: %s", path, err)
 		return []ssh.Signer{}, err
@@ -120,37 +107,24 @@ func (h *Host) sshKeys() ([]ssh.Signer, error) {
 
 // Set all the defults and initialize ssh configuration for the host
 func (h *Host) init() {
-	h.extConfig = extConfig.configForHost(h.Name)
-	h.publicKeys = make([]ssh.PublicKey, 0)
-	h.sshConfig = &ssh.ClientConfig{
-		ClientVersion:   "SSH-2.0-Herd-0.1",
-		User:            localUser,
-		Timeout:         3 * time.Second,
-		HostKeyCallback: h.hostKeyCallback,
-		BannerCallback:  h.bannerCallback,
-	}
-	h.sshConfig.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(h.sshKeys)}
 	h.csum = crc32.ChecksumIEEE([]byte(h.Name))
-	parts := strings.SplitN(h.Name, ".", 2)
+	h.publicKeys = make([]ssh.PublicKey, 0)
+
+	h.sshConfig = kssh.ConfigForHost(h.Name)
+	cc := h.sshConfig.ClientConfig
+	cc.HostKeyCallback = h.hostKeyCallback
+	cc.BannerCallback = h.bannerCallback
+	cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(h.sshKeys)}
+
 	if h.Attributes == nil {
 		h.Attributes = make(HostAttributes)
 	}
+	parts := strings.SplitN(h.Name, ".", 2)
 	h.Attributes["hostname"] = parts[0]
 	if len(parts) == 2 {
 		h.Attributes["domainname"] = parts[1]
 	} else {
 		h.Attributes["domainname"] = ""
-	}
-	if h.Port == 0 {
-		h.Port = 22
-	}
-	if user, ok := h.extConfig["user"]; ok {
-		h.sshConfig.User = user
-	}
-	if port, ok := h.extConfig["port"]; ok {
-		if p, err := strconv.Atoi(port); err == nil {
-			h.Port = p
-		}
 	}
 }
 
@@ -179,7 +153,8 @@ func (host Host) expandSshTokens(input string) (string, error) {
 		case "%":
 			return "%"
 		case "C":
-			panic("OOPS")
+			err = errors.New("%C is not supported")
+			return ""
 		case "d":
 			return home
 		// Does not quite match openssh, but the best we can do
@@ -196,9 +171,9 @@ func (host Host) expandSshTokens(input string) (string, error) {
 			name, err = os.Hostname()
 			return name
 		case "p":
-			return fmt.Sprintf("%d", host.Port)
+			return fmt.Sprintf("%d", host.sshConfig.Port)
 		case "r":
-			return host.sshConfig.User
+			return host.sshConfig.ClientConfig.User
 		case "%T":
 			return "NONE"
 		case "%u":
@@ -218,7 +193,7 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	for _, k := range h.publicKeys {
 		algos = append(algos, k.Type())
 	}
-	h.sshConfig.HostKeyAlgorithms = algos
+	h.sshConfig.ClientConfig.HostKeyAlgorithms = algos
 }
 
 func (h *Host) PublicKeys() []ssh.PublicKey {
@@ -227,9 +202,9 @@ func (h *Host) PublicKeys() []ssh.PublicKey {
 
 func (h *Host) address() string {
 	if h.Address == "" {
-		return net.JoinHostPort(h.Name, strconv.Itoa(h.Port))
+		return net.JoinHostPort(h.Name, strconv.Itoa(h.sshConfig.Port))
 	}
-	return net.JoinHostPort(h.Address, strconv.Itoa(h.Port))
+	return net.JoinHostPort(h.Address, strconv.Itoa(h.sshConfig.Port))
 }
 
 var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
@@ -311,26 +286,16 @@ func (h *Host) hostKeyCallback(hostname string, remote net.Addr, key ssh.PublicK
 	}
 
 	// We don't have the key, but is it in DNS?
-	if x, ok := h.extConfig["verifyhostkeydns"]; ok && strings.ToLower(x) == "yes" {
-		if dnsVerify(h.Name, key) {
-			h.AddPublicKey(key)
-			return nil
-		}
+	if h.sshConfig.VerifyHostKeyDns && dnsVerify(h.Name, key) {
+		h.AddPublicKey(key)
+		return nil
 	}
 
-	// We couldn't verify the key, what should we do?
-	check, ok := h.extConfig["stricthostkeychecking"]
-	if !ok || check == "" {
-		// We default to accept-new instead of ask, as we cannot ask the user a
-		// question and thus treat ask the same as yes
-		check = "accept-new"
-	}
-
-	switch strings.ToLower(check) {
-	case "accept-new":
+	switch h.sshConfig.StrictHostKeyChecking {
+	case kssh.AcceptNew:
 		logrus.Warnf("ssh: no known host key for %s, accepting new key", h.Name)
 		fallthrough
-	case "no":
+	case kssh.No:
 		h.AddPublicKey(key)
 		return nil
 	default:
@@ -353,9 +318,8 @@ func (e TimeoutError) Error() string {
 
 func (host *Host) keyScan(ctx context.Context, keyTypes []string) *Result {
 	logrus.Debugf("Scanning keys on %s (%s)", host.Name, host.address())
-	host.extConfig["stricthostkeychecking"] = "no"
-	conf := *host.sshConfig
-	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
+	host.sshConfig.StrictHostKeyChecking = kssh.No
+	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.ClientConfig.Timeout)
 	defer cancel()
 	go func() {
 		for _, keyType := range keyTypes {
@@ -368,8 +332,8 @@ func (host *Host) keyScan(ctx context.Context, keyTypes []string) *Result {
 			}
 			if !found {
 				logrus.Debugf("Don't have a %s key for %s, checking whether the host has it", keyType, host.Name)
-				conf.HostKeyAlgorithms = []string{keyType}
-				client, err := ssh.Dial("tcp", host.address(), &conf)
+				host.sshConfig.ClientConfig.HostKeyAlgorithms = []string{keyType}
+				client, err := ssh.Dial("tcp", host.address(), host.sshConfig.ClientConfig)
 				if err != nil {
 					logrus.Debugf("Error checking %s key on %s: %s", keyType, host.Name, err)
 				} else {
@@ -388,13 +352,13 @@ func (host *Host) connect(ctx context.Context) (*ssh.Client, error) {
 		return host.connection, nil
 	}
 	logrus.Debugf("Connecting to %s (%s)", host.Name, host.address())
-	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.Timeout)
+	ctx, cancel := context.WithTimeout(ctx, host.sshConfig.ClientConfig.Timeout)
 	defer cancel()
 	var client *ssh.Client
 	ec := make(chan error)
 	go func() {
 		var err error
-		client, err = ssh.Dial("tcp", host.address(), host.sshConfig)
+		client, err = ssh.Dial("tcp", host.address(), host.sshConfig.ClientConfig)
 		ec <- err
 	}()
 	select {

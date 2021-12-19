@@ -150,7 +150,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			pc <- ProgressMessage{Host: host, State: Running}
 			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
 			defer cancel()
-			host.sshConfig.Timeout = r.connectTimeout
+			host.sshConfig.ClientConfig.Timeout = r.connectTimeout
 			result := host.Run(ctx, command, oc)
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil

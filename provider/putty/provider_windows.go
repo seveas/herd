@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/seveas/herd"
+	kssh "github.com/seveas/herd/ssh"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -70,7 +71,7 @@ func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.
 		}
 		defer k.Close()
 		hn, _, err := k.GetStringValue("HostName")
-		herd.PuttyNameMap[hn] = name
+		kssh.RegisterHostAlias(hn, name)
 		if err != nil || hn == "" {
 			continue
 		}
