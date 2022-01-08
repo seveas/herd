@@ -26,9 +26,6 @@ func TestHostDeserialization(t *testing.T) {
 	if domain, ok := host.Attributes["domainname"]; !ok || domain != "herd.ci" {
 		t.Errorf("Deserialized host is missing attributes")
 	}
-	if host.sshConfig.Port != 22 {
-		t.Errorf("Deserialized host does not get default port")
-	}
 	if color, ok := host.Attributes["color"]; !ok || color != "puce" {
 		t.Errorf("string attribute did not survive the json trip: %v", host.Attributes)
 	}

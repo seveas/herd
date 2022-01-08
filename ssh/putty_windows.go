@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-func (c *Config) readPuttyConfig(name string) {
+func (c *config) readPuttyConfig(name string) {
 	if alias, ok := hostAliases[name]; ok {
 		name = alias
 	}
@@ -18,9 +18,9 @@ func (c *Config) readPuttyConfig(name string) {
 		return
 	}
 	if iv, _, err := k.GetIntegerValue("PortNumber"); err != nil {
-		c.Port = int(iv)
+		c.port = int(iv)
 	}
 	if sv, _, err := k.GetStringValue("UserName"); err != nil {
-		c.ClientConfig.User = sv
+		c.clientConfig.User = sv
 	}
 }

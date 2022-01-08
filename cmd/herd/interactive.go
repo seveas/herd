@@ -7,9 +7,11 @@ import (
 	"time"
 
 	"github.com/seveas/herd/scripting"
+	"github.com/seveas/herd/ssh"
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var interactiveCmd = &cobra.Command{
@@ -34,7 +36,11 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	engine, err := setupScriptEngine(true)
+	agent, err := ssh.NewAgent(viper.GetDuration("SshAgentTimeout"))
+	if err != nil {
+		return err
+	}
+	engine, err := setupScriptEngine(ssh.NewExecutor(agent))
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,8 @@
 package ssh
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -9,78 +11,79 @@ import (
 	"strings"
 	"time"
 
+	"github.com/seveas/herd"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
-var localUser string
-var discoveredConfigs []*Config
-var clientVersion = "SSH-2.0-Herd-0.7.1" // FIXME
+var localUser *user.User
+var discoveredConfigs []*config
+var clientVersion = "SSH-2.0-Herd-" + herd.Version()
 
+// FIXME this needs to be in NewExecutor
 func init() {
-	var fn string
-	if home, ok := os.LookupEnv("HOME"); ok {
-		fn = filepath.Join(home, ".ssh", "config")
-	}
+	localUser = &user.User{HomeDir: "/", Username: "nobody", Uid: "65535"}
 	if u, err := user.Current(); err == nil {
-		localUser = u.Username
-		if fn == "" && u.HomeDir != "" {
-			fn = filepath.Join(u.HomeDir, ".ssh", "config")
-		}
+		localUser = u
 	}
-	if configs, err := parseConfig(fn); err != nil {
+	if home, ok := os.LookupEnv("HOME"); ok {
+		localUser.HomeDir = home
+	}
+	fn := filepath.Join(localUser.HomeDir, ".ssh", "config")
+	if configs, err := parseConfig(fn); err == nil {
 		discoveredConfigs = configs
 	}
-	defaultConfig.ClientConfig.User = localUser
+	defaultConfig.clientConfig.User = localUser.Username
 }
 
-type StrictHostKeyChecking int
+type strictHostKeyChecking int
 
 const (
-	No = iota
-	Yes
-	Ask
-	AcceptNew
+	no = iota
+	yes
+	ask
+	acceptNew
 )
 
-type Config struct {
-	Globs                 []string
-	Port                  int
-	StrictHostKeyChecking StrictHostKeyChecking
-	VerifyHostKeyDns      bool
-	ClientConfig          *ssh.ClientConfig
-	IdentityFile          string
+type config struct {
+	globs                 []string
+	port                  int
+	strictHostKeyChecking strictHostKeyChecking
+	verifyHostKeyDns      bool
+	identityFile          string
+	clientConfig          *ssh.ClientConfig
 }
 
-var defaultConfig = &Config{
-	Port:                  22,
-	StrictHostKeyChecking: AcceptNew,
-	VerifyHostKeyDns:      false,
-	ClientConfig: &ssh.ClientConfig{
+// FIXME no duplication. Can be done by initializing with NewConfig in the initializer.
+var defaultConfig = &config{
+	port:                  22,
+	strictHostKeyChecking: acceptNew,
+	verifyHostKeyDns:      false,
+	clientConfig: &ssh.ClientConfig{
 		ClientVersion: clientVersion,
-		User:          localUser,
 		Timeout:       3 * time.Second,
 	},
 }
 
-func NewConfig(globs []string) *Config {
-	return &Config{
-		Globs:                 globs,
-		Port:                  22,
-		StrictHostKeyChecking: AcceptNew,
-		VerifyHostKeyDns:      false,
-		ClientConfig: &ssh.ClientConfig{
+func NewConfig(globs []string) *config {
+	return &config{
+		globs:                 globs,
+		port:                  22,
+		strictHostKeyChecking: acceptNew,
+		verifyHostKeyDns:      false,
+		clientConfig: &ssh.ClientConfig{
 			ClientVersion: clientVersion,
-			User:          localUser,
 			Timeout:       3 * time.Second,
+			User:          localUser.Username,
 		},
 	}
 }
 
-func (c *Config) readOpenSSHConfig(name string) {
+func (c *config) readOpenSSHConfig(name string) {
 	for i := len(discoveredConfigs) - 1; i >= 0; i-- {
 		config := discoveredConfigs[i]
-		for _, g := range config.Globs {
+		for _, g := range config.globs {
 			if ok, err := filepath.Match(g, name); ok && err == nil {
 				c.updateFromConfig(config)
 				break
@@ -89,33 +92,33 @@ func (c *Config) readOpenSSHConfig(name string) {
 	}
 }
 
-func (c *Config) updateFromConfig(o *Config) {
-	if o.Port != defaultConfig.Port {
-		c.Port = o.Port
+func (c *config) updateFromConfig(o *config) {
+	if o.port != defaultConfig.port {
+		c.port = o.port
 	}
-	if o.StrictHostKeyChecking != defaultConfig.StrictHostKeyChecking {
-		c.StrictHostKeyChecking = o.StrictHostKeyChecking
+	if o.strictHostKeyChecking != defaultConfig.strictHostKeyChecking {
+		c.strictHostKeyChecking = o.strictHostKeyChecking
 	}
-	if o.VerifyHostKeyDns != defaultConfig.VerifyHostKeyDns {
-		c.VerifyHostKeyDns = o.VerifyHostKeyDns
+	if o.verifyHostKeyDns != defaultConfig.verifyHostKeyDns {
+		c.verifyHostKeyDns = o.verifyHostKeyDns
 	}
-	if o.IdentityFile != defaultConfig.IdentityFile {
-		c.IdentityFile = o.IdentityFile
+	if o.identityFile != defaultConfig.identityFile {
+		c.identityFile = o.identityFile
 	}
-	if o.ClientConfig.User != defaultConfig.ClientConfig.User {
-		c.ClientConfig.User = o.ClientConfig.User
+	if o.clientConfig.User != defaultConfig.clientConfig.User {
+		c.clientConfig.User = o.clientConfig.User
 	}
 }
 
 // Parse an openssh config file
 var splitWhitespace = regexp.MustCompile("\\s")
 
-func parseConfig(file string) ([]*Config, error) {
+func parseConfig(file string) ([]*config, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	configs := make([]*Config, 0)
+	configs := make([]*config, 0)
 
 	// Anything before the first Host section is global
 	config := NewConfig([]string{"*"})
@@ -133,7 +136,7 @@ func parseConfig(file string) ([]*Config, error) {
 			continue
 		}
 		key := strings.ToLower(parts[0])
-		val := parts[1]
+		val := strings.TrimSpace(parts[1])
 
 		// New host section, add the existing section to the returned configs
 		if key == "host" {
@@ -150,37 +153,96 @@ func parseConfig(file string) ([]*Config, error) {
 
 		switch key {
 		case "user":
-			config.ClientConfig.User = val
+			config.clientConfig.User = val
 		case "port":
-			config.Port, _ = strconv.Atoi(val)
+			config.port, _ = strconv.Atoi(val)
 		case "verifyhostkeydns":
-			config.VerifyHostKeyDns = strings.ToLower("val") == "yes"
+			config.verifyHostKeyDns = strings.ToLower(val) == "yes"
 		case "stricthostkeychecking":
 			switch strings.ToLower(val) {
 			case "yes":
-				config.StrictHostKeyChecking = Yes
+				config.strictHostKeyChecking = yes
 			case "no":
-				config.StrictHostKeyChecking = No
+				config.strictHostKeyChecking = no
 			case "ask":
 				// We cannot ask the user a  question and thus treat ask the same as yes
 				fallthrough
 			case "accept-new":
-				config.StrictHostKeyChecking = AcceptNew
+				config.strictHostKeyChecking = acceptNew
 			}
 		case "identityfile":
-			config.IdentityFile = val
-
+			config.identityFile = val
 		}
 	}
 	return append(configs, config), nil
 }
 
-// Find all variables relevant for a host, first match wins
-func ConfigForHost(name string) *Config {
-	config := NewConfig(nil)
-	config.readPuttyConfig(name)
-	config.readOpenSSHConfig(name)
+func (c *config) expandSshTokens(input string, hostname, username string, port int) (string, error) {
+	if input == "" {
+		return input, nil
+	}
+	if input[0] == '~' {
+		input = localUser.HomeDir + input[1:]
+	}
+	if !strings.ContainsRune(input, '%') {
+		return input, nil
+	}
+	var err error
+	re := regexp.MustCompile("%[%CdhikLlnprTu]")
+	output := re.ReplaceAllStringFunc(input, func(token string) string {
+		switch token {
+		case "%":
+			return "%"
+		case "C":
+			err = errors.New("%C is not supported")
+			return ""
+		case "d":
+			return localUser.HomeDir
+		// Does not quite match openssh, but the best we can do
+		case "h", "k", "n":
+			var name string
+			name, err = os.Hostname()
+			return name
+		case "i":
+			return localUser.Uid
+		case "L":
+			var name string
+			name, err = os.Hostname()
+			return strings.Split(name, ".")[0]
+		case "l":
+			var name string
+			name, err = os.Hostname()
+			return name
+		case "p":
+			return fmt.Sprintf("%d", port)
+		case "r":
+			return username
+		case "%T":
+			return "NONE"
+		case "%u":
+			return localUser.Username
+		}
+		err = fmt.Errorf("Don't know what to return for %s", token)
+		return ""
+	})
+	return output, err
+}
 
+// Find all variables relevant for a host, first match wins
+func configForHost(host *herd.Host) *config {
+	config := NewConfig(nil)
+	config.readPuttyConfig(host.Name)
+	config.readOpenSSHConfig(host.Name)
+	if path, err := config.expandSshTokens(config.identityFile, host.Name, config.clientConfig.User, config.port); err == nil {
+		config.identityFile = path
+	}
+	algos := []string{}
+	for _, k := range host.PublicKeys() {
+		algos = append(algos, k.Type())
+	}
+	if len(algos) != 0 {
+		config.clientConfig.HostKeyAlgorithms = algos
+	}
 	return config
 }
 

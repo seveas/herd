@@ -24,7 +24,7 @@ type Agent struct {
 	signersByPath       map[string]ssh.Signer
 }
 
-func NewAgent(timeout time.Duration) (*Agent, error) {
+func NewAgent(pipelineTimeout time.Duration) (*Agent, error) {
 	sock, err := agentConnection()
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to SSH agent: %s", err)
@@ -35,7 +35,7 @@ func NewAgent(timeout time.Duration) (*Agent, error) {
 		// Determine whether we can use the faster pipelined ssh agent protocol
 		a.pipelinedConnection, _ = agentConnection()
 		go a.readLoop()
-		if !a.canDoPipelinedSigning(timeout) {
+		if !a.canDoPipelinedSigning(pipelineTimeout) {
 			a.pipelinedConnection.(*net.UnixConn).Close()
 			a.pipelinedConnection = nil
 			logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
@@ -227,6 +227,12 @@ func (a *Agent) SignWithFlags(key ssh.PublicKey, data []byte, flags agent.Signat
 
 func (a *Agent) Extension(extensionType string, contents []byte) ([]byte, error) {
 	return a.sshAgent.Extension(extensionType, contents)
+}
+
+func (a *Agent) SignersForPathCallback(path string) func() ([]ssh.Signer, error) {
+	return func() ([]ssh.Signer, error) {
+		return a.SignersForPath(path), nil
+	}
 }
 
 func (a *Agent) SignersForPath(path string) []ssh.Signer {

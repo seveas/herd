@@ -14,7 +14,6 @@ import (
 	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
-	"github.com/seveas/herd/ssh"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -187,12 +186,7 @@ func bail(format string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
-	agent, err := ssh.NewAgent(viper.GetDuration("SshAgentTimeout"))
-	if needsAgent && err != nil {
-		logrus.Error(err.Error())
-		return nil, err
-	}
+func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) {
 	ui := herd.NewSimpleUI()
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
 	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
@@ -220,13 +214,12 @@ func setupScriptEngine(needsAgent bool) (*scripting.ScriptEngine, error) {
 		return nil, err
 	}
 	ui.Sync()
-	runner := herd.NewRunner(agent)
+	runner := herd.NewRunner(executor)
 	runner.SetSortFields(viper.GetStringSlice("Sort"))
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
 	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
-	runner.SetSshAgentTimeout(viper.GetDuration("SshAgentTimeout"))
 	return scripting.NewScriptEngine(ui, registry, runner), nil
 }

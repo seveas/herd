@@ -7,6 +7,7 @@ import (
 
 	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
+	"github.com/sirupsen/logrus"
 )
 
 type command interface {
@@ -111,18 +112,21 @@ type runCommand struct {
 func (c runCommand) execute(e *ScriptEngine) {
 	oc := e.Ui.OutputChannel(e.Runner)
 	pc := e.Ui.ProgressChannel(e.Runner)
-	hi := e.Runner.Run(c.command, pc, oc)
+	hi, err := e.Runner.Run(c.command, pc, oc)
+	if err != nil {
+		logrus.Errorf("Unable to execute %s: %s", c.command, err)
+	}
 	if oc != nil {
 		close(oc)
 	}
 	close(pc)
 	e.Ui.Sync()
-	if hi == nil {
-		return
-	}
-	e.History = append(e.History, hi)
-	if !strings.HasPrefix(c.command, "herd:") {
-		e.Ui.PrintHistoryItem(hi)
+	if hi != nil {
+		e.History = append(e.History, hi)
+		// FIXME
+		if !strings.HasPrefix(c.command, "herd:") {
+			e.Ui.PrintHistoryItem(hi)
+		}
 	}
 }
 

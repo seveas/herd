@@ -8,11 +8,14 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/seveas/herd/ssh"
-
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 )
+
+type Executor interface {
+	Run(ctx context.Context, host *Host, cmd string, oc chan OutputLine) *Result
+	SetConnectTimeout(time.Duration)
+}
 
 type OutputLine struct {
 	Host   *Host
@@ -27,15 +30,13 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	hosts           Hosts
-	sort            []string
-	parallel        int
-	splay           time.Duration
-	timeout         time.Duration
-	hostTimeout     time.Duration
-	connectTimeout  time.Duration
-	sshAgentTimeout time.Duration
-	sshAgent        *ssh.Agent
+	hosts       Hosts
+	sort        []string
+	parallel    int
+	splay       time.Duration
+	timeout     time.Duration
+	hostTimeout time.Duration
+	executor    Executor
 }
 
 type ProgressState int
@@ -47,15 +48,13 @@ const (
 	Finished
 )
 
-func NewRunner(agent *ssh.Agent) *Runner {
+func NewRunner(executor Executor) *Runner {
 	return &Runner{
-		hosts:           make(Hosts, 0),
-		sort:            []string{"name"},
-		timeout:         60 * time.Second,
-		hostTimeout:     10 * time.Second,
-		connectTimeout:  3 * time.Second,
-		sshAgent:        agent,
-		sshAgentTimeout: 50 * time.Millisecond,
+		hosts:       make(Hosts, 0),
+		sort:        []string{"name"},
+		executor:    executor,
+		timeout:     60 * time.Second,
+		hostTimeout: 10 * time.Second,
 	}
 }
 
@@ -83,21 +82,19 @@ func (r *Runner) SetHostTimeout(t time.Duration) {
 	r.hostTimeout = t
 }
 
+// FIXME
 func (r *Runner) SetConnectTimeout(t time.Duration) {
-	r.connectTimeout = t
-}
-
-func (r *Runner) SetSshAgentTimeout(t time.Duration) {
-	r.sshAgentTimeout = t
+	if r.executor != nil {
+		r.executor.SetConnectTimeout(t)
+	}
 }
 
 func (r *Runner) Settings() (string, map[string]interface{}) {
 	return "Runner", map[string]interface{}{
-		"Parallel":       r.parallel,
-		"Splay":          r.splay,
-		"Timeout":        r.timeout,
-		"HostTimeout":    r.hostTimeout,
-		"ConnectTimeout": r.connectTimeout,
+		"Parallel":    r.parallel,
+		"Splay":       r.splay,
+		"Timeout":     r.timeout,
+		"HostTimeout": r.hostTimeout,
 	}
 }
 
@@ -117,10 +114,12 @@ func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
 	r.hosts = newHosts
 }
 
-func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) *HistoryItem {
+func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) (*HistoryItem, error) {
+	if r.executor == nil {
+		return nil, errors.New("No executor defined")
+	}
 	if len(r.hosts) == 0 {
-		logrus.Errorf("No hosts selected")
-		return nil
+		return nil, errors.New("No hosts selected")
 	}
 	if pc == nil {
 		pc = make(chan ProgressMessage)
@@ -140,7 +139,6 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		sg = scattergather.New(int64(len(r.hosts)))
 	}
 	for _, host := range hi.Hosts {
-		host.sshAgent = r.sshAgent
 		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
 			host := args[0].(*Host)
 			if r.splay > 0 {
@@ -150,8 +148,8 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			pc <- ProgressMessage{Host: host, State: Running}
 			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
 			defer cancel()
-			host.sshConfig.ClientConfig.Timeout = r.connectTimeout
-			result := host.Run(ctx, command, oc)
+			result := r.executor.Run(ctx, host, command, oc)
+			host.lastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil
 		}, ctx, host)
@@ -202,12 +200,15 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		}
 	}
 	hi.end()
-	return hi
+	return hi, nil
 }
 
 func (r *Runner) End() {
-	for _, host := range r.hosts {
-		host.disconnect()
+	for _, h := range r.hosts {
+		if h.Connection != nil {
+			logrus.Debugf("Disconnecting from %s", h.Name)
+			h.Connection.Close()
+		}
 	}
 }
 
@@ -224,4 +225,12 @@ func (r *Runner) splayDelay(ctx context.Context) {
 	case <-tctx.Done():
 		return
 	}
+}
+
+type TimeoutError struct {
+	Message string
+}
+
+func (e TimeoutError) Error() string {
+	return e.Message
 }

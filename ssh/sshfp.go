@@ -51,7 +51,7 @@ var sshfpAlgorithms = map[string]uint8{
 	ssh.KeyAlgoED25519:  4,
 }
 
-func VerifyHostKeyDns(hostname string, key ssh.PublicKey) bool {
+func verifyHostKeyDns(hostname string, key ssh.PublicKey) bool {
 	if sshfpResolver == nil {
 		return false
 	}

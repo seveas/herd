@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/seveas/herd"
+	"github.com/seveas/herd/ssh"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -59,7 +59,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	engine, err := setupScriptEngine(false)
+	engine, err := setupScriptEngine(ssh.NewKeyScanExecutor(keyTypes))
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		hosts := engine.Registry.GetHosts("*", []herd.MatchAttribute{}, []string{}, 0)
 		engine.Runner.AddHosts(hosts)
 	}
-	engine.Runner.Run(fmt.Sprintf("herd:keyscan:%s", strings.Join(keyTypes, ",")), nil, nil)
+	engine.Runner.Run("herd:keyscan", nil, nil)
 	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}
 {{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
 {{ end -}}
