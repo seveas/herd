@@ -3,6 +3,6 @@
 
 package ssh
 
-func (c *config) readPuttyConfig(name string) {
+func (c *configBlock) readPuttyConfig(name string) {
 	return
 }

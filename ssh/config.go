@@ -17,25 +17,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-var localUser *user.User
-var discoveredConfigs []*config
 var clientVersion = "SSH-2.0-Herd-" + herd.Version()
-
-// FIXME this needs to be in NewExecutor
-func init() {
-	localUser = &user.User{HomeDir: "/", Username: "nobody", Uid: "65535"}
-	if u, err := user.Current(); err == nil {
-		localUser = u
-	}
-	if home, ok := os.LookupEnv("HOME"); ok {
-		localUser.HomeDir = home
-	}
-	fn := filepath.Join(localUser.HomeDir, ".ssh", "config")
-	if configs, err := parseConfig(fn); err == nil {
-		discoveredConfigs = configs
-	}
-	defaultConfig.clientConfig.User = localUser.Username
-}
 
 type strictHostKeyChecking int
 
@@ -47,6 +29,11 @@ const (
 )
 
 type config struct {
+	user   user.User
+	blocks []*configBlock
+}
+
+type configBlock struct {
 	globs                 []string
 	port                  int
 	strictHostKeyChecking strictHostKeyChecking
@@ -55,19 +42,30 @@ type config struct {
 	clientConfig          *ssh.ClientConfig
 }
 
-// FIXME no duplication. Can be done by initializing with NewConfig in the initializer.
-var defaultConfig = &config{
-	port:                  22,
-	strictHostKeyChecking: acceptNew,
-	verifyHostKeyDns:      false,
-	clientConfig: &ssh.ClientConfig{
-		ClientVersion: clientVersion,
-		Timeout:       3 * time.Second,
-	},
+func newConfig(u user.User) *config {
+	c := &config{
+		user: u,
+	}
+	return c
 }
 
-func NewConfig(globs []string) *config {
-	return &config{
+func (c *config) readOpenSSHConfig() error {
+	fn := filepath.Join(c.user.HomeDir, ".ssh", "config")
+	blocks, err := parseConfig(fn)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	c.blocks = blocks
+	blocks, err = parseConfig("/etc/ssh/ssh_config")
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	c.blocks = append(c.blocks, blocks...)
+	return nil
+}
+
+func newConfigBlock(globs []string) *configBlock {
+	return &configBlock{
 		globs:                 globs,
 		port:                  22,
 		strictHostKeyChecking: acceptNew,
@@ -75,37 +73,24 @@ func NewConfig(globs []string) *config {
 		clientConfig: &ssh.ClientConfig{
 			ClientVersion: clientVersion,
 			Timeout:       3 * time.Second,
-			User:          localUser.Username,
 		},
 	}
 }
 
-func (c *config) readOpenSSHConfig(name string) {
-	for i := len(discoveredConfigs) - 1; i >= 0; i-- {
-		config := discoveredConfigs[i]
-		for _, g := range config.globs {
-			if ok, err := filepath.Match(g, name); ok && err == nil {
-				c.updateFromConfig(config)
-				break
-			}
-		}
-	}
-}
-
-func (c *config) updateFromConfig(o *config) {
-	if o.port != defaultConfig.port {
+func (c *configBlock) updateFromBlock(o *configBlock) {
+	if c.port == 22 {
 		c.port = o.port
 	}
-	if o.strictHostKeyChecking != defaultConfig.strictHostKeyChecking {
+	if c.strictHostKeyChecking == acceptNew {
 		c.strictHostKeyChecking = o.strictHostKeyChecking
 	}
-	if o.verifyHostKeyDns != defaultConfig.verifyHostKeyDns {
+	if !c.verifyHostKeyDns {
 		c.verifyHostKeyDns = o.verifyHostKeyDns
 	}
-	if o.identityFile != defaultConfig.identityFile {
+	if c.identityFile == "" {
 		c.identityFile = o.identityFile
 	}
-	if o.clientConfig.User != defaultConfig.clientConfig.User {
+	if c.clientConfig.User == "" {
 		c.clientConfig.User = o.clientConfig.User
 	}
 }
@@ -113,15 +98,15 @@ func (c *config) updateFromConfig(o *config) {
 // Parse an openssh config file
 var splitWhitespace = regexp.MustCompile("\\s")
 
-func parseConfig(file string) ([]*config, error) {
+func parseConfig(file string) ([]*configBlock, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
 	}
-	configs := make([]*config, 0)
+	configs := make([]*configBlock, 0)
 
 	// Anything before the first Host section is global
-	config := NewConfig([]string{"*"})
+	config := newConfigBlock([]string{"*"})
 	seen := make(map[string]bool)
 
 	for _, line := range strings.Split(string(data), "\n") {
@@ -141,7 +126,7 @@ func parseConfig(file string) ([]*config, error) {
 		// New host section, add the existing section to the returned configs
 		if key == "host" {
 			configs = append(configs, config)
-			config = NewConfig(splitWhitespace.Split(val, -1))
+			config = newConfigBlock(splitWhitespace.Split(val, -1))
 			seen = make(map[string]bool)
 			continue
 		}
@@ -177,12 +162,12 @@ func parseConfig(file string) ([]*config, error) {
 	return append(configs, config), nil
 }
 
-func (c *config) expandSshTokens(input string, hostname, username string, port int) (string, error) {
+func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string, error) {
 	if input == "" {
 		return input, nil
 	}
 	if input[0] == '~' {
-		input = localUser.HomeDir + input[1:]
+		input = c.user.HomeDir + input[1:]
 	}
 	if !strings.ContainsRune(input, '%') {
 		return input, nil
@@ -197,14 +182,14 @@ func (c *config) expandSshTokens(input string, hostname, username string, port i
 			err = errors.New("%C is not supported")
 			return ""
 		case "d":
-			return localUser.HomeDir
+			return c.user.HomeDir
 		// Does not quite match openssh, but the best we can do
 		case "h", "k", "n":
 			var name string
 			name, err = os.Hostname()
 			return name
 		case "i":
-			return localUser.Uid
+			return c.user.Uid
 		case "L":
 			var name string
 			name, err = os.Hostname()
@@ -214,13 +199,13 @@ func (c *config) expandSshTokens(input string, hostname, username string, port i
 			name, err = os.Hostname()
 			return name
 		case "p":
-			return fmt.Sprintf("%d", port)
+			return fmt.Sprintf("%d", b.port)
 		case "r":
-			return username
+			return b.clientConfig.User
 		case "%T":
 			return "NONE"
 		case "%u":
-			return localUser.Username
+			return c.user.Username
 		}
 		err = fmt.Errorf("Don't know what to return for %s", token)
 		return ""
@@ -229,21 +214,31 @@ func (c *config) expandSshTokens(input string, hostname, username string, port i
 }
 
 // Find all variables relevant for a host, first match wins
-func configForHost(host *herd.Host) *config {
-	config := NewConfig(nil)
-	config.readPuttyConfig(host.Name)
-	config.readOpenSSHConfig(host.Name)
-	if path, err := config.expandSshTokens(config.identityFile, host.Name, config.clientConfig.User, config.port); err == nil {
-		config.identityFile = path
+func (c *config) forHost(host *herd.Host) *configBlock {
+	b := newConfigBlock(nil)
+	b.clientConfig.User = c.user.Username
+	b.readPuttyConfig(host.Name)
+	for i := len(c.blocks) - 1; i >= 0; i-- {
+		config := c.blocks[i]
+		for _, g := range config.globs {
+			if ok, err := filepath.Match(g, host.Name); ok && err == nil {
+				b.updateFromBlock(config)
+				break
+			}
+		}
+	}
+
+	if path, err := c.expandSshTokens(b.identityFile, host.Name, b); err == nil {
+		b.identityFile = path
 	}
 	algos := []string{}
 	for _, k := range host.PublicKeys() {
 		algos = append(algos, k.Type())
 	}
 	if len(algos) != 0 {
-		config.clientConfig.HostKeyAlgorithms = algos
+		b.clientConfig.HostKeyAlgorithms = algos
 	}
-	return config
+	return b
 }
 
 var hostAliases = make(map[string]string)

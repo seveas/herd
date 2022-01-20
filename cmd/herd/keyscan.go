@@ -59,7 +59,11 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	engine, err := setupScriptEngine(ssh.NewKeyScanExecutor(keyTypes))
+	executor, err := ssh.NewKeyScanExecutor(keyTypes, *currentUser.user)
+	if err != nil {
+		return err
+	}
+	engine, err := setupScriptEngine(executor)
 	if err != nil {
 		return err
 	}

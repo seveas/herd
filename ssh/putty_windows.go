@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-func (c *config) readPuttyConfig(name string) {
+func (c *configBlock) readPuttyConfig(name string) {
 	if alias, ok := hostAliases[name]; ok {
 		name = alias
 	}

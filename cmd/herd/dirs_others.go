@@ -15,6 +15,9 @@ func getCurrentUser() (*userData, error) {
 	if err != nil {
 		return nil, fmt.Errorf("I don't know who you are: %s", err)
 	}
+	if d, ok := os.LookupEnv("HOME"); ok {
+		u.HomeDir = d
+	}
 	if u.HomeDir == "" {
 		return nil, fmt.Errorf("You don't have a homedir")
 	}

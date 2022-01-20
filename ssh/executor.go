@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os/user"
 	"strconv"
 	"time"
 
@@ -14,14 +15,25 @@ import (
 )
 
 type Executor struct {
-	agent          *Agent
+	agent          *agent
+	config         *config
 	connectTimeout time.Duration
 }
 
-func NewExecutor(agent *Agent) herd.Executor {
-	return &Executor{
-		agent: agent,
+func NewExecutor(agentTimeout time.Duration, user user.User) (herd.Executor, error) {
+	agent, err := newAgent(agentTimeout)
+	if err != nil {
+		return nil, err
 	}
+	config := newConfig(user)
+	if err := config.readOpenSSHConfig(); err != nil {
+		return nil, err
+	}
+
+	return &Executor{
+		agent:  agent,
+		config: config,
+	}, nil
 }
 
 func (e *Executor) SetConnectTimeout(t time.Duration) {
@@ -95,7 +107,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	if host.Connection != nil {
 		return host.Connection.(*ssh.Client), nil
 	}
-	config := configForHost(host)
+	config := e.config.forHost(host)
 	cc := config.clientConfig
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return e.hostKeyCallback(host, key, config)
@@ -110,7 +122,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 		address = host.Name
 	}
 	address = net.JoinHostPort(address, strconv.Itoa(config.port))
-	logrus.Debugf("Connecting to %s (%s)", host.Name, address)
+	logrus.Debugf("Connecting to %s (%s) as %s with key %s", host.Name, address, cc.User, config.identityFile)
 
 	ctx, cancel := context.WithTimeout(ctx, e.connectTimeout+time.Second/2)
 	defer cancel()
@@ -132,7 +144,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	}
 }
 
-func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *config) error {
+func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *configBlock) error {
 	// Do we have the key?
 	bkey := key.Marshal()
 	for _, pkey := range host.PublicKeys() {
