@@ -127,6 +127,15 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 	return hosts, nil
 }
 
+func appendService(host *herd.Host, attribute, service string) {
+	services := []string{}
+	si, ok := host.Attributes[attribute]
+	if ok {
+		services = si.([]string)
+	}
+	host.Attributes[attribute] = append(services, service)
+}
+
 func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Hosts, error) {
 	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(p.consulConfig)
@@ -156,13 +165,26 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 		}
 		for _, service := range servicenodes {
 			h := hosts[nodePositions[service.Node]]
-			s := []string{}
-			si, ok := h.Attributes["service"]
-			if ok {
-				s = si.([]string)
-			}
-			h.Attributes["service"] = append(s, service.ServiceName)
+			appendService(h, "service", service.ServiceName)
 			h.Attributes[fmt.Sprintf("service:%s", service.ServiceName)] = service.ServiceTags
+		}
+		health := client.Health()
+		checks, _, err := health.Checks(service, opts)
+		if err != nil {
+			return nil, err
+		}
+		serviceHealth := make(map[string]bool)
+		for _, check := range checks {
+			v, ok := serviceHealth[check.Node]
+			serviceHealth[check.Node] = (v || !ok) && check.Status == "passing"
+		}
+		for host, healthy := range serviceHealth {
+			h := hosts[nodePositions[host]]
+			if healthy {
+				appendService(h, "service_healthy", service)
+			} else {
+				appendService(h, "service_unhealthy", service)
+			}
 		}
 	}
 

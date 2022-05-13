@@ -51,6 +51,14 @@ func TestConsulMock(t *testing.T) {
 		httpmock.NewStringResponder(200, mockServices("site1", "service2", 2)))
 	httpmock.RegisterResponder("GET", "=~http://consul.ci:8080/v1/catalog/service/service2.*site2",
 		httpmock.NewStringResponder(200, mockServices("site2", "service2", 2)))
+	httpmock.RegisterResponder("GET", "=~http://consul.ci:8080/v1/health/checks/service1.*site1",
+		httpmock.NewStringResponder(200, mockHealthchecks("site1", "service1", "passing", 1)))
+	httpmock.RegisterResponder("GET", "=~http://consul.ci:8080/v1/health/checks/service1.*site2",
+		httpmock.NewStringResponder(200, mockHealthchecks("site2", "service1", "passing", 1)))
+	httpmock.RegisterResponder("GET", "=~http://consul.ci:8080/v1/health/checks/service2.*site1",
+		httpmock.NewStringResponder(200, mockHealthchecks("site1", "service2", "failing", 2)))
+	httpmock.RegisterResponder("GET", "=~http://consul.ci:8080/v1/health/checks/service2.*site2",
+		httpmock.NewStringResponder(200, mockHealthchecks("site2", "service2", "failing", 2)))
 
 	p.config.Address = "http://consul.ci:8080"
 	ctx := context.Background()
@@ -84,6 +92,28 @@ func TestConsulMock(t *testing.T) {
 					st := sts.([]string)
 					if st[0] != ss || st[1] != ss+"X" {
 						t.Errorf("incorrect service tags %v set for %s/%s", st, h.Name, ss)
+					}
+				}
+			}
+			if si, ok := h.Attributes["service_healthy"]; !ok {
+				t.Errorf("service_healthy attribute not set for %s", h.Name)
+			} else {
+				s := si.([]string)
+				if len(s) != 1 || s[0] != "service1" {
+					if len(s) != 1+((i+1)%2) {
+						t.Errorf("incorrect services_healthy %v set for %s", s, h.Name)
+					}
+				}
+			}
+			if i%2 == 0 {
+				if si, ok := h.Attributes["service_unhealthy"]; !ok {
+					t.Errorf("service_unhealthy attribute not set for %s", h.Name)
+				} else {
+					s := si.([]string)
+					if len(s) != 1 || s[0] != "service2" {
+						if len(s) != 1+((i+1)%2) {
+							t.Errorf("incorrect services_unhealthy %v set for %s", s, h.Name)
+						}
 					}
 				}
 			}
@@ -170,5 +200,45 @@ func mockServices(site, service string, skip int) string {
 		services = append(services, svc)
 	}
 	data, _ := json.Marshal(services)
+	return string(data)
+}
+
+func mockHealthchecks(site, service, status string, skip int) string {
+	checks := make([]map[string]interface{}, 0)
+	for i := 0; i < 10; i += skip {
+		check := map[string]interface{}{
+			"Node":        fmt.Sprintf("node-%d.%s.consul.ci", i, site),
+			"CheckID":     fmt.Sprintf("service:%s:1", service),
+			"Name":        "Service check 1",
+			"Status":      "passing",
+			"Notes":       "CI check",
+			"Output":      "",
+			"ServiceID":   service,
+			"ServiceName": service,
+			"ServiceTags": []string{},
+			"Type":        "script",
+			"Definition":  map[string]interface{}{},
+			"CreateIndex": 1807514456,
+			"ModifyIndex": 1807514456,
+		}
+		checks = append(checks, check)
+		check = map[string]interface{}{
+			"Node":        fmt.Sprintf("node-%d.%s.consul.ci", i, site),
+			"CheckID":     fmt.Sprintf("service:%s:2", service),
+			"Name":        "Service check 2",
+			"Status":      status,
+			"Notes":       "CI check",
+			"Output":      "",
+			"ServiceID":   service,
+			"ServiceName": service,
+			"ServiceTags": []string{},
+			"Type":        "script",
+			"Definition":  map[string]interface{}{},
+			"CreateIndex": 1807514456,
+			"ModifyIndex": 1807514456,
+		}
+		checks = append(checks, check)
+	}
+	data, _ := json.Marshal(checks)
 	return string(data)
 }
