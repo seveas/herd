@@ -110,26 +110,26 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 		}
 	}
 	logrus.Debugf("AWS regions: %v", p.config.Regions)
-	sg := scattergather.New(int64(len(p.config.Regions)))
+	sg := scattergather.New[herd.Hosts](int64(len(p.config.Regions)))
 	for _, region := range p.config.Regions {
-		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
-			region := args[0].(string)
+		region := region
+		sg.Run(ctx, func() (herd.Hosts, error) {
 			name := fmt.Sprintf("%s@%s", p.name, region)
 			lm(name, false, nil)
 			hosts, err := p.loadRegion(ctx, region)
 			lm(name, true, err)
 			return hosts, err
-		}, ctx, region)
+		})
 	}
 
-	untypedResults, err := sg.Wait()
+	allHosts, err := sg.Wait()
 	if err != nil {
 		return nil, err
 	}
 
 	hosts = make(herd.Hosts, 0)
-	for _, hu := range untypedResults {
-		hosts = append(hosts, hu.(herd.Hosts)...)
+	for _, h := range allHosts {
+		hosts = append(hosts, h...)
 	}
 	return hosts, nil
 }

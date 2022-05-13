@@ -132,15 +132,14 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	hi := newHistoryItem(command, r.hosts)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	var sg *scattergather.ScatterGather
-	if r.parallel > 0 {
-		sg = scattergather.New(int64(r.parallel))
-	} else {
-		sg = scattergather.New(int64(len(r.hosts)))
+	count := r.parallel
+	if count <= 0 {
+		count = len(r.hosts)
 	}
+	sg := scattergather.New[*Result](int64(count))
 	for _, host := range hi.Hosts {
-		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
-			host := args[0].(*Host)
+		host := host
+		sg.Run(ctx, func() (*Result, error) {
 			if r.splay > 0 {
 				pc <- ProgressMessage{Host: host, State: Waiting}
 				r.splayDelay(ctx)
@@ -152,7 +151,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			host.lastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil
-		}, ctx, host)
+		})
 	}
 	go func() {
 		timeout := time.After(r.timeout)
@@ -172,8 +171,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	}()
 	results, _ := sg.Wait()
 	cancel()
-	for _, rawResult := range results {
-		result := rawResult.(*Result)
+	for _, result := range results {
 		hi.Results[result.Host.Name] = result
 		switch result.ExitStatus {
 		case -1:

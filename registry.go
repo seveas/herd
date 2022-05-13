@@ -193,11 +193,11 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 		signal.Reset()
 	}()
 
-	sg := scattergather.New(int64(len(r.providers)))
+	sg := scattergather.New[Hosts](int64(len(r.providers)))
 
 	for _, p := range r.providers {
-		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
-			p := args[0].(HostProvider)
+		p := p
+		sg.Run(ctx, func() (Hosts, error) {
 			hosts, err := p.Load(ctx, lm)
 			lm(p.Name(), true, err)
 			logrus.Debugf("%d hosts returned from %s", len(hosts), p.Name())
@@ -208,10 +208,10 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 				host.Attributes["herd_provider"] = []string{p.Name()}
 			}
 			return hosts, err
-		}, ctx, p)
+		})
 	}
 
-	untypedHosts, err := sg.Wait()
+	hostSets, err := sg.Wait()
 	lm("", true, nil)
 	seen := make(map[string]int)
 	allHosts := make(Hosts, 0)
@@ -220,8 +220,7 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 		return err
 	}
 
-	for _, uh := range untypedHosts {
-		hosts := uh.(Hosts)
+	for _, hosts := range hostSets {
 		for _, host := range hosts {
 			if existing, ok := seen[host.Name]; ok {
 				allHosts[existing].Amend(host)

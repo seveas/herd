@@ -94,7 +94,7 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		return nil, err
 	}
 	logrus.Debugf("Consul datacenters: %v", datacenters)
-	sg := scattergather.New(int64(len(datacenters)))
+	sg := scattergather.New[herd.Hosts](int64(len(datacenters)))
 	for _, dc := range datacenters {
 		if len(p.config.Datacenters) != 0 && !stringInList(p.config.Datacenters, dc) {
 			continue
@@ -102,8 +102,8 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		if len(p.config.ExcludeDatacenters) != 0 && stringInList(p.config.ExcludeDatacenters, dc) {
 			continue
 		}
-		sg.Run(func(ctx context.Context, args ...interface{}) (interface{}, error) {
-			dc := args[0].(string)
+		dc := dc
+		sg.Run(ctx, func() (herd.Hosts, error) {
 			name := fmt.Sprintf("%s@%s", p.name, dc)
 			lm(name, false, nil)
 			hosts, err := p.loadDatacenter(ctx, dc)
@@ -112,17 +112,17 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 				err = nil
 			}
 			return hosts, err
-		}, ctx, dc)
+		})
 	}
 
-	untypedResults, err := sg.Wait()
+	allHosts, err := sg.Wait()
 	if err != nil {
 		return nil, err
 	}
 
 	hosts := make(herd.Hosts, 0)
-	for _, hu := range untypedResults {
-		hosts = append(hosts, hu.(herd.Hosts)...)
+	for _, h := range allHosts {
+		hosts = append(hosts, h...)
 	}
 	return hosts, nil
 }

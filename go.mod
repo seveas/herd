@@ -1,6 +1,6 @@
 module github.com/seveas/herd
 
-go 1.17
+go 1.18
 
 require (
 	cloud.google.com/go v0.97.0
@@ -21,7 +21,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/miekg/dns v1.1.43
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
-	github.com/seveas/scattergather v0.0.0-20210110122831-adaf8cbaca34
+	github.com/seveas/scattergather v0.0.0-20220426083153-06e9d90e54fd
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/cobra v1.1.1
