@@ -87,7 +87,7 @@ func TestConsulMock(t *testing.T) {
 			}
 			for _, ss := range s {
 				if sts, ok := h.Attributes["service:"+ss]; !ok {
-					t.Errorf("service tags not set for %s/%s", h.Name, ss)
+					t.Errorf("service tags not set for %s/%s %v", h.Name, ss, h.Attributes)
 				} else {
 					st := sts.([]string)
 					if st[0] != ss || st[1] != ss+"X" {

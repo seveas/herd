@@ -136,6 +136,13 @@ func appendService(host *herd.Host, attribute, service string) {
 	host.Attributes[attribute] = append(services, service)
 }
 
+type nodeInfo struct {
+	health string
+	tags   []string
+}
+
+type serviceInfo map[string]*nodeInfo
+
 func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Hosts, error) {
 	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(p.consulConfig)
@@ -158,41 +165,57 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 	if err != nil {
 		return nil, err
 	}
-	for service, _ := range services {
-		servicenodes, _, err := catalog.Service(service, "", opts)
-		if err != nil {
-			return nil, err
-		}
-		for _, service := range servicenodes {
-			h := hosts[nodePositions[service.Node]]
-			appendService(h, "service", service.ServiceName)
-			h.Attributes[fmt.Sprintf("service:%s", service.ServiceName)] = service.ServiceTags
-		}
-		health := client.Health()
-		checks, _, err := health.Checks(service, opts)
-		if err != nil {
-			return nil, err
-		}
-		serviceHealth := make(map[string]bool)
-		for _, check := range checks {
-			v, ok := serviceHealth[check.Node]
-			serviceHealth[check.Node] = (v || !ok) && check.Status == "passing"
-		}
-		for host, healthy := range serviceHealth {
-			h := hosts[nodePositions[host]]
-			if healthy {
-				appendService(h, "service_healthy", service)
-			} else {
-				appendService(h, "service_unhealthy", service)
+	sg := scattergather.New[map[string]serviceInfo](5)
+	for service := range services {
+		service := service
+		sg.Run(ctx, func() (map[string]serviceInfo, error) {
+			ret := make(serviceInfo)
+			servicenodes, _, err := catalog.Service(service, "", opts)
+			if err != nil {
+				return nil, err
+			}
+			for _, service := range servicenodes {
+				ret[service.Node] = &nodeInfo{tags: service.ServiceTags}
+			}
+			health := client.Health()
+			checks, _, err := health.Checks(service, opts)
+			if err != nil {
+				return nil, err
+			}
+			for _, check := range checks {
+				if check.Status != "passing" {
+					ret[check.Node].health = "unhealthy"
+				} else if ret[check.Node].health != "unhealthy" {
+					ret[check.Node].health = "healthy"
+				}
+			}
+			return map[string]serviceInfo{service: ret}, nil
+		})
+	}
+	serviceNodes, err := sg.Wait()
+	if err != nil {
+		return nil, err
+	}
+	for _, serviceNode := range serviceNodes {
+		for service, nodes := range serviceNode {
+			for host, info := range nodes {
+				h := hosts[nodePositions[host]]
+				h.Attributes[fmt.Sprintf("service:%s", service)] = info.tags
+				appendService(h, "service", service)
+				if info.health != "" {
+					appendService(h, "service_"+info.health, service)
+				}
 			}
 		}
 	}
 
 	for _, h := range hosts {
-		if s, ok := h.Attributes["service"]; ok {
-			ss := s.([]string)
-			sort.Strings(ss)
-			h.Attributes["service"] = ss
+		for _, attr := range []string{"service", "service_healthy", "service_unhealthy"} {
+			if s, ok := h.Attributes[attr]; ok {
+				ss := s.([]string)
+				sort.Strings(ss)
+				h.Attributes[attr] = ss
+			}
 		}
 	}
 	return hosts, nil
