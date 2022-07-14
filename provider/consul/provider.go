@@ -159,7 +159,7 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 	for i, node := range catalognodes {
 		nodePositions[node.Node] = i
 		ap := strings.Split(node.Address, ":")
-		hosts[i] = herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter})
+		hosts[i] = herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter, "node_address": node.Address})
 	}
 	services, _, err := catalog.Services(opts)
 	if err != nil {
