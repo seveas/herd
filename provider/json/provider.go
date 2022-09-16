@@ -68,7 +68,7 @@ func (p *jsonProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.H
 
 	var hosts herd.Hosts
 	err = json.Unmarshal(data, &hosts)
-	return nil, err
+	return hosts, err
 }
 
 var _ herd.DataLoader = &jsonProvider{}

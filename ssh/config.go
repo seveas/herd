@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/seveas/herd"
-
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
@@ -50,13 +49,14 @@ func newConfig(u user.User) *config {
 }
 
 func (c *config) readOpenSSHConfig() error {
-	fn := filepath.Join(c.user.HomeDir, ".ssh", "config")
-	blocks, err := parseConfig(fn)
+	baseDir := filepath.Join(c.user.HomeDir, ".ssh")
+	blocks, err := parseConfig(true, baseDir, "config")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 	c.blocks = blocks
-	blocks, err = parseConfig("/etc/ssh/ssh_config")
+	baseDir = filepath.Join("/etc", "ssh")
+	blocks, err = parseConfig(true, baseDir, "ssh_config")
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
@@ -98,15 +98,22 @@ func (c *configBlock) updateFromBlock(o *configBlock) {
 // Parse an openssh config file
 var splitWhitespace = regexp.MustCompile("\\s")
 
-func parseConfig(file string) ([]*configBlock, error) {
-	data, err := os.ReadFile(file)
+func parseConfig(main bool, baseDir string, file string) ([]*configBlock, error) {
+	fname := file
+	if !filepath.IsAbs(file) {
+		fname = filepath.Join(baseDir, file)
+	}
+	data, err := os.ReadFile(fname)
 	if err != nil {
 		return nil, err
 	}
 	configs := make([]*configBlock, 0)
 
 	// Anything before the first Host section is global
-	config := newConfigBlock([]string{"*"})
+	var config *configBlock
+	if main {
+		config = newConfigBlock([]string{"*"})
+	}
 	seen := make(map[string]bool)
 
 	for _, line := range strings.Split(string(data), "\n") {
@@ -125,16 +132,34 @@ func parseConfig(file string) ([]*configBlock, error) {
 
 		// New host section, add the existing section to the returned configs
 		if key == "host" {
-			configs = append(configs, config)
+			if config != nil && val != "*" {
+				configs = append(configs, config)
+			}
 			config = newConfigBlock(splitWhitespace.Split(val, -1))
 			seen = make(map[string]bool)
 			continue
+		}
+		if key == "include" {
+			if config != nil {
+				configs = append(configs, config)
+			}
+			cfgs, err := parseInclude(baseDir, val)
+			if err != nil {
+				return nil, err
+			}
+			configs = append(configs, cfgs...)
 		}
 
 		if _, ok := seen[key]; ok {
 			continue
 		}
 		seen[key] = true
+
+		// at this point config should not be nil, but raise an error rather
+		// than panicking if this assumption is wrong
+		if config == nil {
+			return nil, errors.New("unexpected state: config is nil")
+		}
 
 		switch key {
 		case "user":
@@ -160,6 +185,48 @@ func parseConfig(file string) ([]*configBlock, error) {
 		}
 	}
 	return append(configs, config), nil
+}
+
+func parseInclude(baseDir string, file string) ([]*configBlock, error) {
+	files := strings.Split(file, " ")
+	var includes []string
+	for _, f := range files {
+		abs := filepath.IsAbs(file)
+		if strings.ContainsAny(f, "*?[") {
+			var matches []string
+			var err error
+			if abs {
+				matches, err = filepath.Glob(f)
+			} else {
+				matches, err = filepath.Glob(filepath.Join(baseDir, f))
+			}
+			if err != nil {
+				return nil, err
+			}
+			for i, s := range matches {
+				if strings.HasPrefix(s, baseDir) {
+					rel, err := filepath.Rel(baseDir, s)
+					if err != nil {
+						return nil, err
+					}
+					matches[i] = rel
+				}
+			}
+			includes = append(includes, matches...)
+		} else {
+			includes = append(includes, f)
+		}
+	}
+
+	var ret []*configBlock
+	for _, inc := range includes {
+		cfgs, err := parseConfig(false, baseDir, inc)
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, cfgs...)
+	}
+	return ret, nil
 }
 
 func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string, error) {
@@ -216,8 +283,8 @@ func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string
 // Find all variables relevant for a host, first match wins
 func (c *config) forHost(host *herd.Host) *configBlock {
 	b := newConfigBlock(nil)
-	b.clientConfig.User = c.user.Username
 	b.readPuttyConfig(host.Name)
+
 	for i := len(c.blocks) - 1; i >= 0; i-- {
 		config := c.blocks[i]
 		for _, g := range config.globs {
@@ -226,6 +293,10 @@ func (c *config) forHost(host *herd.Host) *configBlock {
 				break
 			}
 		}
+	}
+	// set the user if none was provided by the blocks
+	if b.clientConfig.User == "" {
+		b.clientConfig.User = c.user.Username
 	}
 
 	if path, err := c.expandSshTokens(b.identityFile, host.Name, b); err == nil {
