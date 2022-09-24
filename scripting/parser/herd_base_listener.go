@@ -1,8 +1,8 @@
-// Code generated from Herd.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
 
 package parser // Herd
 
-import "github.com/antlr/antlr4/runtime/Go/antlr"
+import "github.com/antlr/antlr4/runtime/Go/antlr/v4"
 
 // BaseHerdListener is a complete listener for a parse tree produced by HerdParser.
 type BaseHerdListener struct{}

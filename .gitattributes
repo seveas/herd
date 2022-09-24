@@ -1,0 +1,3 @@
+*.pb.go -diff linguist-generated=true
+*.interp  -diff linguist-generated=true
+scripting/parser/herd_*.go -diff linguist-generated=true

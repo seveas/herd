@@ -1,121 +1,141 @@
-// Code generated from Herd.g4 by ANTLR 4.8. DO NOT EDIT.
+// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
 
 package parser // Herd
 
 import (
 	"fmt"
-	"reflect"
 	"strconv"
+	"sync"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 )
 
 // Suppress unused import errors
 var _ = fmt.Printf
-var _ = reflect.Copy
 var _ = strconv.Itoa
-
-var parserATN = []uint16{
-	3, 24715, 42794, 33075, 47597, 16764, 15335, 30598, 22884, 3, 26, 136,
-	4, 2, 9, 2, 4, 3, 9, 3, 4, 4, 9, 4, 4, 5, 9, 5, 4, 6, 9, 6, 4, 7, 9, 7,
-	4, 8, 9, 8, 4, 9, 9, 9, 4, 10, 9, 10, 4, 11, 9, 11, 4, 12, 9, 12, 4, 13,
-	9, 13, 3, 2, 7, 2, 28, 10, 2, 12, 2, 14, 2, 31, 11, 2, 3, 2, 3, 2, 3, 3,
-	3, 3, 3, 3, 3, 3, 3, 3, 5, 3, 40, 10, 3, 3, 3, 3, 3, 3, 4, 3, 4, 3, 5,
-	3, 5, 3, 5, 5, 5, 49, 10, 5, 3, 6, 3, 6, 3, 6, 3, 6, 7, 6, 55, 10, 6, 12,
-	6, 14, 6, 58, 11, 6, 3, 6, 6, 6, 61, 10, 6, 13, 6, 14, 6, 62, 5, 6, 65,
-	10, 6, 3, 7, 3, 7, 3, 7, 3, 7, 7, 7, 71, 10, 7, 12, 7, 14, 7, 74, 11, 7,
-	3, 7, 6, 7, 77, 10, 7, 13, 7, 14, 7, 78, 5, 7, 81, 10, 7, 3, 8, 3, 8, 3,
-	8, 5, 8, 86, 10, 8, 3, 9, 3, 9, 3, 9, 3, 9, 3, 9, 5, 9, 93, 10, 9, 3, 10,
-	3, 10, 3, 11, 3, 11, 3, 11, 5, 11, 100, 10, 11, 3, 12, 3, 12, 3, 12, 3,
-	12, 3, 12, 3, 12, 7, 12, 108, 10, 12, 12, 12, 14, 12, 111, 11, 12, 3, 12,
-	3, 12, 5, 12, 115, 10, 12, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3, 13, 3,
-	13, 3, 13, 3, 13, 3, 13, 7, 13, 127, 10, 13, 12, 13, 14, 13, 130, 11, 13,
-	3, 13, 3, 13, 5, 13, 134, 10, 13, 3, 13, 2, 2, 14, 2, 4, 6, 8, 10, 12,
-	14, 16, 18, 20, 22, 24, 2, 6, 3, 2, 18, 19, 4, 2, 20, 20, 22, 22, 4, 2,
-	21, 21, 23, 23, 4, 2, 16, 18, 24, 24, 2, 144, 2, 29, 3, 2, 2, 2, 4, 39,
-	3, 2, 2, 2, 6, 43, 3, 2, 2, 2, 8, 45, 3, 2, 2, 2, 10, 50, 3, 2, 2, 2, 12,
-	66, 3, 2, 2, 2, 14, 82, 3, 2, 2, 2, 16, 87, 3, 2, 2, 2, 18, 94, 3, 2, 2,
-	2, 20, 99, 3, 2, 2, 2, 22, 114, 3, 2, 2, 2, 24, 133, 3, 2, 2, 2, 26, 28,
-	5, 4, 3, 2, 27, 26, 3, 2, 2, 2, 28, 31, 3, 2, 2, 2, 29, 27, 3, 2, 2, 2,
-	29, 30, 3, 2, 2, 2, 30, 32, 3, 2, 2, 2, 31, 29, 3, 2, 2, 2, 32, 33, 7,
-	2, 2, 3, 33, 3, 3, 2, 2, 2, 34, 40, 5, 6, 4, 2, 35, 40, 5, 8, 5, 2, 36,
-	40, 5, 10, 6, 2, 37, 40, 5, 12, 7, 2, 38, 40, 5, 14, 8, 2, 39, 34, 3, 2,
-	2, 2, 39, 35, 3, 2, 2, 2, 39, 36, 3, 2, 2, 2, 39, 37, 3, 2, 2, 2, 39, 38,
-	3, 2, 2, 2, 39, 40, 3, 2, 2, 2, 40, 41, 3, 2, 2, 2, 41, 42, 7, 3, 2, 2,
-	42, 5, 3, 2, 2, 2, 43, 44, 7, 8, 2, 2, 44, 7, 3, 2, 2, 2, 45, 48, 7, 11,
-	2, 2, 46, 47, 7, 18, 2, 2, 47, 49, 5, 18, 10, 2, 48, 46, 3, 2, 2, 2, 48,
-	49, 3, 2, 2, 2, 49, 9, 3, 2, 2, 2, 50, 51, 7, 12, 2, 2, 51, 64, 7, 15,
-	2, 2, 52, 56, 9, 2, 2, 2, 53, 55, 5, 16, 9, 2, 54, 53, 3, 2, 2, 2, 55,
-	58, 3, 2, 2, 2, 56, 54, 3, 2, 2, 2, 56, 57, 3, 2, 2, 2, 57, 65, 3, 2, 2,
-	2, 58, 56, 3, 2, 2, 2, 59, 61, 5, 16, 9, 2, 60, 59, 3, 2, 2, 2, 61, 62,
-	3, 2, 2, 2, 62, 60, 3, 2, 2, 2, 62, 63, 3, 2, 2, 2, 63, 65, 3, 2, 2, 2,
-	64, 52, 3, 2, 2, 2, 64, 60, 3, 2, 2, 2, 65, 11, 3, 2, 2, 2, 66, 67, 7,
-	13, 2, 2, 67, 80, 7, 15, 2, 2, 68, 72, 9, 2, 2, 2, 69, 71, 5, 16, 9, 2,
-	70, 69, 3, 2, 2, 2, 71, 74, 3, 2, 2, 2, 72, 70, 3, 2, 2, 2, 72, 73, 3,
-	2, 2, 2, 73, 81, 3, 2, 2, 2, 74, 72, 3, 2, 2, 2, 75, 77, 5, 16, 9, 2, 76,
-	75, 3, 2, 2, 2, 77, 78, 3, 2, 2, 2, 78, 76, 3, 2, 2, 2, 78, 79, 3, 2, 2,
-	2, 79, 81, 3, 2, 2, 2, 80, 68, 3, 2, 2, 2, 80, 76, 3, 2, 2, 2, 81, 13,
-	3, 2, 2, 2, 82, 83, 7, 14, 2, 2, 83, 85, 7, 15, 2, 2, 84, 86, 5, 24, 13,
-	2, 85, 84, 3, 2, 2, 2, 85, 86, 3, 2, 2, 2, 86, 15, 3, 2, 2, 2, 87, 92,
-	7, 18, 2, 2, 88, 89, 9, 3, 2, 2, 89, 93, 5, 18, 10, 2, 90, 91, 9, 4, 2,
-	2, 91, 93, 7, 25, 2, 2, 92, 88, 3, 2, 2, 2, 92, 90, 3, 2, 2, 2, 93, 17,
-	3, 2, 2, 2, 94, 95, 9, 5, 2, 2, 95, 19, 3, 2, 2, 2, 96, 100, 5, 18, 10,
-	2, 97, 100, 5, 22, 12, 2, 98, 100, 5, 24, 13, 2, 99, 96, 3, 2, 2, 2, 99,
-	97, 3, 2, 2, 2, 99, 98, 3, 2, 2, 2, 100, 21, 3, 2, 2, 2, 101, 102, 7, 9,
-	2, 2, 102, 115, 7, 4, 2, 2, 103, 104, 7, 9, 2, 2, 104, 109, 5, 20, 11,
-	2, 105, 106, 7, 5, 2, 2, 106, 108, 5, 20, 11, 2, 107, 105, 3, 2, 2, 2,
-	108, 111, 3, 2, 2, 2, 109, 107, 3, 2, 2, 2, 109, 110, 3, 2, 2, 2, 110,
-	112, 3, 2, 2, 2, 111, 109, 3, 2, 2, 2, 112, 113, 7, 4, 2, 2, 113, 115,
-	3, 2, 2, 2, 114, 101, 3, 2, 2, 2, 114, 103, 3, 2, 2, 2, 115, 23, 3, 2,
-	2, 2, 116, 117, 7, 10, 2, 2, 117, 134, 7, 6, 2, 2, 118, 119, 7, 10, 2,
-	2, 119, 120, 7, 18, 2, 2, 120, 121, 7, 7, 2, 2, 121, 128, 5, 20, 11, 2,
-	122, 123, 7, 5, 2, 2, 123, 124, 7, 18, 2, 2, 124, 125, 7, 7, 2, 2, 125,
-	127, 5, 20, 11, 2, 126, 122, 3, 2, 2, 2, 127, 130, 3, 2, 2, 2, 128, 126,
-	3, 2, 2, 2, 128, 129, 3, 2, 2, 2, 129, 131, 3, 2, 2, 2, 130, 128, 3, 2,
-	2, 2, 131, 132, 7, 6, 2, 2, 132, 134, 3, 2, 2, 2, 133, 116, 3, 2, 2, 2,
-	133, 118, 3, 2, 2, 2, 134, 25, 3, 2, 2, 2, 18, 29, 39, 48, 56, 62, 64,
-	72, 78, 80, 85, 92, 99, 109, 114, 128, 133,
-}
-var deserializer = antlr.NewATNDeserializer(nil)
-var deserializedATN = deserializer.DeserializeFromUInt16(parserATN)
-
-var literalNames = []string{
-	"", "'\n'", "']'", "','", "'}'", "':'", "", "'['", "'{'", "'set'", "'add'",
-	"'remove'", "'list'", "'hosts'", "", "", "", "", "'=='", "'=~'", "'!='",
-	"'!~'",
-}
-var symbolicNames = []string{
-	"", "", "", "", "", "", "RUN", "SB_OPEN", "CB_OPEN", "SET", "ADD", "REMOVE",
-	"LIST", "HOSTS", "DURATION", "NUMBER", "IDENTIFIER", "GLOB", "EQUALS",
-	"MATCHES", "NOT_EQUALS", "NOT_MATCHES", "STRING", "REGEXP", "SKIP_",
-}
-
-var ruleNames = []string{
-	"prog", "line", "run", "set", "add", "remove", "list", "filter", "scalar",
-	"value", "array", "hash",
-}
-var decisionToDFA = make([]*antlr.DFA, len(deserializedATN.DecisionToState))
-
-func init() {
-	for index, ds := range deserializedATN.DecisionToState {
-		decisionToDFA[index] = antlr.NewDFA(ds, index)
-	}
-}
+var _ = sync.Once{}
 
 type HerdParser struct {
 	*antlr.BaseParser
 }
 
+var herdParserStaticData struct {
+	once                   sync.Once
+	serializedATN          []int32
+	literalNames           []string
+	symbolicNames          []string
+	ruleNames              []string
+	predictionContextCache *antlr.PredictionContextCache
+	atn                    *antlr.ATN
+	decisionToDFA          []*antlr.DFA
+}
+
+func herdParserInit() {
+	staticData := &herdParserStaticData
+	staticData.literalNames = []string{
+		"", "'\\n'", "']'", "','", "'}'", "':'", "", "'['", "'{'", "'set'",
+		"'add'", "'remove'", "'list'", "'hosts'", "", "", "", "", "'=='", "'=~'",
+		"'!='", "'!~'",
+	}
+	staticData.symbolicNames = []string{
+		"", "", "", "", "", "", "RUN", "SB_OPEN", "CB_OPEN", "SET", "ADD", "REMOVE",
+		"LIST", "HOSTS", "DURATION", "NUMBER", "IDENTIFIER", "GLOB", "EQUALS",
+		"MATCHES", "NOT_EQUALS", "NOT_MATCHES", "STRING", "REGEXP", "SKIP_",
+	}
+	staticData.ruleNames = []string{
+		"prog", "line", "run", "set", "add", "remove", "list", "filter", "scalar",
+		"value", "array", "hash",
+	}
+	staticData.predictionContextCache = antlr.NewPredictionContextCache()
+	staticData.serializedATN = []int32{
+		4, 1, 24, 134, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
+		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7,
+		10, 2, 11, 7, 11, 1, 0, 5, 0, 26, 8, 0, 10, 0, 12, 0, 29, 9, 0, 1, 0, 1,
+		0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 38, 8, 1, 1, 1, 1, 1, 1, 2, 1, 2,
+		1, 3, 1, 3, 1, 3, 3, 3, 47, 8, 3, 1, 4, 1, 4, 1, 4, 1, 4, 5, 4, 53, 8,
+		4, 10, 4, 12, 4, 56, 9, 4, 1, 4, 4, 4, 59, 8, 4, 11, 4, 12, 4, 60, 3, 4,
+		63, 8, 4, 1, 5, 1, 5, 1, 5, 1, 5, 5, 5, 69, 8, 5, 10, 5, 12, 5, 72, 9,
+		5, 1, 5, 4, 5, 75, 8, 5, 11, 5, 12, 5, 76, 3, 5, 79, 8, 5, 1, 6, 1, 6,
+		1, 6, 3, 6, 84, 8, 6, 1, 7, 1, 7, 1, 7, 1, 7, 1, 7, 3, 7, 91, 8, 7, 1,
+		8, 1, 8, 1, 9, 1, 9, 1, 9, 3, 9, 98, 8, 9, 1, 10, 1, 10, 1, 10, 1, 10,
+		1, 10, 1, 10, 5, 10, 106, 8, 10, 10, 10, 12, 10, 109, 9, 10, 1, 10, 1,
+		10, 3, 10, 113, 8, 10, 1, 11, 1, 11, 1, 11, 1, 11, 1, 11, 1, 11, 1, 11,
+		1, 11, 1, 11, 1, 11, 5, 11, 125, 8, 11, 10, 11, 12, 11, 128, 9, 11, 1,
+		11, 1, 11, 3, 11, 132, 8, 11, 1, 11, 0, 0, 12, 0, 2, 4, 6, 8, 10, 12, 14,
+		16, 18, 20, 22, 0, 4, 1, 0, 16, 17, 2, 0, 18, 18, 20, 20, 2, 0, 19, 19,
+		21, 21, 2, 0, 14, 16, 22, 22, 142, 0, 27, 1, 0, 0, 0, 2, 37, 1, 0, 0, 0,
+		4, 41, 1, 0, 0, 0, 6, 43, 1, 0, 0, 0, 8, 48, 1, 0, 0, 0, 10, 64, 1, 0,
+		0, 0, 12, 80, 1, 0, 0, 0, 14, 85, 1, 0, 0, 0, 16, 92, 1, 0, 0, 0, 18, 97,
+		1, 0, 0, 0, 20, 112, 1, 0, 0, 0, 22, 131, 1, 0, 0, 0, 24, 26, 3, 2, 1,
+		0, 25, 24, 1, 0, 0, 0, 26, 29, 1, 0, 0, 0, 27, 25, 1, 0, 0, 0, 27, 28,
+		1, 0, 0, 0, 28, 30, 1, 0, 0, 0, 29, 27, 1, 0, 0, 0, 30, 31, 5, 0, 0, 1,
+		31, 1, 1, 0, 0, 0, 32, 38, 3, 4, 2, 0, 33, 38, 3, 6, 3, 0, 34, 38, 3, 8,
+		4, 0, 35, 38, 3, 10, 5, 0, 36, 38, 3, 12, 6, 0, 37, 32, 1, 0, 0, 0, 37,
+		33, 1, 0, 0, 0, 37, 34, 1, 0, 0, 0, 37, 35, 1, 0, 0, 0, 37, 36, 1, 0, 0,
+		0, 37, 38, 1, 0, 0, 0, 38, 39, 1, 0, 0, 0, 39, 40, 5, 1, 0, 0, 40, 3, 1,
+		0, 0, 0, 41, 42, 5, 6, 0, 0, 42, 5, 1, 0, 0, 0, 43, 46, 5, 9, 0, 0, 44,
+		45, 5, 16, 0, 0, 45, 47, 3, 16, 8, 0, 46, 44, 1, 0, 0, 0, 46, 47, 1, 0,
+		0, 0, 47, 7, 1, 0, 0, 0, 48, 49, 5, 10, 0, 0, 49, 62, 5, 13, 0, 0, 50,
+		54, 7, 0, 0, 0, 51, 53, 3, 14, 7, 0, 52, 51, 1, 0, 0, 0, 53, 56, 1, 0,
+		0, 0, 54, 52, 1, 0, 0, 0, 54, 55, 1, 0, 0, 0, 55, 63, 1, 0, 0, 0, 56, 54,
+		1, 0, 0, 0, 57, 59, 3, 14, 7, 0, 58, 57, 1, 0, 0, 0, 59, 60, 1, 0, 0, 0,
+		60, 58, 1, 0, 0, 0, 60, 61, 1, 0, 0, 0, 61, 63, 1, 0, 0, 0, 62, 50, 1,
+		0, 0, 0, 62, 58, 1, 0, 0, 0, 63, 9, 1, 0, 0, 0, 64, 65, 5, 11, 0, 0, 65,
+		78, 5, 13, 0, 0, 66, 70, 7, 0, 0, 0, 67, 69, 3, 14, 7, 0, 68, 67, 1, 0,
+		0, 0, 69, 72, 1, 0, 0, 0, 70, 68, 1, 0, 0, 0, 70, 71, 1, 0, 0, 0, 71, 79,
+		1, 0, 0, 0, 72, 70, 1, 0, 0, 0, 73, 75, 3, 14, 7, 0, 74, 73, 1, 0, 0, 0,
+		75, 76, 1, 0, 0, 0, 76, 74, 1, 0, 0, 0, 76, 77, 1, 0, 0, 0, 77, 79, 1,
+		0, 0, 0, 78, 66, 1, 0, 0, 0, 78, 74, 1, 0, 0, 0, 79, 11, 1, 0, 0, 0, 80,
+		81, 5, 12, 0, 0, 81, 83, 5, 13, 0, 0, 82, 84, 3, 22, 11, 0, 83, 82, 1,
+		0, 0, 0, 83, 84, 1, 0, 0, 0, 84, 13, 1, 0, 0, 0, 85, 90, 5, 16, 0, 0, 86,
+		87, 7, 1, 0, 0, 87, 91, 3, 16, 8, 0, 88, 89, 7, 2, 0, 0, 89, 91, 5, 23,
+		0, 0, 90, 86, 1, 0, 0, 0, 90, 88, 1, 0, 0, 0, 91, 15, 1, 0, 0, 0, 92, 93,
+		7, 3, 0, 0, 93, 17, 1, 0, 0, 0, 94, 98, 3, 16, 8, 0, 95, 98, 3, 20, 10,
+		0, 96, 98, 3, 22, 11, 0, 97, 94, 1, 0, 0, 0, 97, 95, 1, 0, 0, 0, 97, 96,
+		1, 0, 0, 0, 98, 19, 1, 0, 0, 0, 99, 100, 5, 7, 0, 0, 100, 113, 5, 2, 0,
+		0, 101, 102, 5, 7, 0, 0, 102, 107, 3, 18, 9, 0, 103, 104, 5, 3, 0, 0, 104,
+		106, 3, 18, 9, 0, 105, 103, 1, 0, 0, 0, 106, 109, 1, 0, 0, 0, 107, 105,
+		1, 0, 0, 0, 107, 108, 1, 0, 0, 0, 108, 110, 1, 0, 0, 0, 109, 107, 1, 0,
+		0, 0, 110, 111, 5, 2, 0, 0, 111, 113, 1, 0, 0, 0, 112, 99, 1, 0, 0, 0,
+		112, 101, 1, 0, 0, 0, 113, 21, 1, 0, 0, 0, 114, 115, 5, 8, 0, 0, 115, 132,
+		5, 4, 0, 0, 116, 117, 5, 8, 0, 0, 117, 118, 5, 16, 0, 0, 118, 119, 5, 5,
+		0, 0, 119, 126, 3, 18, 9, 0, 120, 121, 5, 3, 0, 0, 121, 122, 5, 16, 0,
+		0, 122, 123, 5, 5, 0, 0, 123, 125, 3, 18, 9, 0, 124, 120, 1, 0, 0, 0, 125,
+		128, 1, 0, 0, 0, 126, 124, 1, 0, 0, 0, 126, 127, 1, 0, 0, 0, 127, 129,
+		1, 0, 0, 0, 128, 126, 1, 0, 0, 0, 129, 130, 5, 4, 0, 0, 130, 132, 1, 0,
+		0, 0, 131, 114, 1, 0, 0, 0, 131, 116, 1, 0, 0, 0, 132, 23, 1, 0, 0, 0,
+		16, 27, 37, 46, 54, 60, 62, 70, 76, 78, 83, 90, 97, 107, 112, 126, 131,
+	}
+	deserializer := antlr.NewATNDeserializer(nil)
+	staticData.atn = deserializer.Deserialize(staticData.serializedATN)
+	atn := staticData.atn
+	staticData.decisionToDFA = make([]*antlr.DFA, len(atn.DecisionToState))
+	decisionToDFA := staticData.decisionToDFA
+	for index, state := range atn.DecisionToState {
+		decisionToDFA[index] = antlr.NewDFA(state, index)
+	}
+}
+
+// HerdParserInit initializes any static state used to implement HerdParser. By default the
+// static state used to implement the parser is lazily initialized during the first call to
+// NewHerdParser(). You can call this function if you wish to initialize the static state ahead
+// of time.
+func HerdParserInit() {
+	staticData := &herdParserStaticData
+	staticData.once.Do(herdParserInit)
+}
+
+// NewHerdParser produces a new parser instance for the optional input antlr.TokenStream.
 func NewHerdParser(input antlr.TokenStream) *HerdParser {
+	HerdParserInit()
 	this := new(HerdParser)
-
 	this.BaseParser = antlr.NewBaseParser(input)
-
-	this.Interpreter = antlr.NewParserATNSimulator(this, deserializedATN, decisionToDFA, antlr.NewPredictionContextCache())
-	this.RuleNames = ruleNames
-	this.LiteralNames = literalNames
-	this.SymbolicNames = symbolicNames
-	this.GrammarFileName = "Herd.g4"
+	staticData := &herdParserStaticData
+	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.predictionContextCache)
+	this.RuleNames = staticData.ruleNames
+	this.LiteralNames = staticData.literalNames
+	this.SymbolicNames = staticData.symbolicNames
+	this.GrammarFileName = "java-escape"
 
 	return this
 }
@@ -208,12 +228,20 @@ func (s *ProgContext) EOF() antlr.TerminalNode {
 }
 
 func (s *ProgContext) AllLine() []ILineContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*ILineContext)(nil)).Elem())
-	var tst = make([]ILineContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(ILineContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]ILineContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(ILineContext); ok {
 			tst[i] = t.(ILineContext)
+			i++
 		}
 	}
 
@@ -221,7 +249,17 @@ func (s *ProgContext) AllLine() []ILineContext {
 }
 
 func (s *ProgContext) Line(i int) ILineContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*ILineContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(ILineContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -251,6 +289,9 @@ func (s *ProgContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Prog() (localctx IProgContext) {
+	this := p
+	_ = this
+
 	localctx = NewProgContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 0, HerdParserRULE_prog)
 	var _la int
@@ -276,7 +317,7 @@ func (p *HerdParser) Prog() (localctx IProgContext) {
 	p.GetErrorHandler().Sync(p)
 	_la = p.GetTokenStream().LA(1)
 
-	for ((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<HerdParserT__0)|(1<<HerdParserRUN)|(1<<HerdParserSET)|(1<<HerdParserADD)|(1<<HerdParserREMOVE)|(1<<HerdParserLIST))) != 0 {
+	for (int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&7746) != 0 {
 		{
 			p.SetState(24)
 			p.Line()
@@ -333,7 +374,13 @@ func NewLineContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokin
 func (s *LineContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *LineContext) Run() IRunContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IRunContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IRunContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -343,7 +390,13 @@ func (s *LineContext) Run() IRunContext {
 }
 
 func (s *LineContext) Set() ISetContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*ISetContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(ISetContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -353,7 +406,13 @@ func (s *LineContext) Set() ISetContext {
 }
 
 func (s *LineContext) Add() IAddContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IAddContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IAddContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -363,7 +422,13 @@ func (s *LineContext) Add() IAddContext {
 }
 
 func (s *LineContext) Remove() IRemoveContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IRemoveContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IRemoveContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -373,7 +438,13 @@ func (s *LineContext) Remove() IRemoveContext {
 }
 
 func (s *LineContext) List() IListContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IListContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IListContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -403,6 +474,9 @@ func (s *LineContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Line() (localctx ILineContext) {
+	this := p
+	_ = this
+
 	localctx = NewLineContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 2, HerdParserRULE_line)
 
@@ -532,6 +606,9 @@ func (s *RunContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Run() (localctx IRunContext) {
+	this := p
+	_ = this
+
 	localctx = NewRunContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 4, HerdParserRULE_run)
 
@@ -629,7 +706,13 @@ func (s *SetContext) IDENTIFIER() antlr.TerminalNode {
 }
 
 func (s *SetContext) Scalar() IScalarContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IScalarContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IScalarContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -659,6 +742,9 @@ func (s *SetContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Set() (localctx ISetContext) {
+	this := p
+	_ = this
+
 	localctx = NewSetContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 6, HerdParserRULE_set)
 	var _la int
@@ -786,12 +872,20 @@ func (s *AddContext) IDENTIFIER() antlr.TerminalNode {
 }
 
 func (s *AddContext) AllFilter() []IFilterContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IFilterContext)(nil)).Elem())
-	var tst = make([]IFilterContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IFilterContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IFilterContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IFilterContext); ok {
 			tst[i] = t.(IFilterContext)
+			i++
 		}
 	}
 
@@ -799,7 +893,17 @@ func (s *AddContext) AllFilter() []IFilterContext {
 }
 
 func (s *AddContext) Filter(i int) IFilterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IFilterContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IFilterContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -829,6 +933,9 @@ func (s *AddContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Add() (localctx IAddContext) {
+	this := p
+	_ = this
+
 	localctx = NewAddContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 8, HerdParserRULE_add)
 	var _la int
@@ -999,12 +1106,20 @@ func (s *RemoveContext) IDENTIFIER() antlr.TerminalNode {
 }
 
 func (s *RemoveContext) AllFilter() []IFilterContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IFilterContext)(nil)).Elem())
-	var tst = make([]IFilterContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IFilterContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IFilterContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IFilterContext); ok {
 			tst[i] = t.(IFilterContext)
+			i++
 		}
 	}
 
@@ -1012,7 +1127,17 @@ func (s *RemoveContext) AllFilter() []IFilterContext {
 }
 
 func (s *RemoveContext) Filter(i int) IFilterContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IFilterContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IFilterContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1042,6 +1167,9 @@ func (s *RemoveContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Remove() (localctx IRemoveContext) {
+	this := p
+	_ = this
+
 	localctx = NewRemoveContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 10, HerdParserRULE_remove)
 	var _la int
@@ -1193,7 +1321,13 @@ func (s *ListContext) HOSTS() antlr.TerminalNode {
 }
 
 func (s *ListContext) Hash() IHashContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IHashContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IHashContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1223,6 +1357,9 @@ func (s *ListContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) List() (localctx IListContext) {
+	this := p
+	_ = this
+
 	localctx = NewListContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 12, HerdParserRULE_list)
 	var _la int
@@ -1357,7 +1494,13 @@ func (s *FilterContext) IDENTIFIER() antlr.TerminalNode {
 }
 
 func (s *FilterContext) Scalar() IScalarContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IScalarContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IScalarContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1407,6 +1550,9 @@ func (s *FilterContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Filter() (localctx IFilterContext) {
+	this := p
+	_ = this
+
 	localctx = NewFilterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 14, HerdParserRULE_filter)
 	var _la int
@@ -1575,6 +1721,9 @@ func (s *ScalarContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Scalar() (localctx IScalarContext) {
+	this := p
+	_ = this
+
 	localctx = NewScalarContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 16, HerdParserRULE_scalar)
 	var _la int
@@ -1600,7 +1749,7 @@ func (p *HerdParser) Scalar() (localctx IScalarContext) {
 		p.SetState(92)
 		_la = p.GetTokenStream().LA(1)
 
-		if !(((_la)&-(0x1f+1)) == 0 && ((1<<uint(_la))&((1<<HerdParserDURATION)|(1<<HerdParserNUMBER)|(1<<HerdParserIDENTIFIER)|(1<<HerdParserSTRING))) != 0) {
+		if !((int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&4308992) != 0) {
 			p.GetErrorHandler().RecoverInline(p)
 		} else {
 			p.GetErrorHandler().ReportMatch(p)
@@ -1650,7 +1799,13 @@ func NewValueContext(parser antlr.Parser, parent antlr.ParserRuleContext, invoki
 func (s *ValueContext) GetParser() antlr.Parser { return s.parser }
 
 func (s *ValueContext) Scalar() IScalarContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IScalarContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IScalarContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1660,7 +1815,13 @@ func (s *ValueContext) Scalar() IScalarContext {
 }
 
 func (s *ValueContext) Array() IArrayContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IArrayContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IArrayContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1670,7 +1831,13 @@ func (s *ValueContext) Array() IArrayContext {
 }
 
 func (s *ValueContext) Hash() IHashContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IHashContext)(nil)).Elem(), 0)
+	var t antlr.RuleContext
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IHashContext); ok {
+			t = ctx.(antlr.RuleContext)
+			break
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1700,6 +1867,9 @@ func (s *ValueContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Value() (localctx IValueContext) {
+	this := p
+	_ = this
+
 	localctx = NewValueContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 18, HerdParserRULE_value)
 
@@ -1794,12 +1964,20 @@ func (s *ArrayContext) SB_OPEN() antlr.TerminalNode {
 }
 
 func (s *ArrayContext) AllValue() []IValueContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IValueContext)(nil)).Elem())
-	var tst = make([]IValueContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IValueContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IValueContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IValueContext); ok {
 			tst[i] = t.(IValueContext)
+			i++
 		}
 	}
 
@@ -1807,7 +1985,17 @@ func (s *ArrayContext) AllValue() []IValueContext {
 }
 
 func (s *ArrayContext) Value(i int) IValueContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IValueContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IValueContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -1837,6 +2025,9 @@ func (s *ArrayContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Array() (localctx IArrayContext) {
+	this := p
+	_ = this
+
 	localctx = NewArrayContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 20, HerdParserRULE_array)
 	var _la int
@@ -1959,12 +2150,20 @@ func (s *HashContext) IDENTIFIER(i int) antlr.TerminalNode {
 }
 
 func (s *HashContext) AllValue() []IValueContext {
-	var ts = s.GetTypedRuleContexts(reflect.TypeOf((*IValueContext)(nil)).Elem())
-	var tst = make([]IValueContext, len(ts))
+	children := s.GetChildren()
+	len := 0
+	for _, ctx := range children {
+		if _, ok := ctx.(IValueContext); ok {
+			len++
+		}
+	}
 
-	for i, t := range ts {
-		if t != nil {
+	tst := make([]IValueContext, len)
+	i := 0
+	for _, ctx := range children {
+		if t, ok := ctx.(IValueContext); ok {
 			tst[i] = t.(IValueContext)
+			i++
 		}
 	}
 
@@ -1972,7 +2171,17 @@ func (s *HashContext) AllValue() []IValueContext {
 }
 
 func (s *HashContext) Value(i int) IValueContext {
-	var t = s.GetTypedRuleContext(reflect.TypeOf((*IValueContext)(nil)).Elem(), i)
+	var t antlr.RuleContext
+	j := 0
+	for _, ctx := range s.GetChildren() {
+		if _, ok := ctx.(IValueContext); ok {
+			if j == i {
+				t = ctx.(antlr.RuleContext)
+				break
+			}
+			j++
+		}
+	}
 
 	if t == nil {
 		return nil
@@ -2002,6 +2211,9 @@ func (s *HashContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Hash() (localctx IHashContext) {
+	this := p
+	_ = this
+
 	localctx = NewHashContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 22, HerdParserRULE_hash)
 	var _la int

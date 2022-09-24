@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,13 @@ func (l *logrusLogger) Debug(msg string, args ...interface{}) {
 }
 
 func (l *logrusLogger) Info(msg string, args ...interface{}) {
+	// Downgrade the severity of this message, unlike what
+	// https://github.com/hashicorp/go-plugin/pull/195/files says, these
+	// messages are not valuable to us.
+	if strings.HasPrefix(msg, "plugin process exited") {
+		l.Debug(msg, args...)
+		return
+	}
 	l.logger.Infof(l.format(msg, args...))
 }
 

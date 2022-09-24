@@ -131,7 +131,7 @@ func (p *googleProvider) setZones(ctx context.Context, hc *http.Client) error {
 		if err != nil {
 			return err
 		}
-		if *zone.Status == computepb.Zone_UP {
+		if *zone.Status == computepb.Zone_UP.String() {
 			p.config.Zones = append(p.config.Zones, *zone.Name)
 			p.zones[*zone.Name] = zone
 		}

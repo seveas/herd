@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr"
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting/parser"
 	"github.com/sirupsen/logrus"

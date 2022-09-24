@@ -30,7 +30,7 @@ var testcases = []testcase{
 	},
 	{
 		program: "syntax error",
-		errors:  []error{fmt.Errorf("line 1:0 mismatched input 'syntax' expecting {<EOF>, <NEWLINE>, RUN, 'set', 'add', 'remove', 'list'}")},
+		errors:  []error{fmt.Errorf("line 1:0 mismatched input 'syntax' expecting {<EOF>, '\\n', RUN, 'set', 'add', 'remove', 'list'}")},
 	},
 	{
 		program: strings.Join([]string{

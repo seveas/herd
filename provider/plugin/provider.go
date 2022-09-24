@@ -70,6 +70,8 @@ func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
+		// We don't at the moment want to enforce strict checksums, but the plugin library now warns about this
+		SecureConfig: &plugin.SecureConfig{Hash: &fakeHash{}, Checksum: []byte("fake")},
 	})
 
 	rpcClient, err := client.Client()
