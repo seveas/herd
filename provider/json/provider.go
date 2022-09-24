@@ -3,7 +3,6 @@ package json
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -61,7 +60,7 @@ func (p *jsonProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *jsonProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
-	data, err := ioutil.ReadFile(p.config.File)
+	data, err := os.ReadFile(p.config.File)
 	if err != nil {
 		return nil, err
 	}

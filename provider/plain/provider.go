@@ -2,7 +2,6 @@ package plain
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,7 +59,7 @@ func (p *plainTextProvider) ParseViper(v *viper.Viper) error {
 
 func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
 	hosts := make(herd.Hosts, 0)
-	data, err := ioutil.ReadFile(p.config.File)
+	data, err := os.ReadFile(p.config.File)
 	if err != nil {
 		return nil, err
 	}

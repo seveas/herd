@@ -3,7 +3,7 @@ package plugin
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -18,7 +18,7 @@ var testdata string
 
 func init() {
 	logrus.SetLevel(logrus.TraceLevel)
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	_, me, _, _ := runtime.Caller(0)
 	testdata = filepath.Join(filepath.Dir(me), "testdata")
 	os.Setenv("PATH", strings.Join([]string{os.Getenv("PATH"), filepath.Join(testdata, "bin")}, ":"))

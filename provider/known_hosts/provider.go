@@ -3,7 +3,6 @@ package known_hosts
 import (
 	"context"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -69,7 +68,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 	seen := make(map[string]int)
 	for _, f := range p.config.Files {
 		hashed := false
-		data, err := ioutil.ReadFile(f)
+		data, err := os.ReadFile(f)
 		if err != nil {
 			continue
 		}

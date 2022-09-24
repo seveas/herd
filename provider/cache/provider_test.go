@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -45,7 +44,7 @@ func (p *fakeProvider) ParseViper(v *viper.Viper) error {
 }
 
 func TestCache(t *testing.T) {
-	tmpdir, err := ioutil.TempDir("", "herd-test-cache-")
+	tmpdir, err := os.MkdirTemp("", "herd-test-cache-")
 	if err != nil {
 		t.Fatalf("Unable to create temporary directory: %s", err.Error())
 	}
@@ -88,7 +87,7 @@ func TestCache(t *testing.T) {
 }
 
 func TestRelativeFiles(t *testing.T) {
-	tmpdir, err := ioutil.TempDir("", "herd-test-cache-")
+	tmpdir, err := os.MkdirTemp("", "herd-test-cache-")
 	if err != nil {
 		t.Fatalf("Unable to create temporary directory: %s", err.Error())
 	}

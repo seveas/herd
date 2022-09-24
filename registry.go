@@ -3,7 +3,6 @@ package herd
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/exec"
@@ -258,7 +257,7 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes, sam
 func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) Hosts {
 	ret := make(Hosts, 0)
 	seen := make(map[string]int)
-	data, err := ioutil.ReadFile(fn)
+	data, err := os.ReadFile(fn)
 	if err != nil {
 		logrus.Errorf("Error reading %s: %s", fn, err)
 		return ret

@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/seveas/herd"
@@ -28,7 +28,7 @@ func (p *providerImpl) Configure(values map[string]interface{}) error {
 }
 
 func (p *providerImpl) Load(ctx context.Context, logger common.Logger) (herd.Hosts, error) {
-	logrus.SetOutput(ioutil.Discard)
+	logrus.SetOutput(io.Discard)
 	logrus.AddHook(&logrusHook{logger: logger})
 	return p.provider.Load(ctx, logger.LoadingMessage)
 }

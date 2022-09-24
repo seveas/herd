@@ -2,11 +2,12 @@ package scripting
 
 import (
 	"fmt"
-	"github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/seveas/herd"
 )
@@ -129,7 +130,7 @@ hostspecLoop:
 }
 
 func (e *ScriptEngine) ParseScriptFile(fn string) error {
-	code, err := ioutil.ReadFile(fn)
+	code, err := os.ReadFile(fn)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"time"
@@ -93,7 +92,7 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, e
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
 		hosts := make(herd.Hosts, 0)
-		data, err := ioutil.ReadFile(c.config.File)
+		data, err := os.ReadFile(c.config.File)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +111,7 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, e
 		if data, err = json.Marshal(hosts); err != nil {
 			return nil, err
 		}
-		if err = ioutil.WriteFile(c.config.File, data, 0644); err != nil {
+		if err = os.WriteFile(c.config.File, data, 0644); err != nil {
 			return nil, err
 		}
 	}
