@@ -118,11 +118,11 @@ func (c *GRPCLoggerClient) LoadingMessage(name string, done bool, err error) {
 	if err != nil {
 		errs = err.Error()
 	}
-	c.client.LoadingMessage(context.Background(), &LoadingMessageRequest{Name: name, Done: done, Err: errs})
+	_, _ = c.client.LoadingMessage(context.Background(), &LoadingMessageRequest{Name: name, Done: done, Err: errs})
 }
 
 func (c *GRPCLoggerClient) EmitLogMessage(level logrus.Level, message string) {
-	c.client.EmitLogMessage(context.Background(), &EmitLogMessageRequest{Level: uint32(level), Message: message})
+	_, _ = c.client.EmitLogMessage(context.Background(), &EmitLogMessageRequest{Level: uint32(level), Message: message})
 }
 
 type GRPCLoggerServer struct {

@@ -15,7 +15,9 @@ func TestPrometheus(t *testing.T) {
 	p.config.Jobs = []string{"node"}
 	v := viper.New()
 	v.Set("url", "http://prometheus.herd.ci:9100/api/v1/targets")
-	p.ParseViper(v)
+	if err := p.ParseViper(v); err != nil {
+		t.Errorf("ParseViper failed: %s", err)
+	}
 
 	ctx := context.Background()
 	httpmock.Activate()

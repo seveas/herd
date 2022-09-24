@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
@@ -258,7 +259,13 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 					ui.pchan <- buffer
 					usePager = false
 				} else {
-					defer pgr.Wait()
+					defer func() {
+						if err := pgr.Wait(); err != nil {
+							if _, ok := err.(*exec.ExitError); !ok {
+								logrus.Warnf("Pager error: %s", err)
+							}
+						}
+					}()
 					pgr.WriteString(ui.formatter.formatCommand(hi.Command))
 					pgr.WriteString(ui.formatter.formatSummary(hi.Summary.Ok, hi.Summary.Fail, hi.Summary.Err))
 					pgr.WriteString(buffer)
@@ -437,7 +444,11 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 			fmt.Fprintln(out, host.Name)
 		}
 	}
-	pgr.Wait()
+	if err := pgr.Wait(); err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			logrus.Warnf("Pager error: %s", err)
+		}
+	}
 }
 
 func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {

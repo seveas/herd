@@ -83,11 +83,14 @@ func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc 
 
 	select {
 	case <-ctx.Done():
+		terr := herd.TimeoutError{Message: "Timed out while executing command"}
 		// FIXME: no error is ever returned, but the signal is not sent to the process either.
 		// https://github.com/openssh/openssh-portable/commit/cd98925c6405e972dc9f211afc7e75e838abe81c
 		// - OpenSSH 7.9 or newer required
-		sess.Signal(ssh.SIGKILL)
-		r.Err = herd.TimeoutError{Message: "Timed out while executing command"}
+		if err := sess.Signal(ssh.SIGKILL); err != nil {
+			terr.Message = fmt.Sprintf("%s, and killing the session failed: %s", terr.Message, err)
+		}
+		r.Err = terr
 	case err := <-ec:
 		r.Err = err
 	}

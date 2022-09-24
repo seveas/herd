@@ -22,7 +22,9 @@ func TestHttpProvider(t *testing.T) {
 	p := NewProvider("http")
 	v := viper.New()
 	v.SetDefault("Url", "http://inventory.example.com/inventory")
-	p.ParseViper(v)
+	if err := p.ParseViper(v); err != nil {
+		t.Errorf("ParseViper failed %s", err)
+	}
 	seenLoadingMessage := false
 	hosts, err := p.Load(context.Background(), func(string, bool, error) { seenLoadingMessage = true })
 

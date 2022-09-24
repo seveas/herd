@@ -131,7 +131,7 @@ func (r *Registry) AddProvider(p HostProvider) {
 		c.SetCacheDir(r.cacheDir)
 	}
 	if c, ok := stripCache(p).(DataLoader); ok {
-		c.SetDataDir(r.dataDir)
+		_ = c.SetDataDir(r.dataDir)
 	}
 	r.providers = append(r.providers, p)
 }

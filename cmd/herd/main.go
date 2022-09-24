@@ -34,11 +34,11 @@ type userData struct {
 
 func (u *userData) makeDirectories() {
 	// We ignore errors, as we should function fine without these
-	os.MkdirAll(u.configDir, 0700)
-	os.MkdirAll(u.systemConfigDir, 0755)
-	os.MkdirAll(u.dataDir, 0700)
-	os.MkdirAll(u.cacheDir, 0700)
-	os.MkdirAll(u.historyDir, 0700)
+	_ = os.MkdirAll(u.configDir, 0700)
+	_ = os.MkdirAll(u.systemConfigDir, 0755)
+	_ = os.MkdirAll(u.dataDir, 0700)
+	_ = os.MkdirAll(u.cacheDir, 0700)
+	_ = os.MkdirAll(u.historyDir, 0700)
 }
 
 var rootCmd = &cobra.Command{

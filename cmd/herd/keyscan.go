@@ -78,7 +78,9 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 		hosts := engine.Registry.GetHosts("*", []herd.MatchAttribute{}, []string{}, 0)
 		engine.Runner.AddHosts(hosts)
 	}
-	engine.Runner.Run("herd:keyscan", nil, nil)
+	if _, err = engine.Runner.Run("herd:keyscan", nil, nil); err != nil {
+		return err
+	}
 	template := `{{ $host := . }}{{ range $key := .PublicKeys -}}
 {{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
 {{ end -}}
