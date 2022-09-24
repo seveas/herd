@@ -44,7 +44,6 @@ func TestHttpProvider(t *testing.T) {
 			}
 		}
 	}
-
 }
 
 func mockData() (herd.Hosts, string) {

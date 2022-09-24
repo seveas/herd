@@ -4,8 +4,7 @@ import (
 	"hash"
 )
 
-type fakeHash struct {
-}
+type fakeHash struct{}
 
 func (f *fakeHash) Write(b []byte) (int, error) {
 	return len(b), nil

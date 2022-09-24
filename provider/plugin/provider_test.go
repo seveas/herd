@@ -19,8 +19,10 @@ var testdata string
 func init() {
 	logrus.SetLevel(logrus.TraceLevel)
 	logrus.SetOutput(io.Discard)
-	_, me, _, _ := runtime.Caller(0)
-	testdata = filepath.Join(filepath.Dir(me), "testdata")
+	testdata = filepath.Join(".", "provider", "plugin")
+	if _, me, _, ok := runtime.Caller(0); ok {
+		testdata = filepath.Join(filepath.Dir(me), "testdata")
+	}
 	os.Setenv("PATH", strings.Join([]string{os.Getenv("PATH"), filepath.Join(testdata, "bin")}, ":"))
 }
 
@@ -100,7 +102,6 @@ func (h *logrusHook) Levels() []logrus.Level {
 func (h *logrusHook) Fire(entry *logrus.Entry) error {
 	h.seen[entry.Level] = true
 	if entry.Level <= logrus.FatalLevel {
-		fmt.Println("NOOO")
 		entry.Level = logrus.ErrorLevel
 	}
 	return nil

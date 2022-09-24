@@ -5,8 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
 	"github.com/seveas/herd"
+
+	"github.com/go-test/deep"
 )
 
 func init() {

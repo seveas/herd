@@ -7,9 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting/parser"
+
+	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,7 +42,7 @@ func convertScalar(c parser.IScalarContext) (interface{}, error) {
 	if i := sc.IDENTIFIER(); i != nil {
 		switch i.GetText() {
 		case "nil":
-			return nil, nil
+			return nil, nil //nolint:nilnil // We really want nil here, this is not an error
 		case "true":
 			return true, nil
 		case "false":
@@ -98,7 +99,6 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 	}
 	varName := varToken.GetText()
 	varValue, err := convertScalar(c.GetVarvalue())
-
 	if err != nil {
 		c.GetParser().NotifyErrorListeners(err.Error(), c.GetVarvalue().GetStart(), nil)
 		return
@@ -149,7 +149,6 @@ func (l *herdListener) ExitSet(c *parser.SetContext) {
 			if level, perr := logrus.ParseLevel(s); perr == nil {
 				varValue = level
 			} else {
-				fmt.Println("unknown")
 				err = fmt.Errorf("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", s)
 			}
 		} else {
@@ -217,7 +216,7 @@ func (l *herdListener) parseFilters(filters []parser.IFilterContext) herd.MatchA
 		}
 		if strings.HasSuffix(comp, "~") {
 			s := filter.GetRx().GetText()
-			value, err := regexp.Compile(strings.Replace(s[1:len(s)-1], "\\/", "/", -1))
+			value, err := regexp.Compile(strings.ReplaceAll(s[1:len(s)-1], "\\/", "/"))
 			if err != nil {
 				filter.GetParser().NotifyErrorListeners(err.Error(), filter.GetVal().GetStart(), nil)
 				continue

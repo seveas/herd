@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/seveas/herd"
+
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )

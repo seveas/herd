@@ -54,7 +54,7 @@ func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
-	req, err := http.NewRequest("GET", p.config.Url, nil)
+	req, err := http.NewRequest(http.MethodGet, p.config.Url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("http response code %d: %s", resp.StatusCode, body)
 	}
@@ -90,7 +90,7 @@ func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.H
 	if err != nil {
 		return nil, err
 	}
-	if err = json.Unmarshal(data, &hosts); err != nil {
+	if err := json.Unmarshal(data, &hosts); err != nil {
 		return nil, err
 	}
 	return hosts, nil

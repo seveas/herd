@@ -63,6 +63,5 @@ func TestMatchAttribute(t *testing.T) {
 				t.Errorf("(%d) expected %v (%T) to not match %v (%T), but they did match", i, a, a.Value, c.v, c.v)
 			}
 		}
-
 	}
 }

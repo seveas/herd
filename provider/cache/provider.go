@@ -96,7 +96,7 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, e
 		if err != nil {
 			return nil, err
 		}
-		if err = json.Unmarshal(data, &hosts); err != nil {
+		if err := json.Unmarshal(data, &hosts); err != nil {
 			return nil, err
 		}
 		return hosts, nil
@@ -105,13 +105,14 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, e
 	if err == nil && len(hosts) > 0 {
 		var data []byte
 		dir := filepath.Dir(c.config.File)
-		if err = os.MkdirAll(dir, 0700); err != nil {
+		if err = os.MkdirAll(dir, 0o700); err != nil {
 			return nil, fmt.Errorf("Unable to create cache directory %s: %s", dir, err.Error())
 		}
 		if data, err = json.Marshal(hosts); err != nil {
 			return nil, err
 		}
-		if err = os.WriteFile(c.config.File, data, 0644); err != nil {
+		//#nosec G306 -- Cache file may be shared among users
+		if err := os.WriteFile(c.config.File, data, 0o644); err != nil {
 			return nil, err
 		}
 	}

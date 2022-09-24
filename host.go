@@ -94,8 +94,8 @@ func (h *Host) init() {
 	}
 }
 
-func (host Host) String() string {
-	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s}", host.Name, len(host.publicKeys), host.Attributes)
+func (h Host) String() string {
+	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s}", h.Name, len(h.publicKeys), h.Attributes)
 }
 
 // Adds a public key to a host. Used by the ssh know hosts provider, but can be
@@ -109,7 +109,6 @@ func (h *Host) PublicKeys() []ssh.PublicKey {
 }
 
 func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
-
 	if hostnameGlob != "" {
 		ok, err := filepath.Match(hostnameGlob, h.Name)
 		if !ok || err != nil {
@@ -174,9 +173,9 @@ func (h *Host) Amend(h2 *Host) {
 	}
 }
 
-func (h1 *Host) less(h2 *Host, attributes []string) bool {
+func (h *Host) less(h2 *Host, attributes []string) bool {
 	for _, attr := range attributes {
-		v1, ok1 := h1.GetAttribute(attr)
+		v1, ok1 := h.GetAttribute(attr)
 		v2, ok2 := h2.GetAttribute(attr)
 		// Sort nodes that are missing the attribute last
 		if ok1 && !ok2 {
@@ -200,5 +199,5 @@ func (h1 *Host) less(h2 *Host, attributes []string) bool {
 		}
 		return s1 < s2
 	}
-	return h1.Name < h2.Name
+	return h.Name < h2.Name
 }

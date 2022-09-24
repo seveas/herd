@@ -4,9 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/spf13/viper"
-
 	"github.com/jarcoal/httpmock"
+	"github.com/spf13/viper"
 )
 
 func TestPrometheus(t *testing.T) {

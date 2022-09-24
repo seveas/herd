@@ -19,6 +19,7 @@ import (
 )
 
 var availableProviders = make(map[string]func(string) HostProvider)
+
 var magicProviders = make(map[string]func() HostProvider)
 
 func Providers() []string {
@@ -101,7 +102,7 @@ func (r *Registry) LoadMagicProviders() {
 func (r *Registry) LoadProviders(c *viper.Viper) error {
 	rerr := &MultiError{Subject: "Errors loading providers"}
 
-	// And now all the explicitely configured ones
+	// And now all the explicitly configured ones
 	for key := range c.AllSettings() {
 		ps := c.Sub(key)
 		pname := ps.GetString("Provider")
@@ -289,13 +290,13 @@ func (r *Registry) Settings() (string, map[string]interface{}) {
 	}
 }
 
-func (hosts Hosts) String() string {
+func (h Hosts) String() string {
 	var ret strings.Builder
-	for i, h := range hosts {
+	for i, h_ := range h {
 		if i > 0 {
 			ret.WriteString(", ")
 		}
-		ret.WriteString(h.Name)
+		ret.WriteString(h_.Name)
 	}
 	return ret.String()
 }
@@ -356,6 +357,7 @@ host:
 	}
 	return ret
 }
+
 func min(a, b int) int {
 	if a < b {
 		return a

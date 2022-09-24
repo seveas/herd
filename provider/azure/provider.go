@@ -96,7 +96,7 @@ func (p *azureProvider) ParseViper(v *viper.Viper) error {
 		// Last resort: let's try to authorize from environment data
 		authorizer, err := auth.NewAuthorizerFromEnvironment()
 		if err != nil {
-			return nil
+			return err
 		}
 		p.authorizer = authorizer
 	}
@@ -105,6 +105,7 @@ func (p *azureProvider) ParseViper(v *viper.Viper) error {
 
 func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
 	lm(p.name, false, nil)
+	defer func() { lm(p.name, true, err) }()
 	c := compute.NewVirtualMachinesClient(p.config.Subscription)
 	c.Authorizer = p.authorizer
 	res, err := c.ListAll(ctx, "")

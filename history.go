@@ -98,11 +98,11 @@ func (h History) Save(path string) error {
 		logrus.Warnf("Unable to export history: %s", err)
 		return err
 	}
-	if err = os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err = os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		logrus.Warnf("Unable to create history path %s: %s", filepath.Dir(path), err)
 		return err
 	}
-	if err = os.WriteFile(path, data, 0600); err != nil {
+	if err = os.WriteFile(path, data, 0o600); err != nil {
 		logrus.Warnf("Unable to save history to %s: %s", path, err)
 	} else {
 		logrus.Infof("History saved to %s", path)

@@ -1,10 +1,8 @@
 package main
 
 import (
-	// Import the provider you wish to serve over grpc
+	// Import the provider you wish to serve over grpc, and the helper library to serve it
 	_ "github.com/seveas/herd/provider/example"
-
-	// And the helper library to serve it
 	"github.com/seveas/herd/provider/plugin/server"
 )
 

@@ -11,8 +11,6 @@ import (
 	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-
-	_ "github.com/seveas/herd/provider/example"
 )
 
 type providerImpl struct {

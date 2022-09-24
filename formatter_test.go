@@ -10,6 +10,7 @@ import (
 )
 
 var results []*Result
+
 var testformatter = prettyFormatter{
 	colors: map[logrus.Level]string{
 		logrus.WarnLevel:  "yellow",

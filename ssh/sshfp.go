@@ -1,5 +1,6 @@
 package ssh
 
+// #nosec:G505 -- We want to support sha1 fingerprints for now
 import (
 	"crypto/sha1"
 	"crypto/sha256"
@@ -60,7 +61,7 @@ func verifyHostKeyDns(hostname string, key ssh.PublicKey) bool {
 		return false
 	}
 	blob := key.Marshal()
-	sha1sum := fmt.Sprintf("%x", sha1.Sum(blob))
+	sha1sum := fmt.Sprintf("%x", sha1.Sum(blob)) // #nosec:G401 -- We want to support sha1 fingerprints for now
 	sha256sum := fmt.Sprintf("%x", sha256.Sum256(blob))
 
 	rrset, err := sshfpResolver.resolve(hostname+".", dns.TypeSSHFP)
@@ -73,7 +74,7 @@ func verifyHostKeyDns(hostname string, key ssh.PublicKey) bool {
 				if srr.Type == dns.SHA1 && srr.FingerPrint == sha1sum {
 					return true
 				}
-				if srr.Type == dns.SHA1 && srr.FingerPrint == sha256sum {
+				if srr.Type == dns.SHA256 && srr.FingerPrint == sha256sum {
 					return true
 				}
 			}

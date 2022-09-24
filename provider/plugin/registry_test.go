@@ -11,8 +11,10 @@ import (
 )
 
 func init() {
-	_, me, _, _ := runtime.Caller(0)
-	testdata = filepath.Join(filepath.Dir(me), "testdata")
+	testdata = filepath.Join(".", "provider", "plugin")
+	if _, me, _, ok := runtime.Caller(0); ok {
+		testdata = filepath.Join(filepath.Dir(me), "testdata")
+	}
 	os.Setenv("PATH", strings.Join([]string{os.Getenv("PATH"), filepath.Join(testdata, "bin")}, ":"))
 }
 

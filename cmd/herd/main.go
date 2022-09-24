@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting"
+
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -34,11 +35,11 @@ type userData struct {
 
 func (u *userData) makeDirectories() {
 	// We ignore errors, as we should function fine without these
-	_ = os.MkdirAll(u.configDir, 0700)
-	_ = os.MkdirAll(u.systemConfigDir, 0755)
-	_ = os.MkdirAll(u.dataDir, 0700)
-	_ = os.MkdirAll(u.cacheDir, 0700)
-	_ = os.MkdirAll(u.historyDir, 0700)
+	_ = os.MkdirAll(u.configDir, 0o700)
+	_ = os.MkdirAll(u.systemConfigDir, 0o755)
+	_ = os.MkdirAll(u.dataDir, 0o700)
+	_ = os.MkdirAll(u.cacheDir, 0o700)
+	_ = os.MkdirAll(u.historyDir, 0o700)
 }
 
 var rootCmd = &cobra.Command{

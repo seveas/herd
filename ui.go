@@ -24,6 +24,7 @@ import (
 )
 
 type OutputMode int
+
 type LoadingMessage func(string, bool, error)
 
 const clearLine string = "\r\033[2K"
@@ -259,13 +260,6 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 					ui.pchan <- buffer
 					usePager = false
 				} else {
-					defer func() {
-						if err := pgr.Wait(); err != nil {
-							if _, ok := err.(*exec.ExitError); !ok {
-								logrus.Warnf("Pager error: %s", err)
-							}
-						}
-					}()
 					pgr.WriteString(ui.formatter.formatCommand(hi.Command))
 					pgr.WriteString(ui.formatter.formatSummary(hi.Summary.Ok, hi.Summary.Fail, hi.Summary.Err))
 					pgr.WriteString(buffer)
@@ -276,6 +270,13 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 	}
 	if buffer != "" {
 		ui.pchan <- buffer
+	}
+	if pgr != nil {
+		if err := pgr.Wait(); err != nil {
+			if _, ok := err.(*exec.ExitError); !ok {
+				logrus.Warnf("Pager error: %s", err)
+			}
+		}
 	}
 }
 
@@ -532,7 +533,7 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 			// Make sure we don't pollute hostnames with colors
 			suffix := []byte{}
 			colors := cr.FindAll(line, -1)
-			if colors != nil && !bytes.Equal(colors[len(colors)-1], reset) {
+			if len(colors) > 0 && !bytes.Equal(colors[len(colors)-1], reset) {
 				lastcolor = colors[len(colors)-1]
 				suffix = reset
 			}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/seveas/herd/scripting"
 	"github.com/seveas/herd/ssh"
+
 	"github.com/seveas/readline"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

@@ -80,10 +80,9 @@ func TestCache(t *testing.T) {
 	if c.source.(*fakeProvider).loaded != 2 {
 		t.Errorf("Fake provider was not called")
 	}
-	if _, err := os.Stat(filepath.Join(c.config.File)); err == nil {
+	if _, err := os.Stat(c.config.File); err == nil {
 		t.Errorf("Hosts were cached when the source provider errored out")
 	}
-
 }
 
 func TestRelativeFiles(t *testing.T) {

@@ -125,14 +125,14 @@ func (a *agent) readLoop() {
 	}
 }
 
-func (a *agent) readSingleReply() (reply []byte, err error) {
+func (a *agent) readSingleReply() ([]byte, error) {
 	var respSizeBuf [4]byte
-	if _, err = io.ReadFull(a.pipelinedConnection, respSizeBuf[:]); err != nil {
+	if _, err := io.ReadFull(a.pipelinedConnection, respSizeBuf[:]); err != nil {
 		return nil, err
 	}
 	respSize := binary.BigEndian.Uint32(respSizeBuf[:])
 	buf := make([]byte, respSize)
-	if _, err = io.ReadFull(a.pipelinedConnection, buf); err != nil {
+	if _, err := io.ReadFull(a.pipelinedConnection, buf); err != nil {
 		return nil, err
 	}
 	return buf, nil

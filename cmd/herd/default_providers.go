@@ -1,6 +1,6 @@
 package main
 
-// These imports are explicitely ordered/grouped to make sure we register
+// These imports are explicitly ordered/grouped to make sure we register
 // providers in the desired order
 import (
 	// The basics for introperability with openssh and putty
@@ -18,7 +18,7 @@ import (
 	_ "github.com/seveas/herd/provider/prometheus"
 
 	// Disabled for now, as it doesn't build on windows
-	//_ "github.com/seveas/herd/provider/tailscale"
+	// _ "github.com/seveas/herd/provider/tailscale"
 
 	// Cloud providers
 	_ "github.com/seveas/herd/provider/aws"

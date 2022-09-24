@@ -5,8 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mgutz/ansi"
 	"github.com/seveas/herd"
+
+	"github.com/mgutz/ansi"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,8 +47,7 @@ func (c setCommand) String() string {
 	return fmt.Sprintf("set %s %v", c.variable, c.value)
 }
 
-type showVariablesCommand struct {
-}
+type showVariablesCommand struct{}
 
 func (c showVariablesCommand) execute(e *ScriptEngine) {
 	e.Ui.PrintSettings(e.Ui.Settings, e.Registry.Settings, e.Runner.Settings)

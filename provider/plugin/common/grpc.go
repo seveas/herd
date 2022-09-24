@@ -65,7 +65,7 @@ func (c *GRPCClient) Load(ctx context.Context, logger Logger) (herd.Hosts, error
 		return nil, errors.New(resp.Err)
 	}
 	var hosts herd.Hosts
-	if err = json.Unmarshal(resp.Data, &hosts); err != nil {
+	if err := json.Unmarshal(resp.Data, &hosts); err != nil {
 		return nil, err
 	}
 	return hosts, nil
@@ -83,7 +83,7 @@ func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*Con
 		return nil, err
 	}
 	if err := s.Impl.Configure(data); err != nil {
-		return &ConfigureResponse{Err: err.Error()}, nil
+		return &ConfigureResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
 	}
 	return &ConfigureResponse{}, nil
 }
@@ -100,7 +100,7 @@ func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse,
 	l := &GRPCLoggerClient{NewLoggerClient(conn)}
 	hosts, err := s.Impl.Load(ctx, l)
 	if err != nil {
-		return &LoadResponse{Err: err.Error()}, nil
+		return &LoadResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
 	}
 	data, err := json.Marshal(hosts)
 	if err != nil {
@@ -145,4 +145,5 @@ func (s *GRPCLoggerServer) EmitLogMessage(ctx context.Context, req *EmitLogMessa
 }
 
 var _ Logger = &GRPCLoggerClient{}
+
 var _ Provider = &GRPCClient{}

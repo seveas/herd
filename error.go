@@ -6,8 +6,7 @@ import (
 )
 
 type MultiError struct {
-	Subject string
-	//errors   []error
+	Subject  string
 	messages []string
 }
 
@@ -19,7 +18,6 @@ func (m *MultiError) Error() string {
 }
 
 func (m *MultiError) Add(e error) {
-	// m.errors = append(m.errors, e)
 	m.messages = append(m.messages, e.Error())
 }
 

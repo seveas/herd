@@ -90,7 +90,6 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 					hashed = true
 				}
 				continue
-
 			}
 			if idx, ok := seen[name]; ok {
 				// -1 means: seen but did not match

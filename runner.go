@@ -99,7 +99,8 @@ func (r *Runner) Settings() (string, map[string]interface{}) {
 }
 
 func (r *Runner) AddHosts(hosts Hosts) {
-	h := append(r.hosts, hosts...)
+	h := r.hosts[:]
+	h = append(h, hosts...)
 	h.Sort(r.sort)
 	r.hosts = h.Uniq()
 }
@@ -214,7 +215,7 @@ func (r *Runner) splayDelay(ctx context.Context) {
 	if r.splay <= 0 {
 		return
 	}
-	d := time.Duration(rand.Int63n(int64(r.splay)))
+	d := time.Duration(rand.Int63n(int64(r.splay))) //#nosec G404 -- This does not need cryptographically secure numbers
 	tctx, cancel := context.WithTimeout(ctx, d)
 	defer cancel()
 	select {

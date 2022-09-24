@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/seveas/herd"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ScriptEngine struct {
@@ -54,7 +54,7 @@ hostspecLoop:
 		attrs := make(herd.MatchAttributes, 0)
 		sampled := make([]string, 0)
 		count := 0
-		for i, arg := range filters[:] {
+		for i, arg := range filters {
 			if arg == "+" || arg == "-" {
 				filters = filters[i+1:]
 				if add {

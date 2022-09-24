@@ -185,9 +185,7 @@ func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string
 			return c.user.HomeDir
 		// Does not quite match openssh, but the best we can do
 		case "h", "k", "n":
-			var name string
-			name, err = os.Hostname()
-			return name
+			return hostname
 		case "i":
 			return c.user.Uid
 		case "L":

@@ -2,7 +2,6 @@ package known_hosts
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -11,14 +10,13 @@ import (
 var testdata string
 
 func init() {
-	_, me, _, _ := runtime.Caller(0)
-	testdata = filepath.Join(filepath.Dir(me), "testdata")
+	testdata = filepath.Join(".", "provider", "known_hosts")
+	if _, me, _, ok := runtime.Caller(0); ok {
+		testdata = filepath.Join(filepath.Dir(me), "testdata")
+	}
 }
 
 func TestParser(t *testing.T) {
-	if oldHome, ok := os.LookupEnv("HOME"); ok {
-		defer os.Setenv("HOME", oldHome)
-	}
 	tests := []struct {
 		path  string
 		hosts int
@@ -31,7 +29,7 @@ func TestParser(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.path, func(t *testing.T) {
-			os.Setenv("HOME", filepath.Join(testdata, test.path))
+			t.Setenv("HOME", filepath.Join(testdata, test.path))
 			p := magicProvider().(*knownHostsProvider)
 			p.config.Files = p.config.Files[1:]
 			hosts, err := p.Load(context.Background(), nil)

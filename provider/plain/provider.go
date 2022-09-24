@@ -53,6 +53,7 @@ func (p *plainTextProvider) SetDataDir(dir string) error {
 	}
 	return nil
 }
+
 func (p *plainTextProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }

@@ -9,8 +9,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-type fakeProvider struct {
-}
+type fakeProvider struct{}
 
 func (p *fakeProvider) Name() string {
 	return "fake"

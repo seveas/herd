@@ -142,18 +142,21 @@ func (p *googleProvider) setZones(ctx context.Context, hc *http.Client) error {
 func bv(b *bool) bool {
 	return b != nil && *b
 }
+
 func sv(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
 }
+
 func iv(i *uint64) int {
 	if i == nil {
 		return 0
 	}
 	return int(*i)
 }
+
 func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone string) (herd.Hosts, error) {
 	region := p.zones[zone].Region
 	client, err := compute.NewInstancesRESTClient(ctx, option.WithCredentialsFile(p.config.Key), option.WithHTTPClient(hc))
@@ -209,10 +212,8 @@ func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone str
 		addr := ""
 		if !p.config.UsePublicAddress {
 			addr = *iface.NetworkIP
-		} else {
-			if iface.AccessConfigs != nil {
-				addr = *iface.AccessConfigs[0].NatIP
-			}
+		} else if iface.AccessConfigs != nil {
+			addr = *iface.AccessConfigs[0].NatIP
 		}
 		ret = append(ret, herd.NewHost(name, addr, attrs))
 	}
