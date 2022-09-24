@@ -2,4 +2,6 @@
 dist
 herd
 /herd-provider-*
+*.tar.gz
+*.exe
 /provider/plugin/testdata/bin/herd-provider-ci
