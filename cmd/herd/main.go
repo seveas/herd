@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime/pprof"
 	"runtime/trace"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/seveas/herd/scripting"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
@@ -112,43 +114,46 @@ Providers: %s
 		defaultAgentTimeout = 200 * time.Millisecond
 	}
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
-	rootCmd.PersistentFlags().DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
-	rootCmd.PersistentFlags().Duration("load-timeout", 30*time.Second, "Timeout for loading host data from providers")
-	rootCmd.PersistentFlags().Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
-	rootCmd.PersistentFlags().Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
-	rootCmd.PersistentFlags().Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
-	rootCmd.PersistentFlags().IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
-	rootCmd.PersistentFlags().StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
-	rootCmd.PersistentFlags().Bool("no-pager", false, "Disable the use of the pager")
-	rootCmd.PersistentFlags().Bool("no-color", false, "Disable the use of the colors in the output")
-	rootCmd.PersistentFlags().StringP("loglevel", "l", "INFO", "Log level")
-	rootCmd.PersistentFlags().StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
-	rootCmd.PersistentFlags().Bool("timestamp", false, "In tail mode, prefix each line with the current time")
-	rootCmd.PersistentFlags().String("profile", "", "Write profiling and tracing data to files starting with this name")
-	rootCmd.PersistentFlags().Bool("refresh", false, "Force caches to be refreshed")
-	viper.BindPFlag("Splay", rootCmd.PersistentFlags().Lookup("splay"))
-	viper.BindPFlag("Timeout", rootCmd.PersistentFlags().Lookup("timeout"))
-	viper.BindPFlag("LoadTimeout", rootCmd.PersistentFlags().Lookup("load-timeout"))
-	viper.BindPFlag("HostTimeout", rootCmd.PersistentFlags().Lookup("host-timeout"))
-	viper.BindPFlag("ConnectTimeout", rootCmd.PersistentFlags().Lookup("connect-timeout"))
-	viper.BindPFlag("SshAgentTimeout", rootCmd.PersistentFlags().Lookup("ssh-agent-timeout"))
-	viper.BindPFlag("Parallel", rootCmd.PersistentFlags().Lookup("parallel"))
-	viper.BindPFlag("Output", rootCmd.PersistentFlags().Lookup("output"))
-	viper.BindPFlag("LogLevel", rootCmd.PersistentFlags().Lookup("loglevel"))
-	viper.BindPFlag("Sort", rootCmd.PersistentFlags().Lookup("sort"))
-	viper.BindPFlag("NoPager", rootCmd.PersistentFlags().Lookup("no-pager"))
-	viper.BindPFlag("NoColor", rootCmd.PersistentFlags().Lookup("no-color"))
-	viper.BindPFlag("Timestamp", rootCmd.PersistentFlags().Lookup("timestamp"))
-	viper.BindPFlag("Profile", rootCmd.PersistentFlags().Lookup("profile"))
-	viper.BindPFlag("Refresh", rootCmd.PersistentFlags().Lookup("refresh"))
+	f := rootCmd.PersistentFlags()
+	f.Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
+	f.DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
+	f.Duration("load-timeout", 30*time.Second, "Timeout for loading host data from providers")
+	f.Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
+	f.Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
+	f.Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
+	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
+	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	f.Bool("no-pager", false, "Disable the use of the pager")
+	f.Bool("no-color", false, "Disable the use of the colors in the output")
+	f.StringP("loglevel", "l", "INFO", "Log level")
+	f.StringSliceP("sort", "s", []string{"name"}, "Sort hosts by these fields before running commands")
+	f.Bool("timestamp", false, "In tail mode, prefix each line with the current time")
+	f.String("profile", "", "Write profiling and tracing data to files starting with this name")
+	f.Bool("refresh", false, "Force caches to be refreshed")
+	bindFlagsAndEnv(f)
+}
+
+func bindFlagsAndEnv(s *pflag.FlagSet) {
+	rx := regexp.MustCompile("((?:^|-).)")
+	toUpper := func(s string) string {
+		return strings.ToUpper(strings.Trim(s, "-"))
+	}
+	s.VisitAll(func(f *pflag.Flag) {
+		varName := rx.ReplaceAllStringFunc(f.Name, toUpper)
+		envName := "HERD_" + strings.ReplaceAll(strings.ToUpper(f.Name), "-", "_")
+		if err := viper.BindPFlag(varName, f); err != nil {
+			panic(err)
+		}
+		if err := viper.BindEnv(varName, envName); err != nil {
+			panic(err)
+		}
+	})
 }
 
 func initConfig() {
 	viper.AddConfigPath(currentUser.configDir)
 	viper.AddConfigPath("/etc/herd")
 	viper.SetConfigName("config")
-	viper.SetEnvPrefix("herd")
 
 	// Read the configuration
 	if err := viper.ReadInConfig(); err != nil {
@@ -156,7 +161,6 @@ func initConfig() {
 			bail("Can't read configuration: %s", err)
 		}
 	}
-	viper.AutomaticEnv()
 
 	// Check configuration variables
 	level, err := logrus.ParseLevel(viper.GetString("LogLevel"))

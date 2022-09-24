@@ -24,8 +24,9 @@ var keyScanCmd = &cobra.Command{
 }
 
 func init() {
-	keyScanCmd.Flags().StringSlice("type", []string{"ssh-rsa", "ecdsa-sha2-nistp256", "ssh-ed25519"}, "Which key algorithm(s) to scan for")
-	viper.BindPFlag("KeyType", keyScanCmd.Flags().Lookup("type"))
+	f := keyScanCmd.Flags()
+	f.StringSlice("key-type", []string{"ssh-rsa", "ecdsa-sha2-nistp256", "ssh-ed25519"}, "Which key algorithm(s) to scan for")
+	bindFlagsAndEnv(f)
 	rootCmd.AddCommand(keyScanCmd)
 }
 
