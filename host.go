@@ -7,8 +7,6 @@ import (
 	"hash/crc32"
 	"io"
 	"path/filepath"
-	"reflect"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cast"
@@ -109,9 +107,6 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 func (h *Host) PublicKeys() []ssh.PublicKey {
 	return h.publicKeys
 }
-
-var _regexpType = reflect.TypeOf(regexp.MustCompile(""))
-var _stringType = reflect.TypeOf("")
 
 func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 

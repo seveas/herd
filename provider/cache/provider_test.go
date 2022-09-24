@@ -52,7 +52,7 @@ func TestCache(t *testing.T) {
 	c := NewFromProvider(&fakeProvider{}).(*Cache)
 	c.config.Lifetime = 1 * time.Hour
 	c.SetCacheDir(filepath.Join(tmpdir, "cache"))
-	hosts, err := c.Load(nil, func(string, bool, error) {})
+	hosts, err := c.Load(context.Background(), func(string, bool, error) {})
 	if len(hosts) != 1 || err != nil {
 		t.Errorf("First cache load did not succeed")
 	}
@@ -62,7 +62,7 @@ func TestCache(t *testing.T) {
 	if c.mustRefresh() {
 		t.Errorf("We must immediately refresh the cache")
 	}
-	hosts, err = c.Load(nil, func(string, bool, error) {})
+	hosts, err = c.Load(context.Background(), func(string, bool, error) {})
 	if len(hosts) != 1 || err != nil {
 		t.Errorf("Second cache load did not succeed")
 	}
@@ -73,7 +73,7 @@ func TestCache(t *testing.T) {
 	c.source.(*fakeProvider).doError = true
 	c.config.File += "-failed"
 	c.Invalidate()
-	hosts, err = c.Load(nil, func(string, bool, error) {})
+	_, err = c.Load(context.Background(), func(string, bool, error) {})
 	if err == nil {
 		t.Errorf("Expected an error from the cache")
 	}

@@ -323,11 +323,11 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 		if opts.AllAttributes {
 			attrs := make(map[string]bool)
 			for _, host := range hosts {
-				for key, _ := range host.Attributes {
+				for key := range host.Attributes {
 					attrs[key] = true
 				}
 			}
-			for attr, _ := range attrs {
+			for attr := range attrs {
 				opts.Attributes = append(opts.Attributes, attr)
 			}
 			sort.Strings(opts.Attributes)
@@ -383,8 +383,7 @@ func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
 		for _, host := range hosts {
 			v := make([]string, len(opts.Count)+1)
 			for i, attr := range opts.Count {
-				iv, _ := host.Attributes[attr]
-				v[i] = fmt.Sprintf("%v", iv)
+				v[i] = fmt.Sprintf("%v", host.Attributes[attr])
 			}
 			vs := strings.Join(v, "\000")
 			if _, ok := counts[vs]; ok {

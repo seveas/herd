@@ -1,0 +1,26 @@
+run:
+  tests: true
+  skip-files:
+    - ".*\\.pb\\.go$"
+    - "scripting/parser/herd_.*\\.go$"
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+
+issues:
+  exclude-rules:
+    # This needs to be disabled until we update the protobuf dependency
+    - path: provider/plugin/common/grpc.go
+      linters:
+        - staticcheck
+    # We ignore all i/o errors, needs a dedicated fix
+    - path: ui.go
+      linters:
+        - errcheck

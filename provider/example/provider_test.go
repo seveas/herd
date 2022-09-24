@@ -1,6 +1,7 @@
 package example
 
 import (
+	"context"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -13,7 +14,7 @@ func TestConfigAttribute(t *testing.T) {
 	if err := p.ParseViper(v); err != nil {
 		t.Errorf("ParseViper failed: %s", err)
 	}
-	h, _ := p.Load(nil, nil)
+	h, _ := p.Load(context.Background(), nil)
 	if h[0].Attributes["static_attribute"] != "static_value" {
 		t.Errorf("Static attribute has wrong value %s", h[0].Attributes["static_attribute"])
 	}

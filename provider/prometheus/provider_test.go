@@ -2,8 +2,9 @@ package prometheus
 
 import (
 	"context"
-	"github.com/spf13/viper"
 	"testing"
+
+	"github.com/spf13/viper"
 
 	"github.com/jarcoal/httpmock"
 )

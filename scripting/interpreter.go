@@ -81,18 +81,6 @@ func convertHash(c parser.IHashContext) (map[string]interface{}, error) {
 	return ret, nil
 }
 
-type variable struct {
-	tokenType int
-	validator func(interface{}) (interface{}, error)
-}
-
-func mustBeBool(i interface{}) (interface{}, error) {
-	if _, ok := i.(bool); ok {
-		return i, nil
-	}
-	return nil, fmt.Errorf("Expected a boolean value, not %v", i)
-}
-
 type herdListener struct {
 	*parser.BaseHerdListener
 	commands      []command

@@ -96,7 +96,7 @@ func (c *configBlock) updateFromBlock(o *configBlock) {
 }
 
 // Parse an openssh config file
-var splitWhitespace = regexp.MustCompile("\\s")
+var splitWhitespace = regexp.MustCompile(`\s`)
 
 func parseConfig(file string) ([]*configBlock, error) {
 	data, err := os.ReadFile(file)

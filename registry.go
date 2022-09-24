@@ -40,7 +40,6 @@ func RegisterProvider(name string, constructor func(string) HostProvider, magic 
 type Registry struct {
 	providers []HostProvider
 	hosts     Hosts
-	sort      []string
 	dataDir   string
 	cacheDir  string
 }
@@ -103,7 +102,7 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 	rerr := &MultiError{Subject: "Errors loading providers"}
 
 	// And now all the explicitely configured ones
-	for key, _ := range c.AllSettings() {
+	for key := range c.AllSettings() {
 		ps := c.Sub(key)
 		pname := ps.GetString("Provider")
 		p, err := NewProvider(pname, key)
@@ -248,7 +247,7 @@ func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes, sam
 			ret = append(ret, NewHost(hostnameGlob, "", HostAttributes{}))
 		}
 	}
-	if sampled != nil && len(sampled) != 0 {
+	if len(sampled) != 0 {
 		ret = ret.Sample(sampled, count)
 	}
 	return ret

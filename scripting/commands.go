@@ -47,8 +47,6 @@ func (c setCommand) String() string {
 }
 
 type showVariablesCommand struct {
-	variable string
-	value    interface{}
 }
 
 func (c showVariablesCommand) execute(e *ScriptEngine) {

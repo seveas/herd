@@ -34,8 +34,8 @@ $(antlr_sources): scripting/Herd.g4
 fmt:
 	go fmt ./...
 
-vet:
-	go vet ./...
+lint:
+	golangci-lint run ./...
 
 tidy:
 	go mod tidy
@@ -43,7 +43,7 @@ tidy:
 provider/plugin/testdata/bin/herd-provider-ci: go.mod go.sum provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
 
-test: fmt vet tidy provider/plugin/testdata/bin/herd-provider-ci
+test: fmt lint tidy provider/plugin/testdata/bin/herd-provider-ci
 	go test ./...
 	GOOS=windows go build github.com/seveas/herd/cmd/herd
 

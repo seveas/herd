@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net"
@@ -8,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"bytes"
 	"github.com/seveas/herd"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"

@@ -17,7 +17,6 @@ func init() {
 
 type jsonProvider struct {
 	name   string
-	hashed bool
 	config struct {
 		Prefix string
 		File   string
