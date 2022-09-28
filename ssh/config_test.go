@@ -120,3 +120,69 @@ func TestIncludes(t *testing.T) {
 		assertConfig(t, bl)
 	})
 }
+
+func TestSimpleConfig(t *testing.T) {
+	testDir, err := os.MkdirTemp(os.TempDir(), "test-simple-config")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		_ = os.RemoveAll(testDir)
+	}()
+
+	configDir := filepath.Join(testDir, "config.d")
+	err = os.Mkdir(configDir, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// this test only uses the prod config
+	err = cpTestdata("include_prod", configDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bl, err := parseConfig(true, "", filepath.Join(configDir, "include_prod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bl) != 5 {
+		t.Errorf("expected %d blocks, but got %d", 5, len(bl))
+	}
+
+	c := &config{
+		user: user.User{
+			Username: "bob",
+			HomeDir:  "/home/bob",
+		},
+		blocks: bl,
+	}
+	type tcase struct {
+		host    string
+		expUser string
+		expPort int
+		expId   string
+	}
+	for i, tc := range []*tcase{
+		{host: "", expUser: "bob", expPort: 22, expId: ""},
+		{host: "xyz", expUser: "bob", expPort: 22, expId: ""},
+		{host: "ab8-001.prod.dom", expUser: "srv-prod", expPort: 2022, expId: "/home/bob/.ssh/keys.d/id_key_prod"},
+		{host: "ab8-002.prod.dom", expUser: "srv-prod", expPort: 2022, expId: "/home/bob/.ssh/keys.d/id_key_prod"},
+		{host: "cb8-003.prod.dom", expUser: "srv-prod", expPort: 2022, expId: "/home/bob/.ssh/keys.d/id_key_prod"},
+		{host: "ab8-004.test.dom", expUser: "bob", expPort: 22, expId: ""},
+		{host: "fr5-002.test.dom", expUser: "bob", expPort: 22, expId: ""},
+	} {
+		cb := c.forHost(&herd.Host{
+			Name: tc.host,
+		})
+		if cb.clientConfig.User != tc.expUser {
+			t.Errorf("case %d: expected user %s, but got %s", i, tc.expUser, cb.clientConfig.User)
+		}
+		if cb.port != tc.expPort {
+			t.Errorf("case %d: expected port %d, but got %d", i, tc.expPort, cb.port)
+		}
+		if cb.identityFile != tc.expId {
+			t.Errorf("case %d: expected id %s, but got %s", i, tc.expId, cb.identityFile)
+		}
+	}
+}
