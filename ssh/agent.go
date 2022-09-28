@@ -239,8 +239,6 @@ func (a *agent) SignersForPath(path string) []ssh.Signer {
 	if path != "" {
 		if k, ok := a.signersByPath[path]; ok {
 			return []ssh.Signer{k}
-		} else {
-			return []ssh.Signer{}
 		}
 	}
 	return a.signers

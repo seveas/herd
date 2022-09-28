@@ -113,13 +113,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return e.hostKeyCallback(host, key, config)
 	}
-	if config.identityFile != "" && len(e.agent.SignersForPath(config.identityFile)) > 0 {
-		// if we have no signer for the identity file, fall back to agent.signers
-		// since the agent may have been externally configured for this.
-		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.SignersForPathCallback(config.identityFile))}
-	} else {
-		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.Signers)}
-	}
+	cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.SignersForPathCallback(config.identityFile))}
 
 	address := host.Address
 	if address == "" {
