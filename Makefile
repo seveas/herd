@@ -1,3 +1,5 @@
+GOGCFLAGS := -gcflags=all=-e
+
 # Let's not rebuild the parser if we don't have antlr available
 ifeq ("", "$(strip $(shell which antlr))")
 	antlr_sources :=
@@ -17,7 +19,7 @@ else
 endif
 
 herd: go.mod go.sum *.go cmd/herd/*.go ssh/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
-	go build -o "$@" github.com/seveas/herd/cmd/herd
+	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/cmd/herd
 
 %_grpc.pb.go: %.proto
 	protoc --go-grpc_out=. $^
@@ -26,7 +28,7 @@ herd: go.mod go.sum *.go cmd/herd/*.go ssh/*.go scripting/*.go provider/*/*.go p
 	protoc --go_out=. $^
 
 herd-provider-%: go.mod go.sum cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
-	go build -o "$@" github.com/seveas/herd/cmd/$@
+	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/cmd/$@
 
 $(antlr_sources): scripting/Herd.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
@@ -38,10 +40,14 @@ tidy:
 	go mod tidy
 
 provider/plugin/testdata/bin/herd-provider-ci: go.mod go.sum provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
-	go build -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
+	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
 
-test: lint tidy provider/plugin/testdata/bin/herd-provider-ci
+test: test-go lint tidy test-build provider/plugin/testdata/bin/herd-provider-ci
+test-go:
 	go test ./...
+test-build:
+	GOOS=darwin go build github.com/seveas/herd/cmd/herd
+	GOOS=linux go build github.com/seveas/herd/cmd/herd
 	GOOS=windows go build github.com/seveas/herd/cmd/herd
 
 ABORT ?= --exit-code-from herd --abort-on-container-exit
@@ -56,7 +62,7 @@ test-integration:
 
 dist_oses := darwin-amd64 darwin-arm64 dragonfly-amd64 freebsd-amd64 linux-amd64 netbsd-amd64 openbsd-amd64 windows-amd64
 VERSION = $(shell go run cmd/version.go)
-build_all:
+build-all:
 	@echo Building herd
 	@$(foreach os,$(dist_oses),echo " - for $(os)" && mkdir -p dist/$(os) && GOOS=$(firstword $(subst -, ,$(os))) GOARCH=$(lastword $(subst -, ,$(os))) go build -tags no_extra -ldflags '-s -w' -o dist/$(os)/herd-$(VERSION)/  github.com/seveas/herd/cmd/herd && tar -C dist/$(os)/ -zcf herd-$(VERSION)-$(os).tar.gz herd-$(VERSION)/;)
 
@@ -72,4 +78,4 @@ fullclean: clean
 install:
 	go install github.com/seveas/herd/cmd/herd
 
-.PHONY: fmt vet tidy test build_all clean fullclean install
+.PHONY: tidy test build-all clean fullclean install test-go test-build test-integration lint
