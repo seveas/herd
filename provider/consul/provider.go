@@ -80,7 +80,7 @@ func stringInList(haystack []string, needle string) bool {
 	return false
 }
 
-func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	p.consulConfig.Address = p.config.Address
 	lm(p.name, false, nil)
 	client, err := consul.NewClient(p.consulConfig)
@@ -94,7 +94,7 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		return nil, err
 	}
 	logrus.Debugf("Consul datacenters: %v", datacenters)
-	sg := scattergather.New[herd.Hosts](int64(len(datacenters)))
+	sg := scattergather.New[*herd.HostSet](int64(len(datacenters)))
 	for _, dc := range datacenters {
 		if len(p.config.Datacenters) != 0 && !stringInList(p.config.Datacenters, dc) {
 			continue
@@ -103,7 +103,7 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 			continue
 		}
 		dc := dc
-		sg.Run(ctx, func() (herd.Hosts, error) {
+		sg.Run(ctx, func() (*herd.HostSet, error) {
 			name := fmt.Sprintf("%s@%s", p.name, dc)
 			lm(name, false, nil)
 			hosts, err := p.loadDatacenter(ctx, dc)
@@ -120,9 +120,9 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd
 		return nil, err
 	}
 
-	hosts := make(herd.Hosts, 0)
+	hosts := herd.NewHostSet()
 	for _, h := range allHosts {
-		hosts = append(hosts, h...)
+		hosts.AddHosts(h)
 	}
 	return hosts, nil
 }
@@ -143,7 +143,7 @@ type nodeInfo struct {
 
 type serviceInfo map[string]*nodeInfo
 
-func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Hosts, error) {
+func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (*herd.HostSet, error) {
 	nodePositions := make(map[string]int)
 	client, err := consul.NewClient(p.consulConfig)
 	catalog := client.Catalog()
@@ -155,11 +155,14 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 	if err != nil {
 		return nil, err
 	}
-	hosts := make(herd.Hosts, len(catalognodes))
+	hosts := herd.NewHostSet()
+	hm := make(map[string]*herd.Host, len(catalognodes))
 	for i, node := range catalognodes {
 		nodePositions[node.Node] = i
 		ap := strings.Split(node.Address, ":")
-		hosts[i] = herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter, "node_address": node.Address})
+		host := herd.NewHost(node.Node, ap[0], herd.HostAttributes{"datacenter": node.Datacenter, "node_address": node.Address})
+		hm[node.Node] = host
+		hosts.AddHost(host)
 	}
 	services, _, err := catalog.Services(opts)
 	if err != nil {
@@ -199,7 +202,7 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 	for _, serviceNode := range serviceNodes {
 		for service, nodes := range serviceNode {
 			for host, info := range nodes {
-				h := hosts[nodePositions[host]]
+				h := hm[host]
 				h.Attributes[fmt.Sprintf("service:%s", service)] = info.tags
 				appendService(h, "service", service)
 				if info.health != "" {
@@ -209,7 +212,7 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (herd.Ho
 		}
 	}
 
-	for _, h := range hosts {
+	for _, h := range hm {
 		for _, attr := range []string{"service", "service_healthy", "service_unhealthy"} {
 			if s, ok := h.Attributes[attr]; ok {
 				ss := s.([]string)

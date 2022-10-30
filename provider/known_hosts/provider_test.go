@@ -36,16 +36,16 @@ func TestParser(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error parsing known_hosts: %s", err)
 			}
-			if len(hosts) != test.hosts {
-				t.Errorf("Incorrect number of hosts (%d) returned, expected %d", len(hosts), test.hosts)
+			if hosts.Len() != test.hosts {
+				t.Errorf("Incorrect number of hosts (%d) returned, expected %d", hosts.Len(), test.hosts)
 				return
 			}
 			if test.hosts == 0 {
 				return
 			}
 			expect := 3
-			if len(hosts[0].PublicKeys()) != expect {
-				t.Errorf("Incorrect number of keys (%d) returned for the first host, expected %d", len(hosts[0].PublicKeys()), expect)
+			if len(hosts.Get(0).PublicKeys()) != expect {
+				t.Errorf("Incorrect number of keys (%d) returned for the first host, expected %d", len(hosts.Get(0).PublicKeys()), expect)
 			}
 		})
 	}

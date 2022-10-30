@@ -25,7 +25,7 @@ func (p *providerImpl) Configure(values map[string]interface{}) error {
 	return p.provider.ParseViper(v)
 }
 
-func (p *providerImpl) Load(ctx context.Context, logger common.Logger) (herd.Hosts, error) {
+func (p *providerImpl) Load(ctx context.Context, logger common.Logger) (*herd.HostSet, error) {
 	logrus.SetOutput(io.Discard)
 	logrus.AddHook(&logrusHook{logger: logger})
 	return p.provider.Load(ctx, logger.LoadingMessage)

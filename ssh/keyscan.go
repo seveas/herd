@@ -74,7 +74,7 @@ func (e *KeyScanExecutor) Run(ctx context.Context, host *herd.Host, cmd string, 
 		cancel()
 	}()
 	<-ctx.Done()
-	return &herd.Result{Host: host}
+	return &herd.Result{Host: host.Name}
 }
 
 func (e *KeyScanExecutor) Disconnect() {

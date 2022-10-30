@@ -41,16 +41,16 @@ func (p *exampleProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *exampleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *exampleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	nhosts := 5
-	hosts := make(herd.Hosts, nhosts)
+	hosts := new(herd.HostSet)
 	for i := 0; i < nhosts; i++ {
 		attrs := herd.HostAttributes{
 			"static_attribute":  "static_value",
 			"dynamic_attribute": fmt.Sprintf("dynamic_value_%d", i),
 			"config_color":      p.config.Color,
 		}
-		hosts[i] = herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs)
+		hosts.AddHost(herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs))
 	}
 	return hosts, nil
 }

@@ -58,8 +58,8 @@ func (p *plainTextProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
-	hosts := make(herd.Hosts, 0)
+func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
+	hosts := herd.NewHostSet()
 	data, err := os.ReadFile(p.config.File)
 	if err != nil {
 		return nil, err
@@ -69,8 +69,7 @@ func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (h
 		if len(line) == 0 {
 			continue
 		}
-		host := herd.NewHost(line, "", herd.HostAttributes{})
-		hosts = append(hosts, host)
+		hosts.AddHost(herd.NewHost(line, "", herd.HostAttributes{}))
 	}
 	return hosts, nil
 }

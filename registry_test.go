@@ -23,14 +23,14 @@ func (p *fakeProvider) Equivalent(o HostProvider) bool {
 	return false
 }
 
-func (p *fakeProvider) Load(ctx context.Context, lm LoadingMessage) (Hosts, error) {
+func (p *fakeProvider) Load(ctx context.Context, lm LoadingMessage) (*HostSet, error) {
 	time.Sleep(2 * time.Millisecond)
 	dl, ok := ctx.Deadline()
 	if ok && time.Until(dl) < 0 {
 		return nil, errors.New("context deadline exceeded")
 	}
 	h := NewHost("test-host", "", HostAttributes{"foo": "bar"})
-	return Hosts{h}, nil
+	return &HostSet{hosts: []*Host{h}}, nil
 }
 
 func (p *fakeProvider) ParseViper(v *viper.Viper) error {
@@ -51,8 +51,8 @@ func TestGetHosts(t *testing.T) {
 		t.Errorf("%t %v", err, err)
 		t.Errorf("Could not load hosts: %s", err.Error())
 	}
-	if len(r.hosts) != 1 {
-		t.Errorf("Hosts returned by multiple providers are not merged, got %d hosts instead of 1", len(r.hosts))
+	if r.hosts.Len() != 1 {
+		t.Errorf("Hosts returned by multiple providers are not merged, got %d hosts instead of 1", r.hosts.Len())
 	}
 }
 

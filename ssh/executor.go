@@ -43,7 +43,7 @@ func (e *Executor) SetConnectTimeout(t time.Duration) {
 
 func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc chan herd.OutputLine) *herd.Result {
 	now := time.Now()
-	r := &herd.Result{Host: host, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
+	r := &herd.Result{Host: host.Name, StartTime: now, EndTime: now, ElapsedTime: 0, ExitStatus: -1}
 	defer func() {
 		r.EndTime = time.Now()
 		r.ElapsedTime = r.EndTime.Sub(r.StartTime).Seconds()

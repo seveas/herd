@@ -68,7 +68,7 @@ func (p *prometheusProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	lm(p.name, false, nil)
 	data, err := p.hp.Fetch(ctx)
 	if err != nil {
@@ -83,7 +83,7 @@ func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 		return nil, fmt.Errorf("Prometheus API returned: %s", targets.Status)
 	}
 
-	ret := make(herd.Hosts, 0)
+	ret := herd.NewHostSet()
 	for _, target := range targets.Data["activeTargets"] {
 		job := target.Labels["job"]
 		found := false
@@ -124,7 +124,7 @@ func (p *prometheusProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 		for k, v := range target.Labels {
 			attributes[k] = v
 		}
-		ret = append(ret, herd.NewHost(name, "", attributes))
+		ret.AddHost(herd.NewHost(name, "", attributes))
 	}
 
 	return ret, nil

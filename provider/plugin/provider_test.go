@@ -69,13 +69,15 @@ func TestPluginConnection(t *testing.T) {
 			err := p.ParseViper(v)
 			if err != nil {
 				t.Errorf("Unable to configure plugin: %s", err)
+				return
 			}
 			hosts, err := p.Load(context.Background(), func(name string, done bool, err error) { msg.name = name })
 			if fmt.Sprintf("%v", err) != test.err {
 				t.Errorf("Unexpected load error: %v. Expected: %v", err, test.err)
+				return
 			}
-			if len(hosts) != test.count {
-				t.Errorf("Received %d hosts, expecting %d", len(hosts), test.count)
+			if hosts != nil && hosts.Len() != test.count {
+				t.Errorf("Received %d hosts, expecting %d", hosts.Len(), test.count)
 			}
 			if test.log {
 				if msg.name != "ci" {

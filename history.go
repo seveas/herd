@@ -13,21 +13,21 @@ import (
 type History []*HistoryItem
 
 type HistoryItem struct {
-	Hosts   Hosts
 	Command string
-	Results map[string]*Result
+	Results []*Result
 	Summary struct {
 		Ok   int
 		Fail int
 		Err  int
 	}
-	StartTime   time.Time
-	EndTime     time.Time
-	ElapsedTime float64
+	StartTime         time.Time
+	EndTime           time.Time
+	ElapsedTime       float64
+	maxHostNameLength int
 }
 
 type Result struct {
-	Host        *Host
+	Host        string
 	ExitStatus  int
 	Stdout      []byte
 	Stderr      []byte
@@ -35,24 +35,19 @@ type Result struct {
 	StartTime   time.Time
 	EndTime     time.Time
 	ElapsedTime float64
+	index       int
 }
 
-func newHistoryItem(command string, hosts Hosts) *HistoryItem {
+func newHistoryItem(command string, nhosts int) *HistoryItem {
 	return &HistoryItem{
-		Hosts:     hosts,
 		Command:   command,
-		Results:   make(map[string]*Result),
+		Results:   make([]*Result, nhosts),
 		StartTime: time.Now(),
 	}
 }
 
 func (h *HistoryItem) MarshalJSON() ([]byte, error) {
-	hosts := make([]string, len(h.Hosts))
-	for i, h_ := range h.Hosts {
-		hosts[i] = h_.Name
-	}
 	r := map[string]interface{}{
-		"Hosts":       hosts,
 		"Command":     h.Command,
 		"Results":     h.Results,
 		"StartTime":   h.StartTime,
@@ -69,7 +64,7 @@ func (h *HistoryItem) end() {
 
 func (r Result) MarshalJSON() ([]byte, error) {
 	r_ := map[string]interface{}{
-		"Host":        r.Host.Name,
+		"Host":        r.Host,
 		"ExitStatus":  r.ExitStatus,
 		"Stdout":      string(r.Stdout),
 		"Stderr":      string(r.Stderr),

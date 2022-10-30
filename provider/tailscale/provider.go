@@ -49,7 +49,7 @@ func (p *tailscaleProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *tailscaleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+func (p *tailscaleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 
@@ -58,7 +58,7 @@ func (p *tailscaleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (h
 		return nil, err
 	}
 
-	ret := make(herd.Hosts, 0, len(status.Peer))
+	ret := herd.NewHostSet()
 	for _, peer := range status.Peer {
 		ips := make([]string, len(peer.TailscaleIPs))
 		for i, ip := range peer.TailscaleIPs {
@@ -97,7 +97,7 @@ func (p *tailscaleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (h
 		} else if p.config.Domain != "" {
 			name = peer.DNSName[:strings.IndexRune(peer.DNSName, '.')] + "." + p.config.Domain
 		}
-		ret = append(ret, herd.NewHost(name, peer.TailscaleIPs[0].String(), attrs))
+		ret.AddHost(herd.NewHost(name, peer.TailscaleIPs[0].String(), attrs))
 	}
 	return ret, nil
 }

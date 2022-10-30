@@ -76,8 +76,8 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 	}
 	engine.Execute()
 	if len(args) == 0 {
-		hosts := engine.Registry.GetHosts("*", []herd.MatchAttribute{}, []string{}, 0)
-		engine.Runner.AddHosts(hosts)
+		hosts := engine.Registry.Search("*", []herd.MatchAttribute{}, []string{}, 0)
+		engine.Hosts.AddHosts(hosts)
 	}
 	if _, err = engine.Runner.Run("herd:keyscan", nil, nil); err != nil {
 		return err
@@ -86,6 +86,6 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 {{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
 {{ end -}}
 `
-	engine.Ui.PrintHostList(engine.Runner.GetHosts(), herd.HostListOptions{Template: template})
+	engine.Ui.PrintHostList(herd.HostListOptions{Template: template})
 	return nil
 }

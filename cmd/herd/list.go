@@ -65,6 +65,6 @@ func runList(cmd *cobra.Command, args []string) error {
 		Count:         viper.GetStringSlice("Count"),
 		SortByCount:   !viper.IsSet("Sort"),
 	}
-	engine.Ui.PrintHostList(engine.Runner.GetHosts(), opts)
+	engine.Ui.PrintHostList(opts)
 	return nil
 }

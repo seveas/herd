@@ -100,7 +100,7 @@ func (l *interactiveLoop) run() {
 }
 
 func (l *interactiveLoop) prompt() string {
-	return fmt.Sprintf("herd [%d hosts] $ ", len(l.engine.Runner.GetHosts()))
+	return fmt.Sprintf("herd [%d hosts] $ ", l.engine.Hosts.Len())
 }
 
 func (l *interactiveLoop) autoComplete() readline.AutoCompleter {

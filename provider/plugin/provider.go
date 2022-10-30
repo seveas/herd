@@ -57,7 +57,7 @@ func (p *pluginProvider) Equivalent(o herd.HostProvider) bool {
 	return p.config.Command == o.(*pluginProvider).config.Command
 }
 
-func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	pluginMap := map[string]plugin.Plugin{
 		"provider": &common.ProviderPlugin{},
 	}

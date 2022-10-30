@@ -28,13 +28,14 @@ func TestPrometheus(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)
 	}
-	if len(hosts) != 1 {
-		t.Errorf("Incorrect number of hosts returned (%d)", len(hosts))
+	if hosts.Len() != 1 {
+		t.Errorf("Incorrect number of hosts returned (%d)", hosts.Len())
 	}
-	if hosts[0].Attributes["job"] != "node" {
+	h := hosts.Get(0)
+	if h.Attributes["job"] != "node" {
 		t.Errorf("Job label not copied to host attributes")
 	}
-	if hosts[0].Attributes["health"] != "up" {
+	if h.Attributes["health"] != "up" {
 		t.Errorf("Health not copied to host attributes")
 	}
 }

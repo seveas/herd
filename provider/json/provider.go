@@ -58,14 +58,14 @@ func (p *jsonProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *jsonProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *jsonProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	data, err := os.ReadFile(p.config.File)
 	if err != nil {
 		return nil, err
 	}
 
-	var hosts herd.Hosts
-	err = json.Unmarshal(data, &hosts)
+	hosts := new(herd.HostSet)
+	err = json.Unmarshal(data, hosts)
 	return hosts, err
 }
 

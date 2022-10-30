@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"sort"
 	"time"
 
 	"github.com/seveas/scattergather"
@@ -30,8 +31,7 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	hosts       Hosts
-	sort        []string
+	hosts       *HostSet
 	parallel    int
 	splay       time.Duration
 	timeout     time.Duration
@@ -48,22 +48,13 @@ const (
 	Finished
 )
 
-func NewRunner(executor Executor) *Runner {
+func NewRunner(hosts *HostSet, executor Executor) *Runner {
 	return &Runner{
-		hosts:       make(Hosts, 0),
-		sort:        []string{"name"},
+		hosts:       hosts,
 		executor:    executor,
 		timeout:     60 * time.Second,
 		hostTimeout: 10 * time.Second,
 	}
-}
-
-func (r *Runner) GetHosts() Hosts {
-	return r.hosts[:]
-}
-
-func (r *Runner) SetSortFields(s []string) {
-	r.sort = s
 }
 
 func (r *Runner) SetParallel(p int) {
@@ -78,11 +69,14 @@ func (r *Runner) SetTimeout(t time.Duration) {
 	r.timeout = t
 }
 
+func (r *Runner) GetTimeout() time.Duration {
+	return r.timeout
+}
+
 func (r *Runner) SetHostTimeout(t time.Duration) {
 	r.hostTimeout = t
 }
 
-// FIXME
 func (r *Runner) SetConnectTimeout(t time.Duration) {
 	if r.executor != nil {
 		r.executor.SetConnectTimeout(t)
@@ -98,28 +92,11 @@ func (r *Runner) Settings() (string, map[string]interface{}) {
 	}
 }
 
-func (r *Runner) AddHosts(hosts Hosts) {
-	h := r.hosts[:]
-	h = append(h, hosts...)
-	h.Sort(r.sort)
-	r.hosts = h.Uniq()
-}
-
-func (r *Runner) RemoveHosts(glob string, attrs MatchAttributes) {
-	newHosts := make(Hosts, 0)
-	for _, host := range r.hosts {
-		if !host.Match(glob, attrs) {
-			newHosts = append(newHosts, host)
-		}
-	}
-	r.hosts = newHosts
-}
-
 func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine) (*HistoryItem, error) {
 	if r.executor == nil {
 		return nil, errors.New("No executor defined")
 	}
-	if len(r.hosts) == 0 {
+	if len(r.hosts.hosts) == 0 {
 		return nil, errors.New("No hosts selected")
 	}
 	if pc == nil {
@@ -130,15 +107,17 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			}
 		}()
 	}
-	hi := newHistoryItem(command, r.hosts)
+	hi := newHistoryItem(command, len(r.hosts.hosts))
+	hi.maxHostNameLength = r.hosts.maxNameLength
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	count := r.parallel
 	if count <= 0 {
-		count = len(r.hosts)
+		count = len(r.hosts.hosts)
 	}
 	sg := scattergather.New[*Result](int64(count))
-	for _, host := range hi.Hosts {
+	for index, host := range r.hosts.hosts {
+		index := index
 		host := host
 		sg.Run(ctx, func() (*Result, error) {
 			if r.splay > 0 {
@@ -149,6 +128,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
 			defer cancel()
 			result := r.executor.Run(ctx, host, command, oc)
+			result.index = index
 			host.lastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil
@@ -173,7 +153,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	results, _ := sg.Wait()
 	cancel()
 	for _, result := range results {
-		hi.Results[result.Host.Name] = result
+		hi.Results[result.index] = result
 		switch result.ExitStatus {
 		case -1:
 			hi.Summary.Err++
@@ -183,18 +163,23 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			hi.Summary.Fail++
 		}
 	}
-	for _, host := range r.hosts {
-		if _, ok := hi.Results[host.Name]; !ok {
-			result := &Result{Host: host, ExitStatus: -1, Err: errors.New("context canceled")}
+	for index, host := range r.hosts.hosts {
+		if hi.Results[index] == nil {
+			result := &Result{Host: host.Name, ExitStatus: -1, Err: errors.New("context canceled")}
 			host.lastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
-			hi.Results[host.Name] = result
+			hi.Results[index] = result
 			hi.Summary.Err++
 		}
 	}
-	for _, key := range r.sort {
+	for _, key := range r.hosts.sort {
 		if key == "stdout" || key == "stderr" || key == "exitstatus" {
-			hi.Hosts.Sort(r.sort)
+			// We re-sort hosts and results according to the result of the last command
+			r.hosts.Sort()
+			for idx, host := range r.hosts.hosts {
+				host.lastResult.index = idx
+			}
+			sort.Slice(hi.Results, func(i, j int) bool { return hi.Results[i].index < hi.Results[j].index })
 			break
 		}
 	}
@@ -203,7 +188,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 }
 
 func (r *Runner) End() {
-	for _, h := range r.hosts {
+	for _, h := range r.hosts.hosts {
 		if h.Connection != nil {
 			logrus.Debugf("Disconnecting from %s", h.Name)
 			h.Connection.Close()

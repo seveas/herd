@@ -35,7 +35,7 @@ func (c *GRPCClient) Configure(settings map[string]interface{}) error {
 	return nil
 }
 
-func (c *GRPCClient) Load(ctx context.Context, logger Logger) (herd.Hosts, error) {
+func (c *GRPCClient) Load(ctx context.Context, logger Logger) (*herd.HostSet, error) {
 	loggerServer := &GRPCLoggerServer{Impl: logger}
 	var s *grpc.Server
 	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
@@ -64,10 +64,11 @@ func (c *GRPCClient) Load(ctx context.Context, logger Logger) (herd.Hosts, error
 	if resp.Err != "" {
 		return nil, errors.New(resp.Err)
 	}
-	var hosts herd.Hosts
+	hosts := herd.NewHostSet()
 	if err := json.Unmarshal(resp.Data, &hosts); err != nil {
 		return nil, err
 	}
+	/* FIXME set maxhostlen? Maybe have a custom json unserializer? */
 	return hosts, nil
 }
 

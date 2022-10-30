@@ -17,7 +17,7 @@ type Logger interface {
 
 type Provider interface {
 	Configure(map[string]interface{}) error
-	Load(ctx context.Context, logger Logger) (herd.Hosts, error)
+	Load(ctx context.Context, logger Logger) (*herd.HostSet, error)
 }
 
 var Handshake = plugin.HandshakeConfig{

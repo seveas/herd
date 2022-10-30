@@ -70,7 +70,7 @@ func (r *ctxRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return r.rt.RoundTrip(req.WithContext(r.ctx))
 }
 
-func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
 	// Contrary to the documentation, this library does _not_ take context timeouts into account, hence this dodgy hack
 	clientOpts := []option.ClientOption{
 		internaloption.WithDefaultEndpoint("https://compute.googleapis.com"),
@@ -91,10 +91,10 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 		}
 	}
 	logrus.Debugf("GCP zones: %v", p.config.Zones)
-	sg := scattergather.New[herd.Hosts](int64(len(p.config.Zones)))
+	sg := scattergather.New[*herd.HostSet](int64(len(p.config.Zones)))
 	for _, zone := range p.config.Zones {
 		zone := zone
-		sg.Run(ctx, func() (herd.Hosts, error) {
+		sg.Run(ctx, func() (*herd.HostSet, error) {
 			name := fmt.Sprintf("%s@%s", p.name, zone)
 			lm(name, false, nil)
 			hosts, err := p.loadZone(ctx, hc, zone)
@@ -108,9 +108,9 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 		return nil, err
 	}
 
-	hosts = make(herd.Hosts, 0)
+	hosts = new(herd.HostSet)
 	for _, h := range allHosts {
-		hosts = append(hosts, h...)
+		hosts.AddHosts(h)
 	}
 	return hosts, nil
 }
@@ -157,7 +157,7 @@ func iv(i *uint64) int {
 	return int(*i)
 }
 
-func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone string) (herd.Hosts, error) {
+func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone string) (*herd.HostSet, error) {
 	region := p.zones[zone].Region
 	client, err := compute.NewInstancesRESTClient(ctx, option.WithCredentialsFile(p.config.Key), option.WithHTTPClient(hc))
 	if err != nil {
@@ -168,7 +168,7 @@ func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone str
 		Zone:    zone,
 	}
 	it := client.List(ctx, req)
-	ret := make(herd.Hosts, 0)
+	set := herd.NewHostSet()
 	for {
 		inst, err := it.Next()
 		if err == iterator.Done {
@@ -215,8 +215,8 @@ func (p *googleProvider) loadZone(ctx context.Context, hc *http.Client, zone str
 		} else if iface.AccessConfigs != nil {
 			addr = *iface.AccessConfigs[0].NatIP
 		}
-		ret = append(ret, herd.NewHost(name, addr, attrs))
+		set.AddHost(herd.NewHost(name, addr, attrs))
 	}
 
-	return ret, nil
+	return set, nil
 }

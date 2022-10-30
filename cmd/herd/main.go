@@ -192,7 +192,9 @@ func bail(format string, args ...interface{}) {
 }
 
 func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) {
-	ui := herd.NewSimpleUI()
+	hosts := new(herd.HostSet)
+	hosts.SetSortFields(viper.GetStringSlice("Sort"))
+	ui := herd.NewSimpleUI(hosts)
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
 	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
@@ -219,12 +221,11 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 		return nil, err
 	}
 	ui.Sync()
-	runner := herd.NewRunner(executor)
-	runner.SetSortFields(viper.GetStringSlice("Sort"))
+	runner := herd.NewRunner(hosts, executor)
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
 	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
-	return scripting.NewScriptEngine(ui, registry, runner), nil
+	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
 }

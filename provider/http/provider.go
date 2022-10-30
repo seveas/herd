@@ -83,14 +83,14 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 	return body, nil
 }
 
-func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
-	hosts := herd.Hosts{}
+func (p *HttpProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
+	hosts := new(herd.HostSet)
 	lm(p.name, false, nil)
 	data, err := p.Fetch(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal(data, &hosts); err != nil {
+	if err := json.Unmarshal(data, hosts); err != nil {
 		return nil, err
 	}
 	return hosts, nil

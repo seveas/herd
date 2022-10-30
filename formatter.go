@@ -42,7 +42,7 @@ func (f prettyFormatter) formatResult(r *Result, l int) string {
 }
 
 func (f prettyFormatter) formatOutput(r *Result, l int) string {
-	prefix := fmt.Sprintf("%-*s  ", l, r.Host.Name)
+	prefix := fmt.Sprintf("%-*s  ", l, r.Host)
 	indent := fmt.Sprintf("%-*s  ", l, "")
 	out := ""
 	if len(r.Stdout) > 0 {
@@ -59,9 +59,9 @@ func (f prettyFormatter) formatOutput(r *Result, l int) string {
 
 func (f prettyFormatter) formatStatus(r *Result, l int) string {
 	if r.Err != nil {
-		return ansi.Color(fmt.Sprintf("%-*s  %s after %s", l, r.Host.Name, r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red") + "\n"
+		return ansi.Color(fmt.Sprintf("%-*s  %s after %s", l, r.Host, r.Err, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "red") + "\n"
 	} else {
-		return ansi.Color(fmt.Sprintf("%-*s  completed successfully after %s", l, r.Host.Name, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "green") + "\n"
+		return ansi.Color(fmt.Sprintf("%-*s  completed successfully after %s", l, r.Host, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), "green") + "\n"
 	}
 }
 

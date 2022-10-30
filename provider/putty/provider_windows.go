@@ -51,9 +51,9 @@ func (p *puttyProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	keys := p.allKeys()
-	ret := herd.Hosts{}
+	ret := herd.NewHostSet()
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\Sessions`, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
 		logrus.Debugf("No putty sessions found")
@@ -80,14 +80,14 @@ func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.
 			h.AddPublicKey(k)
 		}
 		delete(keys, hn)
-		ret = append(ret, h)
+		ret.AddHost(h)
 	}
 	for hn, hkeys := range keys {
 		h := herd.NewHost(hn, "", herd.HostAttributes{})
 		for _, k := range hkeys {
 			h.AddPublicKey(k)
 		}
-		ret = append(ret, h)
+		ret.AddHost(h)
 	}
 	return ret, nil
 }

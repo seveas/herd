@@ -40,18 +40,16 @@ func RegisterProvider(name string, constructor func(string) HostProvider, magic 
 
 type Registry struct {
 	providers []HostProvider
-	hosts     Hosts
+	hosts     *HostSet
 	dataDir   string
 	cacheDir  string
 }
-
-type Hosts []*Host
 
 type HostProvider interface {
 	Name() string
 	Prefix() string
 	ParseViper(v *viper.Viper) error
-	Load(ctx context.Context, l LoadingMessage) (Hosts, error)
+	Load(ctx context.Context, l LoadingMessage) (*HostSet, error)
 	Equivalent(p HostProvider) bool
 }
 
@@ -68,7 +66,6 @@ type Cache interface {
 func NewRegistry(dataDir, cacheDir string) *Registry {
 	return &Registry{
 		providers: []HostProvider{},
-		hosts:     Hosts{},
 		dataDir:   dataDir,
 		cacheDir:  cacheDir,
 	}
@@ -170,8 +167,8 @@ func (r *Registry) InvalidateCache() {
 }
 
 func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
-	if len(r.hosts) > 0 {
-		return nil
+	if r.hosts != nil {
+		return fmt.Errorf("Hosts have already been loaded")
 	}
 	ch := make(chan os.Signal, 2)
 	signal.Notify(ch, os.Interrupt)
@@ -192,15 +189,18 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 		signal.Reset()
 	}()
 
-	sg := scattergather.New[Hosts](int64(len(r.providers)))
+	sg := scattergather.New[*HostSet](int64(len(r.providers)))
 
 	for _, p := range r.providers {
 		p := p
-		sg.Run(ctx, func() (Hosts, error) {
+		sg.Run(ctx, func() (*HostSet, error) {
 			hosts, err := p.Load(ctx, lm)
 			lm(p.Name(), true, err)
-			logrus.Debugf("%d hosts returned from %s", len(hosts), p.Name())
-			for _, host := range hosts {
+			if err != nil {
+				return hosts, err
+			}
+			logrus.Debugf("%d hosts returned from %s", len(hosts.hosts), p.Name())
+			for _, host := range hosts.hosts {
 				if p.Prefix() != "" {
 					host.Attributes = host.Attributes.prefix(p.Prefix())
 				}
@@ -211,73 +211,54 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	}
 
 	hostSets, err := sg.Wait()
-	lm("", true, nil)
-	seen := make(map[string]int)
-	allHosts := make(Hosts, 0)
-
+	lm("", true, err)
 	if err != nil {
 		return err
 	}
-
-	for _, hosts := range hostSets {
-		for _, host := range hosts {
-			if existing, ok := seen[host.Name]; ok {
-				allHosts[existing].Amend(host)
-			} else {
-				seen[host.Name] = len(allHosts)
-				allHosts = append(allHosts, host)
-			}
-		}
-	}
-	r.hosts = allHosts
+	r.hosts = MergeHostSets(hostSets)
 	return nil
 }
 
-func (r *Registry) GetHosts(hostnameGlob string, attributes MatchAttributes, sampled []string, count int) Hosts {
-	ret := make(Hosts, 0)
+func (r *Registry) Search(hostnameGlob string, attributes MatchAttributes, sampled []string, count int) *HostSet {
 	if strings.HasPrefix(hostnameGlob, "file:") {
 		return r.getHostsFromFile(hostnameGlob[5:], attributes)
 	}
-	for _, host := range r.hosts {
-		if host.Match(hostnameGlob, attributes) {
-			ret = append(ret, host)
-		}
-	}
-	if len(ret) == 0 && attributes != nil && len(attributes) == 0 {
+	ret := r.hosts.Search(hostnameGlob, attributes)
+	if len(ret.hosts) == 0 && attributes != nil && len(attributes) == 0 {
 		if _, err := net.LookupHost(hostnameGlob); err == nil {
-			ret = append(ret, NewHost(hostnameGlob, "", HostAttributes{}))
+			ret = &HostSet{hosts: []*Host{NewHost(hostnameGlob, "", HostAttributes{})}}
 		}
 	}
 	if len(sampled) != 0 {
-		ret = ret.Sample(sampled, count)
+		ret.Sample(sampled, count)
 	}
 	return ret
 }
 
-func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) Hosts {
-	ret := make(Hosts, 0)
+func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) *HostSet {
+	hosts := make([]*Host, 0)
 	seen := make(map[string]int)
 	data, err := os.ReadFile(fn)
 	if err != nil {
 		logrus.Errorf("Error reading %s: %s", fn, err)
-		return ret
+		return nil
 	}
 	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-	for i, host := range r.hosts {
+	for i, host := range r.hosts.hosts {
 		seen[host.Name] = i
 	}
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if i, ok := seen[line]; ok {
-			host := r.hosts[i]
+			host := r.hosts.hosts[i]
 			if host.Match("*", attributes) {
-				ret = append(ret, host)
+				hosts = append(hosts, host)
 			}
 		} else {
 			logrus.Warnf("Host %s not found", line)
 		}
 	}
-	return ret
+	return &HostSet{hosts: hosts}
 }
 
 func (r *Registry) Settings() (string, map[string]interface{}) {
@@ -288,89 +269,4 @@ func (r *Registry) Settings() (string, map[string]interface{}) {
 	return "Registry", map[string]interface{}{
 		"Providers": providers,
 	}
-}
-
-func (h Hosts) String() string {
-	var ret strings.Builder
-	for i, h_ := range h {
-		if i > 0 {
-			ret.WriteString(", ")
-		}
-		ret.WriteString(h_.Name)
-	}
-	return ret.String()
-}
-
-func (h Hosts) Sort(fields []string) {
-	if len(h) < 2 || len(fields) < 1 {
-		return
-	}
-	// Most common and default case
-	if len(fields) == 1 && fields[0] == "name" {
-		sort.Slice(h, func(i, j int) bool { return h[i].Name < h[j].Name })
-	} else {
-		sort.Slice(h, func(i, j int) bool {
-			return h[i].less(h[j], fields)
-		})
-	}
-}
-
-func (h Hosts) Uniq() Hosts {
-	if len(h) < 2 {
-		return h
-	}
-	src, dst := 1, 0
-	for src < len(h) {
-		if h[src].Name != h[dst].Name {
-			dst += 1
-			if dst != src {
-				h[dst] = h[src]
-			}
-		}
-		src += 1
-	}
-	return h[:dst+1]
-}
-
-func (h Hosts) Sample(attributes []string, count int) Hosts {
-	ret := make(Hosts, 0)
-	buckets := make(map[string]Hosts)
-host:
-	for _, host := range h {
-		bucket := ""
-		for _, attr := range attributes {
-			value, ok := host.Attributes[attr]
-			if !ok {
-				continue host
-			}
-			bucket = fmt.Sprintf("%s\000%v", bucket, value)
-		}
-		hosts, ok := buckets[bucket]
-		if !ok {
-			buckets[bucket] = Hosts{host}
-		} else {
-			buckets[bucket] = append(hosts, host)
-		}
-	}
-	for _, bucket := range buckets {
-		ret = append(ret, bucket[:min(count, len(bucket))]...)
-	}
-	return ret
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-func (h Hosts) maxLen() int {
-	hlen := 0
-	for _, host := range h {
-		if len(host.Name) > hlen {
-			hlen = len(host.Name)
-		}
-	}
-	return hlen
 }

@@ -17,12 +17,14 @@ type ScriptEngine struct {
 	Registry *herd.Registry
 	Runner   *herd.Runner
 	History  herd.History
+	Hosts    *herd.HostSet
 	commands []command
 	position int
 }
 
-func NewScriptEngine(ui herd.UI, registry *herd.Registry, runner *herd.Runner) *ScriptEngine {
+func NewScriptEngine(hosts *herd.HostSet, ui herd.UI, registry *herd.Registry, runner *herd.Runner) *ScriptEngine {
 	return &ScriptEngine{
+		Hosts:    hosts,
 		Ui:       ui,
 		Registry: registry,
 		Runner:   runner,

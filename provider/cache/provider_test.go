@@ -30,13 +30,14 @@ func (p *fakeProvider) Equivalent(o herd.HostProvider) bool {
 	return false
 }
 
-func (p *fakeProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *fakeProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	p.loaded++
-	h := herd.NewHost("test-host", "", herd.HostAttributes{"foo": "bar"})
+	hosts := new(herd.HostSet)
+	hosts.AddHost(herd.NewHost("test-host", "", herd.HostAttributes{"foo": "bar"}))
 	if p.doError {
-		return herd.Hosts{h}, fmt.Errorf("You wanted an error")
+		return hosts, fmt.Errorf("You wanted an error")
 	}
-	return herd.Hosts{h}, nil
+	return hosts, nil
 }
 
 func (p *fakeProvider) ParseViper(v *viper.Viper) error {
@@ -53,7 +54,7 @@ func TestCache(t *testing.T) {
 	c.config.Lifetime = 1 * time.Hour
 	c.SetCacheDir(filepath.Join(tmpdir, "cache"))
 	hosts, err := c.Load(context.Background(), func(string, bool, error) {})
-	if len(hosts) != 1 || err != nil {
+	if hosts.Len() != 1 || err != nil {
 		t.Errorf("First cache load did not succeed")
 	}
 	if c.source.(*fakeProvider).loaded != 1 {
@@ -63,7 +64,7 @@ func TestCache(t *testing.T) {
 		t.Errorf("We must immediately refresh the cache")
 	}
 	hosts, err = c.Load(context.Background(), func(string, bool, error) {})
-	if len(hosts) != 1 || err != nil {
+	if hosts.Len() != 1 || err != nil {
 		t.Errorf("Second cache load did not succeed")
 	}
 	if c.source.(*fakeProvider).loaded != 1 {
@@ -103,12 +104,13 @@ func TestRelativeFiles(t *testing.T) {
 	if err := r.LoadHosts(context.Background(), func(string, bool, error) {}); err != nil {
 		t.Errorf("Registry load did not succeed")
 	}
-	hosts := r.GetHosts("", nil, nil, 0)
-	if len(hosts) != 1 {
+	hosts := r.Search("", nil, nil, 0)
+	if hosts.Len() != 1 {
 		panic("Test broken")
 	}
 
-	if attr, ok := hosts[0].Attributes["cache:fake:foo"]; !ok || attr.(string) != "bar" {
-		t.Errorf("Expected attribute not found in %v", hosts[0].Attributes)
+	h := hosts.Get(0)
+	if attr, ok := h.Attributes["cache:fake:foo"]; !ok || attr.(string) != "bar" {
+		t.Errorf("Expected attribute not found in %v", h.Attributes)
 	}
 }

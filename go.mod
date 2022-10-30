@@ -29,6 +29,7 @@ require (
 	github.com/spf13/viper v1.13.0
 	github.com/transip/gotransip/v6 v6.17.0
 	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
 	google.golang.org/api v0.97.0
 	google.golang.org/genproto v0.0.0-20220923205249-dd2d53f1fffc
@@ -91,7 +92,6 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	go4.org/mem v0.0.0-20220726221520-4f986261bf13 // indirect
 	go4.org/netipx v0.0.0-20220922150402-a3c4c4abef03 // indirect
-	golang.org/x/exp v0.0.0-20220921164117-439092de6870 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220923203811-8be639271d50 // indirect
 	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect

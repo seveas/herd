@@ -88,21 +88,21 @@ func (c *Cache) mustRefresh() bool {
 	return err != nil || time.Since(info.ModTime()) > c.config.Lifetime
 }
 
-func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
-		hosts := make(herd.Hosts, 0)
+		hosts := new(herd.HostSet)
 		data, err := os.ReadFile(c.config.File)
 		if err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal(data, &hosts); err != nil {
+		if err := json.Unmarshal(data, hosts); err != nil {
 			return nil, err
 		}
 		return hosts, nil
 	}
 	hosts, err := c.source.Load(ctx, lm)
-	if err == nil && len(hosts) > 0 {
+	if err == nil {
 		var data []byte
 		dir := filepath.Dir(c.config.File)
 		if err = os.MkdirAll(dir, 0o700); err != nil {

@@ -47,7 +47,7 @@ type SettingsFunc func() (string, map[string]interface{})
 
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
-	PrintHostList(hosts Hosts, opts HostListOptions)
+	PrintHostList(opts HostListOptions)
 	PrintSettings(...SettingsFunc)
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
@@ -56,8 +56,8 @@ type UI interface {
 	Sync()
 	End()
 	LoadingMessage(what string, done bool, err error)
-	OutputChannel(r *Runner) chan OutputLine
-	ProgressChannel(r *Runner) chan ProgressMessage
+	OutputChannel() chan OutputLine
+	ProgressChannel(deadline time.Time) chan ProgressMessage
 	BindLogrus()
 	Settings() (string, map[string]interface{})
 }
@@ -76,6 +76,7 @@ type HostListOptions struct {
 }
 
 type SimpleUI struct {
+	hosts           *HostSet
 	output          *os.File
 	atStart         bool
 	lastProgress    string
@@ -113,7 +114,7 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
-func NewSimpleUI() *SimpleUI {
+func NewSimpleUI(hosts *HostSet) *SimpleUI {
 	f := prettyFormatter{
 		colors: map[logrus.Level]string{
 			logrus.WarnLevel:  "yellow",
@@ -122,6 +123,7 @@ func NewSimpleUI() *SimpleUI {
 		},
 	}
 	ui := &SimpleUI{
+		hosts:        hosts,
 		output:       os.Stdout,
 		outputMode:   OutputAll,
 		atStart:      true,
@@ -227,7 +229,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		return
 	}
 	usePager := ui.pagerEnabled
-	hlen := hi.Hosts.maxLen()
+	hlen := hi.maxHostNameLength
 	linecount := 0
 	buffer := ""
 	var pgr *pager
@@ -235,12 +237,8 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		linecount = 2
 	}
 
-	for _, h := range hi.Hosts {
+	for _, result := range hi.Results {
 		var txt string
-		result, ok := hi.Results[h.Name]
-		if !ok {
-			continue
-		}
 		if ui.outputMode == OutputAll {
 			txt = ui.formatter.formatResult(result, hlen)
 		} else {
@@ -291,7 +289,8 @@ func startPager(p *pager, o *io.Writer) {
 	}
 }
 
-func (ui *SimpleUI) PrintHostList(hosts Hosts, opts HostListOptions) {
+func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
+	hosts := ui.hosts.hosts
 	if len(hosts) == 0 {
 		logrus.Error("No hosts to list")
 		return
@@ -502,12 +501,12 @@ func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	ui.pchan <- clearLine + fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, "green"))
 }
 
-func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
+func (ui *SimpleUI) OutputChannel() chan OutputLine {
 	if ui.outputMode != OutputTail {
 		return nil
 	}
 	oc := make(chan OutputLine)
-	hlen := r.hosts.maxLen()
+	hlen := ui.hosts.maxNameLength
 	lastcolor := []byte{}
 	reset := []byte("\033[0m")
 	cr := regexp.MustCompile("\033\\[[0-9;]+m")
@@ -546,16 +545,16 @@ func (ui *SimpleUI) OutputChannel(r *Runner) chan OutputLine {
 	return oc
 }
 
-func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
+func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 	pc := make(chan ProgressMessage)
 	go func() {
 		start := time.Now()
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
-		total := len(r.hosts)
+		total := len(ui.hosts.hosts)
 		queued, todo, waiting, running, done := total, total, 0, 0, 0
 		nok, nfail, nerr := 0, 0, 0
-		hlen := r.hosts.maxLen()
+		hlen := ui.hosts.maxNameLength
 		show_waiting := false
 		for {
 			select {
@@ -599,11 +598,11 @@ func (ui *SimpleUI) ProgressChannel(r *Runner) chan ProgressMessage {
 					}
 				}
 			}
-			since := time.Since(start).Truncate(time.Second)
-			togo := r.timeout - since
+			since := (time.Since(start) + time.Second/2).Truncate(time.Second)
 			if todo == 0 {
 				ui.pchan <- clearLine + fmt.Sprintf("%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
 			} else {
+				togo := (time.Until(deadline) + time.Second/2).Truncate(time.Second)
 				msg := clearLine + fmt.Sprintf("Waiting (%s/%s)... %d/%d done", since, togo, done, total)
 				if queued > 0 {
 					msg += fmt.Sprintf(", %d queued", queued)

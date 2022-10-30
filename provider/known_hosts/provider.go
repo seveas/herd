@@ -63,9 +63,9 @@ func (p *knownHostsProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
-	hosts := make(herd.Hosts, 0)
-	seen := make(map[string]int)
+func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
+	hosts := herd.NewHostSet()
+	seen := make(map[string]*herd.Host)
 	for _, f := range p.config.Files {
 		hashed := false
 		data, err := os.ReadFile(f)
@@ -91,18 +91,16 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 				}
 				continue
 			}
-			if idx, ok := seen[name]; ok {
+			if host, ok := seen[name]; ok {
 				// -1 means: seen but did not match
 				// FIXME: if we ever match on key attributes, this is wrong.
-				if idx != -1 {
-					hosts[idx].AddPublicKey(key)
-				}
+				host.AddPublicKey(key)
 				continue
 			}
 			host := herd.NewHost(name, "", herd.HostAttributes{"PublicKeyComment": comment})
 			host.AddPublicKey(key)
-			seen[host.Name] = len(hosts)
-			hosts = append(hosts, host)
+			seen[host.Name] = host
+			hosts.AddHost(host)
 		}
 	}
 	return hosts, nil

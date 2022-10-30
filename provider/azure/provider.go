@@ -103,7 +103,7 @@ func (p *azureProvider) ParseViper(v *viper.Viper) error {
 	return nil
 }
 
-func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 	c := compute.NewVirtualMachinesClient(p.config.Subscription)
@@ -120,8 +120,8 @@ func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts
 		}
 		vms = append(vms, res.Values()...)
 	}
-	hosts = make(herd.Hosts, len(vms))
-	for i, vm := range vms {
+	hosts = herd.NewHostSet()
+	for _, vm := range vms {
 		attrs := make(herd.HostAttributes)
 		for k, v := range vm.Tags {
 			attrs[k] = *v
@@ -130,7 +130,7 @@ func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts
 		attrs["ProvisioningState"] = *vm.ProvisioningState
 		attrs["VMID"] = *vm.VMID
 		attrs["Location"] = *vm.Location
-		hosts[i] = herd.NewHost(*vm.Name, "", attrs)
+		hosts.AddHost(herd.NewHost(*vm.Name, "", attrs))
 	}
 
 	return hosts, nil

@@ -66,10 +66,11 @@ func TestConsulMock(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)
 	}
-	if len(hosts) != 20 {
+	if hosts.Len() != 20 {
 		t.Errorf("Incorrect number of hosts returned")
 	}
-	for i, h := range hosts {
+	for i := 0; i < hosts.Len(); i++ {
+		h := hosts.Get(i)
 		if dc, ok := h.Attributes["datacenter"]; !ok {
 			t.Errorf("datacenter attribute not set for %s", h.Name)
 		} else if h.Attributes["domainname"] != dc.(string)+".consul.ci" {
@@ -79,7 +80,7 @@ func TestConsulMock(t *testing.T) {
 			t.Errorf("service attribute not set for %s", h.Name)
 		} else {
 			s := svc.([]string)
-			if len(s) != 1+((i+1)%2) {
+			if len(s) != 2-i/2%2 {
 				t.Errorf("incorrect services %v set for %s", s, h.Name)
 			}
 			if s[0] != "service1" || len(s) == 2 && s[1] != "service2" {
@@ -100,25 +101,20 @@ func TestConsulMock(t *testing.T) {
 			} else {
 				s := si.([]string)
 				if len(s) != 1 || s[0] != "service1" {
-					if len(s) != 1+((i+1)%2) {
-						t.Errorf("incorrect services_healthy %v set for %s", s, h.Name)
-					}
+					t.Errorf("incorrect services_healthy %v set for %s", s, h.Name)
 				}
 			}
-			if i%2 == 0 {
+			if i/2%2 == 0 {
 				if si, ok := h.Attributes["service_unhealthy"]; !ok {
 					t.Errorf("service_unhealthy attribute not set for %s", h.Name)
 				} else {
 					s := si.([]string)
 					if len(s) != 1 || s[0] != "service2" {
-						if len(s) != 1+((i+1)%2) {
-							t.Errorf("incorrect services_unhealthy %v set for %s", s, h.Name)
-						}
+						t.Errorf("incorrect services_unhealthy %v set for %s", s, h.Name)
 					}
 				}
 			}
 		}
-		_ = i
 	}
 }
 

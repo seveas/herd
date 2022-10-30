@@ -53,7 +53,7 @@ func (p *ciProvider) ParseViper(v *viper.Viper) error {
 	return nil
 }
 
-func (p *ciProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hosts, error) {
+func (p *ciProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	lm(p.name, false, nil)
 	for _, level := range logrus.AllLevels {
 		if level > logrus.FatalLevel {
@@ -63,13 +63,13 @@ func (p *ciProvider) Load(ctx context.Context, lm herd.LoadingMessage) (herd.Hos
 	switch p.config.Mode {
 	case "normal":
 		nhosts := 5
-		hosts := make(herd.Hosts, nhosts)
+		hosts := herd.NewHostSet()
 		for i := 0; i < nhosts; i++ {
 			attrs := herd.HostAttributes{
 				"static_attribute":  "static_value",
 				"dynamic_attribute": fmt.Sprintf("dynamic_value_%d", i),
 			}
-			hosts[i] = herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs)
+			hosts.AddHost(herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", attrs))
 		}
 		return hosts, nil
 	case "empty":

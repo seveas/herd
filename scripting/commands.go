@@ -65,11 +65,11 @@ type addHostsCommand struct {
 }
 
 func (c addHostsCommand) execute(e *ScriptEngine) {
-	hosts := e.Registry.GetHosts(c.glob, c.attributes, c.sampled, c.count)
+	hosts := e.Registry.Search(c.glob, c.attributes, c.sampled, c.count)
 	if strings.HasPrefix(c.glob, "file:") {
-		e.Runner.SetSortFields([]string{})
+		e.Hosts.SetSortFields([]string{})
 	}
-	e.Runner.AddHosts(hosts)
+	e.Hosts.AddHosts(hosts)
 }
 
 func (c addHostsCommand) String() string {
@@ -82,7 +82,7 @@ type removeHostsCommand struct {
 }
 
 func (c removeHostsCommand) execute(e *ScriptEngine) {
-	e.Runner.RemoveHosts(c.glob, c.attributes)
+	e.Hosts.Remove(c.glob, c.attributes)
 }
 
 func (c removeHostsCommand) String() string {
@@ -94,7 +94,7 @@ type listHostsCommand struct {
 }
 
 func (c listHostsCommand) execute(e *ScriptEngine) {
-	e.Ui.PrintHostList(e.Runner.GetHosts(), c.opts)
+	e.Ui.PrintHostList(c.opts)
 }
 
 func (c listHostsCommand) String() string {
@@ -108,8 +108,8 @@ type runCommand struct {
 }
 
 func (c runCommand) execute(e *ScriptEngine) {
-	oc := e.Ui.OutputChannel(e.Runner)
-	pc := e.Ui.ProgressChannel(e.Runner)
+	oc := e.Ui.OutputChannel()
+	pc := e.Ui.ProgressChannel(time.Now().Add(e.Runner.GetTimeout()))
 	hi, err := e.Runner.Run(c.command, pc, oc)
 	if err != nil {
 		logrus.Errorf("Unable to execute %s: %s", c.command, err)

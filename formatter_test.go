@@ -28,7 +28,7 @@ func init() {
 	start := time.Date(2019, 12, 8, 20, 26, 0, 0, time.UTC)
 	results = []*Result{
 		{
-			Host:        NewHost(fmt.Sprintf("test-host-%03d.example.com", count()), "", HostAttributes{}),
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
 			Err:         fmt.Errorf("It's always DNS"),
 			ExitStatus:  -1,
 			Stdout:      []byte{},
@@ -38,7 +38,7 @@ func init() {
 			ElapsedTime: 12,
 		},
 		{
-			Host:        NewHost(fmt.Sprintf("test-host-%03d.example.com", count()), "", HostAttributes{}),
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
 			Stdout:      []byte("May the forks be with you\nAnd you\n"),
 			Stderr:      []byte{},
 			StartTime:   start,
@@ -46,7 +46,7 @@ func init() {
 			ElapsedTime: 12,
 		},
 		{
-			Host:        NewHost(fmt.Sprintf("test-host-%03d.example.com", count()), "", HostAttributes{}),
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
 			Stdout:      []byte("Newline is added automatically"),
 			Stderr:      []byte{},
 			StartTime:   start,
@@ -54,7 +54,7 @@ func init() {
 			ElapsedTime: 12,
 		},
 		{
-			Host:        NewHost(fmt.Sprintf("test-host-%03d.example.com", count()), "", HostAttributes{}),
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
 			Err:         fmt.Errorf("Process exited with status 1"),
 			ExitStatus:  1,
 			Stdout:      []byte{},
@@ -64,7 +64,7 @@ func init() {
 			ElapsedTime: 12,
 		},
 		{
-			Host:        NewHost(fmt.Sprintf("test-host-%03d.example.com", count()), "", HostAttributes{}),
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
 			Stdout:      []byte("Text on stdout without newline"),
 			Stderr:      []byte("Text on stderr\nMore text\n"),
 			StartTime:   start,

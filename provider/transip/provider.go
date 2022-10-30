@@ -55,7 +55,7 @@ func (r *ctxRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return r.rt.RoundTrip(req.WithContext(r.ctx))
 }
 
-func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 
@@ -73,8 +73,8 @@ func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hos
 	if err != nil {
 		return nil, fmt.Errorf("Unable to get VPS list: %s", err)
 	}
-	ret := make(herd.Hosts, len(vpss))
-	for i, vps := range vpss {
+	ret := herd.NewHostSet()
+	for _, vps := range vpss {
 		attrs := herd.HostAttributes{
 			"uuid":             vps.UUID,
 			"description":      vps.Description,
@@ -94,7 +94,7 @@ func (p *transipProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hos
 			"availabilityzone": vps.AvailabilityZone,
 			"tags":             vps.Tags,
 		}
-		ret[i] = herd.NewHost(vps.Name, vps.IPAddress, attrs)
+		ret.AddHost(herd.NewHost(vps.Name, vps.IPAddress, attrs))
 	}
 	return ret, nil
 }

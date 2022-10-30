@@ -101,7 +101,7 @@ func (p *awsProvider) setRegions() error {
 	return nil
 }
 
-func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts herd.Hosts, err error) {
+func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 	if len(p.config.Regions) == 0 {
@@ -110,10 +110,13 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 		}
 	}
 	logrus.Debugf("AWS regions: %v", p.config.Regions)
-	sg := scattergather.New[herd.Hosts](int64(len(p.config.Regions)))
+	sg := scattergather.New[*herd.HostSet](int64(len(p.config.Regions)))
 	for _, region := range p.config.Regions {
 		region := region
-		sg.Run(ctx, func() (herd.Hosts, error) {
+		if len(p.config.ExcludeRegions) != 0 && stringInList(p.config.ExcludeRegions, region) {
+			continue
+		}
+		sg.Run(ctx, func() (*herd.HostSet, error) {
 			name := fmt.Sprintf("%s@%s", p.name, region)
 			lm(name, false, nil)
 			hosts, err := p.loadRegion(ctx, region)
@@ -127,19 +130,14 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts h
 		return nil, err
 	}
 
-	hosts = make(herd.Hosts, 0)
+	hosts = new(herd.HostSet)
 	for _, h := range allHosts {
-		hosts = append(hosts, h...)
+		hosts.AddHosts(h)
 	}
 	return hosts, nil
 }
 
-func (p *awsProvider) loadRegion(ctx context.Context, region string) (herd.Hosts, error) {
-	for _, r := range p.config.ExcludeRegions {
-		if region == r {
-			return nil, nil
-		}
-	}
+func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.HostSet, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Credentials: credentials.NewStaticCredentials(p.config.AccessKeyId, p.config.SecretAccessKey, ""),
 		Region:      aws.String(region),
@@ -148,7 +146,7 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (herd.Hosts
 		return nil, err
 	}
 	svc := ec2.New(sess)
-	ret := herd.Hosts{}
+	ret := new(herd.HostSet)
 	var token *string = nil
 	sv := aws.StringValue
 	iv := aws.Int64Value
@@ -203,7 +201,7 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (herd.Hosts
 				if p.config.UsePublicAddress {
 					addr = sv(instance.PublicIpAddress)
 				}
-				ret = append(ret, herd.NewHost(name, addr, attrs))
+				ret.AddHost(herd.NewHost(name, addr, attrs))
 			}
 		}
 		if out.NextToken == nil {
@@ -213,4 +211,13 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (herd.Hosts
 	}
 
 	return ret, nil
+}
+
+func stringInList(haystack []string, needle string) bool {
+	for _, twig := range haystack {
+		if twig == needle {
+			return true
+		}
+	}
+	return false
 }
