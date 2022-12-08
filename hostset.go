@@ -154,6 +154,9 @@ func MergeHostSets(sets []*HostSet) *HostSet {
 	hosts := make([]*Host, 0)
 
 	for _, set := range sets {
+		if set == nil {
+			continue
+		}
 		for _, host := range set.hosts {
 			if existing, ok := seen[host.Name]; ok {
 				hosts[existing].Amend(host)

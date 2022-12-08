@@ -95,6 +95,7 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*her
 	}
 	logrus.Debugf("Consul datacenters: %v", datacenters)
 	sg := scattergather.New[*herd.HostSet](int64(len(datacenters)))
+	sg.KeepAllResults(true)
 	for _, dc := range datacenters {
 		if len(p.config.Datacenters) != 0 && !stringInList(p.config.Datacenters, dc) {
 			continue
@@ -116,15 +117,7 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*her
 	}
 
 	allHosts, err := sg.Wait()
-	if err != nil {
-		return nil, err
-	}
-
-	hosts := herd.NewHostSet()
-	for _, h := range allHosts {
-		hosts.AddHosts(h)
-	}
-	return hosts, nil
+	return herd.MergeHostSets(allHosts), err
 }
 
 func appendService(host *herd.Host, attribute, service string) {

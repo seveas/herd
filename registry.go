@@ -199,13 +199,14 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	}()
 
 	sg := scattergather.New[*HostSet](int64(len(r.providers)))
+	sg.KeepAllResults(true)
 
 	for _, p := range r.providers {
 		p := p
 		sg.Run(ctx, func() (*HostSet, error) {
 			hosts, err := p.Load(ctx, lm)
 			lm(p.Name(), true, err)
-			if err != nil {
+			if err != nil && hosts == nil {
 				return hosts, err
 			}
 			logrus.Debugf("%d hosts returned from %s", len(hosts.hosts), p.Name())
@@ -220,12 +221,9 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	}
 
 	hostSets, err := sg.Wait()
-	lm("", true, err)
-	if err != nil {
-		return err
-	}
 	r.hosts = MergeHostSets(hostSets)
-	return nil
+	lm("", true, err)
+	return err
 }
 
 func (r *Registry) Search(hostnameGlob string, attributes MatchAttributes, sampled []string, count int) *HostSet {

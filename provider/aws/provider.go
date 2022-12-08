@@ -126,15 +126,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *
 	}
 
 	allHosts, err := sg.Wait()
-	if err != nil {
-		return nil, err
-	}
-
-	hosts = new(herd.HostSet)
-	for _, h := range allHosts {
-		hosts.AddHosts(h)
-	}
-	return hosts, nil
+	return herd.MergeHostSets(allHosts), err
 }
 
 func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.HostSet, error) {

@@ -104,15 +104,7 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 	}
 
 	allHosts, err := sg.Wait()
-	if err != nil {
-		return nil, err
-	}
-
-	hosts = new(herd.HostSet)
-	for _, h := range allHosts {
-		hosts.AddHosts(h)
-	}
-	return hosts, nil
+	return herd.MergeHostSets(allHosts), err
 }
 
 func (p *googleProvider) setZones(ctx context.Context, hc *http.Client) error {

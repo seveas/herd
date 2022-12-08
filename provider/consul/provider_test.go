@@ -66,6 +66,7 @@ func TestConsulMock(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)
 	}
+	hosts.Sort()
 	if hosts.Len() != 20 {
 		t.Errorf("Incorrect number of hosts returned")
 	}

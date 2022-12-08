@@ -132,6 +132,7 @@ Providers: %s
 	f.String("profile", "", "Write profiling and tracing data to files starting with this name")
 	f.Bool("refresh", false, "Force caches to be refreshed")
 	f.Bool("no-refresh", false, "Do not try to refresh cached data")
+	f.Bool("strict-loading", false, "Fail if any provider fails to load data")
 	bindFlagsAndEnv(f)
 }
 
@@ -221,8 +222,10 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	defer cancel()
 	if err := registry.LoadHosts(ctx, ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
-		ui.End()
-		return nil, err
+		if viper.GetBool("StrictLoading") {
+			ui.End()
+			return nil, err
+		}
 	}
 	ui.Sync()
 	runner := herd.NewRunner(hosts, executor)
