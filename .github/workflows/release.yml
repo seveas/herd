@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build binaries
-        run: make build_all
+        run: make build-all
 
       - name: Extract tag
         id: get_tag
