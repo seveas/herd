@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"time"
@@ -61,6 +62,10 @@ func (c *Cache) Source() herd.HostProvider {
 
 func (c *Cache) Invalidate() {
 	c.config.Lifetime = -1
+}
+
+func (c *Cache) Keep() {
+	c.config.Lifetime = time.Duration(math.MaxInt64)
 }
 
 func (c *Cache) Equivalent(p herd.HostProvider) bool {

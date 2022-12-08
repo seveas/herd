@@ -60,6 +60,7 @@ type DataLoader interface {
 type Cache interface {
 	Source() HostProvider
 	Invalidate()
+	Keep()
 	SetCacheDir(string)
 }
 
@@ -162,6 +163,14 @@ func (r *Registry) InvalidateCache() {
 	for _, p := range r.providers {
 		if c, ok := p.(Cache); ok {
 			c.Invalidate()
+		}
+	}
+}
+
+func (r *Registry) KeepCaches() {
+	for _, p := range r.providers {
+		if c, ok := p.(Cache); ok {
+			c.Keep()
 		}
 	}
 }

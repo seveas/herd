@@ -131,6 +131,7 @@ Providers: %s
 	f.Bool("timestamp", false, "In tail mode, prefix each line with the current time")
 	f.String("profile", "", "Write profiling and tracing data to files starting with this name")
 	f.Bool("refresh", false, "Force caches to be refreshed")
+	f.Bool("no-refresh", false, "Do not try to refresh cached data")
 	bindFlagsAndEnv(f)
 }
 
@@ -212,6 +213,9 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	registry.LoadMagicProviders()
 	if viper.GetBool("Refresh") {
 		registry.InvalidateCache()
+	}
+	if viper.GetBool("NoRefresh") {
+		registry.KeepCaches()
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("LoadTimeout"))
 	defer cancel()
