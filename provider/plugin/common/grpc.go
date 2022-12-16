@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"time"
 
 	"github.com/seveas/herd"
@@ -16,7 +17,7 @@ import (
 
 type GRPCClient struct {
 	broker *plugin.GRPCBroker
-	client ProviderClient
+	client ProviderPluginClient
 	ctx    context.Context
 }
 
@@ -35,7 +36,30 @@ func (c *GRPCClient) Configure(settings map[string]interface{}) error {
 	return nil
 }
 
-func (c *GRPCClient) Load(ctx context.Context, logger Logger) (*herd.HostSet, error) {
+func (c *GRPCClient) SetDataDir(dir string) error {
+	resp, err := c.client.SetDataDir(c.ctx, &SetDataDirRequest{Dir: dir})
+	if err != nil {
+		return err
+	}
+	if resp.Err != "" {
+		return errors.New(resp.Err)
+	}
+	return nil
+}
+
+func (c *GRPCClient) SetCacheDir(dir string) {
+	_, _ = c.client.SetCacheDir(c.ctx, &SetCacheDirRequest{Dir: dir})
+}
+
+func (c *GRPCClient) Invalidate() {
+	_, _ = c.client.Invalidate(c.ctx, &Empty{})
+}
+
+func (c *GRPCClient) Keep() {
+	_, _ = c.client.Keep(c.ctx, &Empty{})
+}
+
+func (c *GRPCClient) SetLogger(logger Logger) error {
 	loggerServer := &GRPCLoggerServer{Impl: logger}
 	var s *grpc.Server
 	serverFunc := func(opts []grpc.ServerOption) *grpc.Server {
@@ -46,18 +70,24 @@ func (c *GRPCClient) Load(ctx context.Context, logger Logger) (*herd.HostSet, er
 
 	id := c.broker.NextId()
 	go c.broker.AcceptAndServe(id, serverFunc)
-	defer func() {
-		if s != nil {
-			s.Stop()
-		}
-	}()
 
+	resp, err := c.client.SetLogger(c.ctx, &SetLoggerRequest{Logger: id})
+	if err != nil {
+		return err
+	}
+	if resp.Err != "" {
+		return errors.New(resp.Err)
+	}
+	return nil
+}
+
+func (c *GRPCClient) Load(ctx context.Context) (*herd.HostSet, error) {
 	deadline, ok := ctx.Deadline()
 	if !ok {
 		deadline = time.Now().Add(10 * time.Minute)
 	}
 	ts, _ := ptypes.TimestampProto(deadline)
-	resp, err := c.client.Load(c.ctx, &LoadRequest{Deadline: ts, Logger: id})
+	resp, err := c.client.Load(c.ctx, &LoadRequest{Deadline: ts})
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +103,23 @@ func (c *GRPCClient) Load(ctx context.Context, logger Logger) (*herd.HostSet, er
 }
 
 type GRPCServer struct {
-	UnimplementedProviderServer
-	Impl   Provider
+	UnimplementedProviderPluginServer
+	Impl   ProviderPluginImpl
 	broker *plugin.GRPCBroker
+}
+
+func (s *GRPCServer) SetLogger(ctx context.Context, req *SetLoggerRequest) (*SetLoggerResponse, error) {
+	conn, err := s.broker.Dial(req.Logger)
+	if err != nil {
+		return &SetLoggerResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
+	}
+	logger := &GRPCLoggerClient{NewLoggerClient(conn)}
+	logrus.SetOutput(io.Discard)
+	logrus.AddHook(logger)
+	if err := s.Impl.SetLogger(logger); err != nil {
+		return &SetLoggerResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
+	}
+	return &SetLoggerResponse{}, nil
 }
 
 func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*ConfigureResponse, error) {
@@ -89,17 +133,33 @@ func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*Con
 	return &ConfigureResponse{}, nil
 }
 
-func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse, error) {
-	conn, err := s.broker.Dial(req.Logger)
-	if err != nil {
-		return nil, err
+func (s *GRPCServer) SetDataDir(ctx context.Context, req *SetDataDirRequest) (*SetDataDirResponse, error) {
+	if err := s.Impl.SetDataDir(req.Dir); err != nil {
+		return &SetDataDirResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
 	}
-	defer conn.Close()
+	return &SetDataDirResponse{}, nil
+}
+
+func (s *GRPCServer) SetCacheDir(ctx context.Context, req *SetCacheDirRequest) (*Empty, error) {
+	s.Impl.SetCacheDir(req.Dir)
+	return &Empty{}, nil
+}
+
+func (s *GRPCServer) Invalidate(ctx context.Context, req *Empty) (*Empty, error) {
+	s.Impl.Invalidate()
+	return &Empty{}, nil
+}
+
+func (s *GRPCServer) Keep(ctx context.Context, req *Empty) (*Empty, error) {
+	s.Impl.Keep()
+	return &Empty{}, nil
+}
+
+func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse, error) {
 	ts, _ := ptypes.Timestamp(req.Deadline)
 	ctx, cancel := context.WithDeadline(ctx, ts)
 	defer cancel()
-	l := &GRPCLoggerClient{NewLoggerClient(conn)}
-	hosts, err := s.Impl.Load(ctx, l)
+	hosts, err := s.Impl.Load(ctx)
 	if err != nil {
 		return &LoadResponse{Err: err.Error()}, nil //nolint:nilerr // The error is returned in the response
 	}
@@ -122,8 +182,17 @@ func (c *GRPCLoggerClient) LoadingMessage(name string, done bool, err error) {
 	_, _ = c.client.LoadingMessage(context.Background(), &LoadingMessageRequest{Name: name, Done: done, Err: errs})
 }
 
+func (c *GRPCLoggerClient) Levels() []logrus.Level {
+	return logrus.AllLevels
+}
+
 func (c *GRPCLoggerClient) EmitLogMessage(level logrus.Level, message string) {
 	_, _ = c.client.EmitLogMessage(context.Background(), &EmitLogMessageRequest{Level: uint32(level), Message: message})
+}
+
+func (c *GRPCLoggerClient) Fire(entry *logrus.Entry) error {
+	c.EmitLogMessage(entry.Level, entry.Message)
+	return nil
 }
 
 type GRPCLoggerServer struct {
@@ -145,6 +214,7 @@ func (s *GRPCLoggerServer) EmitLogMessage(ctx context.Context, req *EmitLogMessa
 	return &Empty{}, nil
 }
 
-var _ Logger = &GRPCLoggerClient{}
-
-var _ Provider = &GRPCClient{}
+var (
+	_ Logger             = &GRPCLoggerClient{}
+	_ ProviderPluginImpl = &GRPCClient{}
+)

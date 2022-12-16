@@ -5,17 +5,36 @@ option go_package = "provider/plugin/common";
 
 message Empty {}
 
+message SetLoggerRequest{
+    uint32 logger= 1;
+}
+
+message SetLoggerResponse {
+    string err = 1;
+}
+
 message ConfigureRequest {
     bytes data = 1;
 }
 
 message LoadRequest {
-    uint32 logger = 1;
     google.protobuf.Timestamp deadline = 2;
 }
 
 message ConfigureResponse {
     string err = 1;
+}
+
+message SetDataDirRequest {
+    string dir = 1;
+}
+
+message SetDataDirResponse {
+    string err = 1;
+}
+
+message SetCacheDirRequest {
+    string dir = 1;
 }
 
 message LoadResponse {
@@ -34,8 +53,13 @@ message EmitLogMessageRequest {
     string message = 2;
 }
 
-service Provider {
+service ProviderPlugin {
+    rpc SetLogger(SetLoggerRequest) returns (SetLoggerResponse);
     rpc Configure(ConfigureRequest) returns (ConfigureResponse);
+    rpc SetDataDir(SetDataDirRequest) returns (SetDataDirResponse);
+    rpc SetCacheDir(SetCacheDirRequest) returns (Empty);
+    rpc Invalidate(Empty) returns (Empty);
+    rpc Keep(Empty) returns (Empty);
     rpc Load(LoadRequest) returns (LoadResponse);
 }
 

@@ -15,24 +15,29 @@ type Logger interface {
 	EmitLogMessage(level logrus.Level, message string)
 }
 
-type Provider interface {
+type ProviderPluginImpl interface {
+	SetLogger(Logger) error
 	Configure(map[string]interface{}) error
-	Load(ctx context.Context, logger Logger) (*herd.HostSet, error)
+	Load(ctx context.Context) (*herd.HostSet, error)
+	SetDataDir(string) error
+	SetCacheDir(string)
+	Invalidate()
+	Keep()
 }
 
 var Handshake = plugin.HandshakeConfig{
-	ProtocolVersion:  1,
+	ProtocolVersion:  2,
 	MagicCookieKey:   "HERD",
 	MagicCookieValue: "plugin",
 }
 
 type ProviderPlugin struct {
 	plugin.NetRPCUnsupportedPlugin
-	Impl Provider
+	Impl ProviderPluginImpl
 }
 
 func (p *ProviderPlugin) GRPCServer(b *plugin.GRPCBroker, s *grpc.Server) error {
-	RegisterProviderServer(s, &GRPCServer{
+	RegisterProviderPluginServer(s, &GRPCServer{
 		Impl:   p.Impl,
 		broker: b,
 	})
@@ -41,7 +46,7 @@ func (p *ProviderPlugin) GRPCServer(b *plugin.GRPCBroker, s *grpc.Server) error 
 
 func (p *ProviderPlugin) GRPCClient(ctx context.Context, b *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &GRPCClient{
-		client: NewProviderClient(c),
+		client: NewProviderPluginClient(c),
 		broker: b,
 		ctx:    ctx,
 	}, nil

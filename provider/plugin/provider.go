@@ -2,6 +2,7 @@ package plugin
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -19,23 +20,23 @@ func init() {
 }
 
 type pluginProvider struct {
-	name     string
-	settings map[string]interface{}
-	config   struct {
+	name   string
+	plugin common.ProviderPluginImpl
+	logger *logForwarder
+	config struct {
 		Command string
 		Prefix  string
 	}
 }
 
 func newPlugin(name string) herd.HostProvider {
-	p := &pluginProvider{name: name}
+	p := &pluginProvider{name: name, logger: &logForwarder{}}
 	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", name)); err == nil {
 		p.config.Command = path
 	}
 	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s.exe", name)); err == nil {
 		p.config.Command = path
 	}
-	p.settings = map[string]interface{}{"name": name}
 	return p
 }
 
@@ -48,16 +49,63 @@ func (p *pluginProvider) Prefix() string {
 }
 
 func (p *pluginProvider) ParseViper(v *viper.Viper) error {
-	p.settings = v.AllSettings()
-	p.settings["herd_provider_name"] = p.name
-	return v.Unmarshal(&p.config)
+	if err := v.Unmarshal(&p.config); err != nil {
+		return err
+	}
+	if err := p.connect(); err != nil {
+		return err
+	}
+	return p.plugin.Configure(v.AllSettings())
 }
 
 func (p *pluginProvider) Equivalent(o herd.HostProvider) bool {
 	return p.config.Command == o.(*pluginProvider).config.Command
 }
 
+func (p *pluginProvider) SetDataDir(dir string) error {
+	if p.plugin == nil {
+		return errors.New("SetDataDir called before plugin was connected")
+	}
+	return p.plugin.SetDataDir(dir)
+}
+
+func (p *pluginProvider) SetCacheDir(dir string) {
+	if p.plugin == nil {
+		logrus.Errorf("Invalidate called before plugin was connected")
+		return
+	}
+	p.plugin.SetCacheDir(dir)
+}
+
+func (p *pluginProvider) Keep() {
+	if p.plugin == nil {
+		logrus.Errorf("Invalidate called before plugin was connected")
+		return
+	}
+	p.plugin.Keep()
+}
+
+func (p *pluginProvider) Invalidate() {
+	if p.plugin == nil {
+		logrus.Errorf("Invalidate called before plugin was connected")
+		return
+	}
+	p.plugin.Invalidate()
+}
+
+func (p *pluginProvider) Source() herd.HostProvider {
+	return p
+}
+
 func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
+	if p.plugin == nil {
+		return nil, errors.New("SetDataDir called before plugin was connected")
+	}
+	p.logger.lm = lm
+	return p.plugin.Load(ctx)
+}
+
+func (p *pluginProvider) connect() error {
 	pluginMap := map[string]plugin.Plugin{
 		"provider": &common.ProviderPlugin{},
 	}
@@ -76,22 +124,21 @@ func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*her
 
 	rpcClient, err := client.Client()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	raw, err := rpcClient.Dispense("provider")
 	if err != nil {
-		return nil, err
+		return err
 	}
-	pp := raw.(common.Provider)
-	if err := pp.Configure(p.settings); err != nil {
-		return nil, err
+	p.plugin = raw.(common.ProviderPluginImpl)
+	if err := p.plugin.SetLogger(p.logger); err != nil {
+		return err
 	}
-	return pp.Load(ctx, &logForwarder{provider: p, lm: lm})
+	return nil
 }
 
 type logForwarder struct {
-	provider *pluginProvider
-	lm       herd.LoadingMessage
+	lm herd.LoadingMessage
 }
 
 func (l *logForwarder) LoadingMessage(name string, done bool, err error) {
@@ -102,4 +149,9 @@ func (l *logForwarder) EmitLogMessage(level logrus.Level, message string) {
 	logrus.StandardLogger().Log(level, message)
 }
 
-var _ common.Logger = &logForwarder{}
+// Static checks to make sure we implement the interfaces we want to implement
+var (
+	_ common.Logger   = &logForwarder{}
+	_ herd.Cache      = &pluginProvider{}
+	_ herd.DataLoader = &pluginProvider{}
+)

@@ -27,7 +27,7 @@ herd: go.mod go.sum *.go cmd/herd/*.go ssh/*.go scripting/*.go provider/*/*.go p
 %.pb.go: %.proto
 	protoc --go_out=. $^
 
-herd-provider-%: go.mod go.sum cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+herd-provider-%: host.go hostset.go go.mod go.sum cmd/herd-provider-%/*.go provider/%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/cmd/$@
 
 $(antlr_sources): scripting/Herd.g4
@@ -39,10 +39,11 @@ lint:
 tidy:
 	go mod tidy
 
-provider/plugin/testdata/bin/herd-provider-ci: go.mod go.sum provider/plugin/testdata/provider/ci/*.go provider/plugin/testdata/cmd/herd-provider-ci/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
-	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-ci
+provider/plugin/testdata/bin/herd-provider-%: host.go hostset.go go.mod go.sum provider/plugin/testdata/provider/%/*.go provider/plugin/testdata/cmd/herd-provider-%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
+	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-$*
 
-test: test-go lint tidy test-build provider/plugin/testdata/bin/herd-provider-ci
+test: test-providers test-go lint tidy test-build provider/plugin/testdata/bin/herd-provider-ci
+test-providers: provider/plugin/testdata/bin/herd-provider-ci provider/plugin/testdata/bin/herd-provider-ci_dataloader provider/plugin/testdata/bin/herd-provider-ci_cache
 test-go:
 	go test ./...
 test-build:
@@ -69,6 +70,9 @@ build-all:
 clean:
 	rm -f herd
 	rm -f herd-provider-example
+	rm -f provider/plugin/testdata/bin/herd-provider-ci
+	rm -f provider/plugin/testdata/bin/herd-provider-ci_dataloader
+	rm -f provider/plugin/testdata/bin/herd-provider-ci_cache
 	go mod tidy
 
 fullclean: clean

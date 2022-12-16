@@ -1,6 +1,6 @@
 /herd
 /herd-provider-*
-provider/plugin/testdata/bin/herd-provider-ci
+provider/plugin/testdata/bin/herd-provider-*
 /*.exe
 *.crt
 *.key

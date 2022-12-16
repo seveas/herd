@@ -68,7 +68,13 @@ func TestPluginConnection(t *testing.T) {
 			v.Set("Mode", test.mode)
 			err := p.ParseViper(v)
 			if err != nil {
-				t.Errorf("Unable to configure plugin: %s", err)
+				if test.mode == "config-error" || test.mode == "config-panic" {
+					if err.Error() != test.err {
+						t.Errorf("Unexpected configuration error: %s", err)
+					}
+				} else {
+					t.Errorf("Unable to configure plugin: %s", err)
+				}
 				return
 			}
 			hosts, err := p.Load(context.Background(), func(name string, done bool, err error) { msg.name = name })
@@ -107,4 +113,57 @@ func (h *logrusHook) Fire(entry *logrus.Entry) error {
 		entry.Level = logrus.ErrorLevel
 	}
 	return nil
+}
+
+func TestDataDirProvider(t *testing.T) {
+	p := newPlugin("ci_dataloader").(*pluginProvider)
+	v := viper.New()
+	if err := p.ParseViper(v); err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
+	}
+	if err := p.SetDataDir("testdata"); err != nil {
+		t.Errorf("Unable to set data dir: %s", err)
+		return
+	}
+	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	if err != nil {
+		t.Errorf("Unable to load hosts: %s", err)
+		return
+	}
+	if hosts.Len() != 1 {
+		t.Errorf("Received %d hosts, expecting %d", hosts.Len(), 1)
+	}
+	if dir, ok := hosts.Get(0).Attributes["datadir"]; !ok || dir != "testdata" {
+		t.Errorf("Data dir was not set correctly, got %s", dir)
+	}
+}
+
+func TestCache(t *testing.T) {
+	p := newPlugin("ci_cache").(*pluginProvider)
+	v := viper.New()
+	if err := p.ParseViper(v); err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
+	}
+	p.SetCacheDir("testcache")
+	p.Keep()
+	p.Invalidate()
+	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	if err != nil {
+		t.Errorf("Unable to load hosts: %s", err)
+		return
+	}
+	if hosts.Len() != 1 {
+		t.Errorf("Received %d hosts, expecting %d", hosts.Len(), 1)
+		return
+	}
+	attrs := hosts.Get(0).Attributes
+	if dir, ok := attrs["cachedir"]; !ok || dir != "testcache" {
+		t.Errorf("Cache dir was not set correctly, got %s", dir)
+	}
+	if keep, ok := attrs["keep"]; !ok || keep != true {
+		t.Errorf("Keep was not called")
+	}
+	if invalidate, ok := attrs["invalidate"]; !ok || invalidate != true {
+		t.Errorf("Invalidate was not called")
+	}
 }
