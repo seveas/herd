@@ -1,5 +1,5 @@
-//go:build !minimal
-// +build !minimal
+//go:build minimal
+// +build minimal
 
 package main
 
@@ -16,15 +16,7 @@ import (
 
 	// Network based ones
 	_ "github.com/seveas/herd/provider/cache"
-	_ "github.com/seveas/herd/provider/consul"
 	_ "github.com/seveas/herd/provider/http"
-	_ "github.com/seveas/herd/provider/prometheus"
-
-	// Cloud providers
-	_ "github.com/seveas/herd/provider/aws"
-	_ "github.com/seveas/herd/provider/azure"
-	_ "github.com/seveas/herd/provider/google"
-	_ "github.com/seveas/herd/provider/transip"
 
 	// The sky is the limit!
 	_ "github.com/seveas/herd/provider/plugin"

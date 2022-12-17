@@ -69,10 +69,9 @@ issues:
         - errcheck
     # This file is deliberately not in alphabetical order. Will be fixed when
     # ssh key discovery and host key discovery are separated
-    - path: cmd/herd/default_providers.go
+    - path: cmd/herd/.*_providers.go
       linters:
         - gci
-
 
 linters-settings:
   forbidigo:
