@@ -5,11 +5,15 @@ import (
 )
 
 const (
-	MAJOR_VERSION = 0
-	MINOR_VERSION = 10
-	PATCH_VERSION = 0
+	majorVersion = 0
+	minorVersion = 10
+	patchVersion = 0
 )
 
 func Version() string {
-	return fmt.Sprintf("%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION)
+	return fmt.Sprintf("%d.%d.%d", majorVersion, minorVersion, patchVersion)
+}
+
+func VersionTuple() (major, minor, patch int) {
+	return majorVersion, minorVersion, patchVersion
 }
