@@ -42,7 +42,7 @@ type Runner struct {
 type ProgressState int
 
 const (
-	Queued = iota
+	Queued ProgressState = iota
 	Waiting
 	Running
 	Finished
