@@ -25,10 +25,6 @@ func (h HostAttributes) prefix(prefix string) HostAttributes {
 	return ret
 }
 
-type Connection interface {
-	Close()
-}
-
 // A host represents a remote host. It can be instantiated manually, but is
 // usually fetched from one or more Providers, which can all contribute to the
 // hosts attributes.
