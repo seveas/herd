@@ -65,10 +65,10 @@ func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc 
 	}
 	defer sess.Close()
 
-	var stdout, stderr herd.ByteWriter
+	var stdout, stderr byteWriter
 	if oc != nil {
-		stdout = herd.NewLineWriterBuffer(host, false, oc)
-		stderr = herd.NewLineWriterBuffer(host, true, oc)
+		stdout = newLineWriterBuffer(host, false, oc)
+		stderr = newLineWriterBuffer(host, true, oc)
 	} else {
 		stdout = bytes.NewBuffer([]byte{})
 		stderr = bytes.NewBuffer([]byte{})

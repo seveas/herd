@@ -1,7 +1,6 @@
 package herd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -66,45 +65,4 @@ func (p *passthrough) Write(r []string) error {
 }
 
 func (p *passthrough) Flush() {
-}
-
-type ByteWriter interface {
-	Write([]byte) (int, error)
-	Bytes() []byte
-}
-
-type lineWriterBuffer struct {
-	oc      chan OutputLine
-	host    *Host
-	stderr  bool
-	buf     *bytes.Buffer
-	lineBuf []byte
-}
-
-func NewLineWriterBuffer(host *Host, stderr bool, oc chan OutputLine) *lineWriterBuffer {
-	return &lineWriterBuffer{
-		buf:     bytes.NewBuffer([]byte{}),
-		lineBuf: []byte{},
-		host:    host,
-		oc:      oc,
-		stderr:  stderr,
-	}
-}
-
-func (buf *lineWriterBuffer) Write(p []byte) (int, error) {
-	n, err := buf.buf.Write(p)
-	buf.lineBuf = bytes.Join([][]byte{buf.lineBuf, p}, []byte{})
-	for {
-		idx := bytes.Index(buf.lineBuf, []byte("\n"))
-		if idx == -1 {
-			break
-		}
-		buf.oc <- OutputLine{Host: buf.host, Data: buf.lineBuf[:idx+1], Stderr: buf.stderr}
-		buf.lineBuf = buf.lineBuf[idx+1:]
-	}
-	return n, err
-}
-
-func (buf *lineWriterBuffer) Bytes() []byte {
-	return buf.buf.Bytes()
 }
