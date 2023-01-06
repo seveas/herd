@@ -121,10 +121,7 @@ func (c runCommand) execute(e *ScriptEngine) {
 	e.Ui.Sync()
 	if hi != nil {
 		e.History = append(e.History, hi)
-		// FIXME
-		if !strings.HasPrefix(c.command, "herd:") {
-			e.Ui.PrintHistoryItem(hi)
-		}
+		e.Ui.PrintHistoryItem(hi)
 	}
 }
 
