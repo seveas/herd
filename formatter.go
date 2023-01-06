@@ -46,6 +46,12 @@ func (f prettyFormatter) formatOutput(r *Result, l int) string {
 	indent := fmt.Sprintf("%-*s  ", l, "")
 	out := ""
 	if len(r.Stdout) > 0 {
+		prefix := prefix
+		if r.Err == nil {
+			prefix = ansi.Color(prefix, "green")
+		} else {
+			prefix = ansi.Color(prefix, "red")
+		}
 		out += f.indent(string(r.Stdout), prefix, indent)
 	}
 	if len(r.Stderr) > 0 {
