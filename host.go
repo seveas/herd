@@ -2,6 +2,7 @@ package herd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"hash/crc32"
@@ -61,6 +62,19 @@ func (h *Host) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (h *Host) MarshalJSON() ([]byte, error) {
+	if len(h.publicKeys) > 0 {
+		keys := make([][]byte, len(h.publicKeys))
+		for i, key := range h.publicKeys {
+			keys[i] = key.Marshal()
+		}
+		h.Attributes["__publicKeys"] = keys
+	}
+	data, err := json.Marshal(host(*h))
+	delete(h.Attributes, "__publicKeys")
+	return data, err
+}
+
 // Hosts should be initialized with this function, which also initializes any
 // internal data, without which SSH connections will not be possible.
 func NewHost(name, address string, attributes HostAttributes) *Host {
@@ -87,6 +101,16 @@ func (h *Host) init() {
 		h.Attributes["domainname"] = parts[1]
 	} else {
 		h.Attributes["domainname"] = ""
+	}
+	if keys, ok := h.Attributes["__publicKeys"]; ok {
+		for _, k := range keys.([]any) {
+			if b, err := base64.StdEncoding.DecodeString(k.(string)); err != nil {
+				if key, _ := ssh.ParsePublicKey(b); err != nil {
+					h.AddPublicKey(key)
+				}
+			}
+		}
+		delete(h.Attributes, "__publicKeys")
 	}
 }
 
