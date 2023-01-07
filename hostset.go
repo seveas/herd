@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/crypto/ssh"
 	"golang.org/x/exp/constraints"
 )
 
@@ -81,6 +82,16 @@ func (s *HostSet) Remove(glob string, attrs MatchAttributes) {
 	}
 	s.hosts = newHosts
 	s.maxNameLength = maxNameLength(s.hosts)
+}
+
+func (s *HostSet) addHostKeys(allKeys []map[string][]ssh.PublicKey) {
+	for _, host := range s.hosts {
+		for _, set := range allKeys {
+			if keys, ok := set[host.Name]; ok {
+				host.publicKeys = append(host.publicKeys, keys...)
+			}
+		}
+	}
 }
 
 func (s *HostSet) Uniq() {

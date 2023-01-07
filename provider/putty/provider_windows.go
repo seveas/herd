@@ -52,7 +52,10 @@ func (p *puttyProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
-	keys := p.allKeys()
+	keys, err := p.LoadHostKeys(ctx, lm)
+	if err != nil {
+		return nil, err
+	}
 	ret := herd.NewHostSet()
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\Sessions`, registry.QUERY_VALUE|registry.ENUMERATE_SUB_KEYS)
 	if err != nil {
@@ -92,16 +95,16 @@ func (p *puttyProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd
 	return ret, nil
 }
 
-func (p *puttyProvider) allKeys() map[string][]ssh.PublicKey {
+func (p *puttyProvider) LoadHostKeys(ctx context.Context, lm herd.LoadingMessage) (map[string][]ssh.PublicKey, error) {
 	ret := make(map[string][]ssh.PublicKey)
 	k, err := registry.OpenKey(registry.CURRENT_USER, `Software\SimonTatham\PuTTY\SshHostKeys`, registry.QUERY_VALUE)
 	if err != nil {
-		return ret
+		return ret, nil
 	}
 	defer k.Close()
 	keys, err := k.ReadValueNames(-1)
 	if err != nil {
-		return ret
+		return ret, err
 	}
 	for _, kn := range keys {
 		key, _, err := k.GetStringValue(kn)
@@ -161,7 +164,7 @@ func (p *puttyProvider) allKeys() map[string][]ssh.PublicKey {
 			ret[hn] = []ssh.PublicKey{pubkey}
 		}
 	}
-	return ret
+	return ret, nil
 }
 
 type sshBuffer struct {
@@ -178,3 +181,5 @@ func (buf *sshBuffer) Write(b []byte) {
 func (buf *sshBuffer) Bytes() []byte {
 	return buf.buf.Bytes()
 }
+
+var _ (herd.HostKeyProvider) = &puttyProvider{}

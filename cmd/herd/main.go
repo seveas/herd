@@ -133,6 +133,7 @@ Providers: %s
 	f.Bool("refresh", false, "Force caches to be refreshed")
 	f.Bool("no-refresh", false, "Do not try to refresh cached data")
 	f.Bool("strict-loading", false, "Fail if any provider fails to load data")
+	f.Bool("no-magic-providers", false, "Do not use magic autodiscovery, only explicitly configured providers")
 	bindFlagsAndEnv(f)
 }
 
@@ -211,7 +212,9 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 			return nil, err
 		}
 	}
-	registry.LoadMagicProviders()
+	if !viper.GetBool("NoMagicProviders") {
+		registry.LoadMagicProviders()
+	}
 	if viper.GetBool("Refresh") {
 		registry.InvalidateCache()
 	}
@@ -222,6 +225,12 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	defer cancel()
 	if err := registry.LoadHosts(ctx, ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
+		if viper.GetBool("StrictLoading") {
+			ui.End()
+			return nil, err
+		}
+	}
+	if err := registry.LoadHostKeys(ctx, ui.LoadingMessage); err != nil {
 		if viper.GetBool("StrictLoading") {
 			ui.End()
 			return nil, err

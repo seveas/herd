@@ -16,6 +16,7 @@ import (
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
 )
 
 var availableProviders = make(map[string]func(string) HostProvider)
@@ -39,10 +40,11 @@ func RegisterProvider(name string, constructor func(string) HostProvider, magic 
 }
 
 type Registry struct {
-	providers []HostProvider
-	hosts     *HostSet
-	dataDir   string
-	cacheDir  string
+	providers   []HostProvider
+	hosts       *HostSet
+	dataDir     string
+	cacheDir    string
+	magicLoaded bool
 }
 
 type HostProvider interface {
@@ -51,6 +53,10 @@ type HostProvider interface {
 	ParseViper(v *viper.Viper) error
 	Load(ctx context.Context, l LoadingMessage) (*HostSet, error)
 	Equivalent(p HostProvider) bool
+}
+
+type HostKeyProvider interface {
+	LoadHostKeys(ctx context.Context, l LoadingMessage) (map[string][]ssh.PublicKey, error)
 }
 
 type DataLoader interface {
@@ -95,6 +101,29 @@ func (r *Registry) LoadMagicProviders() {
 			r.AddMagicProvider(p)
 		}
 	}
+	r.magicLoaded = true
+}
+
+func (r *Registry) LoadHostKeys(ctx context.Context, lm LoadingMessage) error {
+	if r.magicLoaded {
+		return nil
+	}
+	sg := scattergather.New[map[string][]ssh.PublicKey](int64(len(r.providers)))
+	for _, fnc := range magicProviders {
+		p := fnc()
+		if hp, ok := p.(HostKeyProvider); ok {
+			hp := hp
+			sg.Run(context.Background(), func() (map[string][]ssh.PublicKey, error) {
+				return hp.LoadHostKeys(ctx, lm)
+			})
+		}
+	}
+	allKeys, err := sg.Wait()
+	if err != nil {
+		return err
+	}
+	r.hosts.addHostKeys(allKeys)
+	return nil
 }
 
 func (r *Registry) LoadProviders(c *viper.Viper) error {

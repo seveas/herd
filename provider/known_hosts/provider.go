@@ -65,7 +65,22 @@ func (p *knownHostsProvider) ParseViper(v *viper.Viper) error {
 
 func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	hosts := herd.NewHostSet()
-	seen := make(map[string]*herd.Host)
+	allKeys, err := p.LoadHostKeys(ctx, lm)
+	if err != nil {
+		return nil, err
+	}
+	for name, keys := range allKeys {
+		host := herd.NewHost(name, "", herd.HostAttributes{})
+		for _, key := range keys {
+			host.AddPublicKey(key)
+		}
+		hosts.AddHost(host)
+	}
+	return hosts, nil
+}
+
+func (p *knownHostsProvider) LoadHostKeys(ctx context.Context, lm herd.LoadingMessage) (map[string][]ssh.PublicKey, error) {
+	ret := make(map[string][]ssh.PublicKey)
 	for _, f := range p.config.Files {
 		hashed := false
 		data, err := os.ReadFile(f)
@@ -73,7 +88,7 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 			continue
 		}
 		for {
-			_, matches, key, comment, rest, err := ssh.ParseKnownHosts(data)
+			_, matches, key, _, rest, err := ssh.ParseKnownHosts(data)
 			if err == io.EOF {
 				break
 			}
@@ -91,17 +106,10 @@ func (p *knownHostsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (
 				}
 				continue
 			}
-			if host, ok := seen[name]; ok {
-				// -1 means: seen but did not match
-				// FIXME: if we ever match on key attributes, this is wrong.
-				host.AddPublicKey(key)
-				continue
-			}
-			host := herd.NewHost(name, "", herd.HostAttributes{"PublicKeyComment": comment})
-			host.AddPublicKey(key)
-			seen[host.Name] = host
-			hosts.AddHost(host)
+			ret[name] = append(ret[name], key)
 		}
 	}
-	return hosts, nil
+	return ret, nil
 }
+
+var _ (herd.HostKeyProvider) = &knownHostsProvider{}
