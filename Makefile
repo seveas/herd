@@ -23,7 +23,7 @@ herd: go.mod go.sum *.go cmd/herd/*.go ssh/*.go scripting/*.go provider/*/*.go p
 	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/cmd/herd
 
 # External providers
-provider_plugins := aws azure consul google prometheus tailscale transip
+provider_plugins := aws azure consul google prometheus puppet tailscale transip
 cmd/herd-provider-%/main.go: cmd/herd-provider-example/main.go
 	mkdir -p cmd/herd-provider-$*
 	cat cmd/herd-provider-example/main.go | sed -e 's/example/$*/g' | gofmt > $@
