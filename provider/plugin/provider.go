@@ -2,8 +2,11 @@ package plugin
 
 import (
 	"context"
+	"crypto"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -24,8 +27,10 @@ type pluginProvider struct {
 	plugin common.ProviderPluginImpl
 	logger *logForwarder
 	config struct {
-		Command string
-		Prefix  string
+		Command  string
+		Prefix   string
+		Checksum string
+		checksum []byte
 	}
 }
 
@@ -51,6 +56,21 @@ func (p *pluginProvider) Prefix() string {
 func (p *pluginProvider) ParseViper(v *viper.Viper) error {
 	if err := v.Unmarshal(&p.config); err != nil {
 		return err
+	}
+	if p.config.Checksum == "" {
+		h := crypto.SHA256.New()
+		if fd, err := os.Open(p.config.Command); err == nil {
+			if _, err := io.Copy(h, fd); err == nil {
+				p.config.checksum = h.Sum(nil)
+			}
+		}
+		logrus.Debugf("Checksum for %s: %s", p.config.Command, hex.EncodeToString(p.config.checksum))
+	} else {
+		cs, err := hex.DecodeString(p.config.Checksum)
+		if err != nil {
+			return err
+		}
+		p.config.checksum = cs
 	}
 	if err := p.connect(); err != nil {
 		return err
@@ -118,8 +138,7 @@ func (p *pluginProvider) connect() error {
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
-		// We don't at the moment want to enforce strict checksums, but the plugin library now warns about this
-		SecureConfig: &plugin.SecureConfig{Hash: &fakeHash{}, Checksum: []byte("fake")},
+		SecureConfig:     &plugin.SecureConfig{Hash: crypto.SHA256.New(), Checksum: p.config.checksum},
 	}) //#nosec G204 -- Cmd is user-supplied by design
 
 	rpcClient, err := client.Client()
