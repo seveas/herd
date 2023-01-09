@@ -31,12 +31,15 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	hosts       *HostSet
-	parallel    int
-	splay       time.Duration
-	timeout     time.Duration
-	hostTimeout time.Duration
-	executor    Executor
+	hosts          *HostSet
+	parallel       int
+	splay          time.Duration
+	timeout        time.Duration
+	hostTimeout    time.Duration
+	executor       Executor
+	current        *scattergather.ScatterGather[*Result]
+	cancel         context.CancelFunc
+	signalHandlers map[os.Signal]func()
 }
 
 type ProgressState int
@@ -50,15 +53,19 @@ const (
 
 func NewRunner(hosts *HostSet, executor Executor) *Runner {
 	return &Runner{
-		hosts:       hosts,
-		executor:    executor,
-		timeout:     60 * time.Second,
-		hostTimeout: 10 * time.Second,
+		hosts:          hosts,
+		executor:       executor,
+		timeout:        60 * time.Second,
+		hostTimeout:    10 * time.Second,
+		signalHandlers: make(map[os.Signal]func()),
 	}
 }
 
 func (r *Runner) SetParallel(p int) {
 	r.parallel = p
+	if r.current != nil {
+		r.current.SetParallel(int64(p))
+	}
 }
 
 func (r *Runner) SetSplay(t time.Duration) {
@@ -110,16 +117,17 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	hi := newHistoryItem(command, len(r.hosts.hosts))
 	hi.maxHostNameLength = r.hosts.maxNameLength
 	ctx, cancel := context.WithCancel(context.Background())
+	r.cancel = cancel
 	defer cancel()
 	count := r.parallel
 	if count <= 0 {
 		count = len(r.hosts.hosts)
 	}
-	sg := scattergather.New[*Result](int64(count))
+	r.current = scattergather.New[*Result](int64(count))
 	for index, host := range r.hosts.hosts {
 		index := index
 		host := host
-		sg.Run(ctx, func() (*Result, error) {
+		r.current.Run(ctx, func() (*Result, error) {
 			if r.splay > 0 {
 				pc <- ProgressMessage{Host: host, State: Waiting}
 				r.splayDelay(ctx)
@@ -137,20 +145,30 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	go func() {
 		timeout := time.After(r.timeout)
 		signals := make(chan os.Signal, 5)
-		signal.Notify(signals, os.Interrupt)
-		defer signal.Reset(os.Interrupt)
-		select {
-		case <-timeout:
-			logrus.Errorf("Run canceled with unfinished tasks!")
-			cancel()
-		case <-signals:
-			logrus.Errorf("Interrupted, canceling with unfinished tasks")
-			cancel()
-		case <-ctx.Done():
-			return
+		for s := range r.signalHandlers {
+			signal.Notify(signals, s)
+		}
+		defer func() {
+			for s := range r.signalHandlers {
+				signal.Reset(s)
+			}
+		}()
+		for {
+			select {
+			case <-timeout:
+				logrus.Errorf("Run timed out with unfinished tasks!")
+				cancel()
+			case s := <-signals:
+				r.signalHandlers[s]()
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
-	results, _ := sg.Wait()
+
+	results, _ := r.current.Wait()
+	r.current = nil
+	r.cancel = nil
 	cancel()
 	for _, result := range results {
 		hi.Results[result.index] = result
@@ -185,6 +203,16 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	}
 	hi.end()
 	return hi, nil
+}
+
+func (r *Runner) OnSignal(s os.Signal, f func()) {
+	r.signalHandlers[s] = f
+}
+
+func (r *Runner) Interrupt() {
+	if r.cancel != nil {
+		r.cancel()
+	}
 }
 
 func (r *Runner) End() {

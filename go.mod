@@ -21,7 +21,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/miekg/dns v1.1.50
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
-	github.com/seveas/scattergather v1.1.0
+	github.com/seveas/scattergather v1.2.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
 	github.com/spf13/cobra v1.5.0

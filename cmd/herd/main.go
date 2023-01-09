@@ -238,6 +238,7 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	}
 	ui.Sync()
 	runner := herd.NewRunner(hosts, executor)
+	handleSignals(runner)
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
 	runner.SetTimeout(viper.GetDuration("Timeout"))
