@@ -18,6 +18,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/mgutz/ansi"
 	"github.com/seveas/readline"
+	"github.com/seveas/variance"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	"gopkg.in/yaml.v2"
@@ -73,6 +74,7 @@ type HostListOptions struct {
 	Template      string
 	Count         []string
 	SortByCount   bool
+	Group         string
 }
 
 type SimpleUI struct {
@@ -379,9 +381,11 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		valueKeys := make([]string, 0)
 		values := make(map[string][]string)
 		counts := make(map[string]int)
+		groupCounts := make(map[string]map[any]int)
+		groupValues := make(map[string]bool)
 
 		for _, host := range hosts {
-			v := make([]string, len(opts.Count)+1)
+			v := make([]string, len(opts.Count))
 			for i, attr := range opts.Count {
 				v[i] = fmt.Sprintf("%v", host.Attributes[attr])
 			}
@@ -393,8 +397,15 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				counts[vs] = 1
 				valueKeys = append(valueKeys, vs)
 			}
+			if opts.Group != "" {
+				if _, ok := groupCounts[vs]; !ok {
+					groupCounts[vs] = make(map[any]int)
+				}
+				attr := fmt.Sprintf("%v", host.Attributes[opts.Group])
+				groupCounts[vs][attr]++
+				groupValues[attr] = true
+			}
 		}
-		end := len(opts.Count)
 		if opts.SortByCount {
 			// We sort by count, keeping the order of entries with the same count intact
 			positions := make(map[string]int)
@@ -408,6 +419,11 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				return counts[valueKeys[i]] > counts[valueKeys[j]]
 			})
 		}
+		groups := make([]string, 0, len(groupValues))
+		for k := range groupValues {
+			groups = append(groups, k)
+		}
+		sort.Strings(groups)
 
 		// And now we write
 		if len(valueKeys) > ui.height {
@@ -421,14 +437,29 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			writer = newPassthrough(out)
 		}
 		if opts.Header {
-			attrline := make([]string, len(opts.Count)+1)
+			attrline := make([]string, len(opts.Count)+len(groups), len(opts.Count)+len(groups)+3)
 			copy(attrline, opts.Count)
-			attrline[len(opts.Count)] = "count"
+			copy(attrline[len(opts.Count):], groups)
+			if len(groups) == 0 {
+				attrline = append(attrline, "count")
+			} else {
+				attrline = append(attrline, "total", "average", "stddev")
+			}
 			writer.Write(attrline)
 		}
 		for _, k := range valueKeys {
-			values[k][end] = fmt.Sprintf("%v", counts[k])
-			writer.Write(values[k])
+			v := values[k]
+			stats := variance.New()
+			for _, group := range groups {
+				v = append(v, fmt.Sprintf("%v", groupCounts[k][group]))
+				stats.Add(float64(groupCounts[k][group]))
+			}
+			v = append(v, fmt.Sprintf("%v", counts[k]))
+			if stats.NumDataValues() != 0 {
+				v = append(v, f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
+			}
+
+			writer.Write(v)
 		}
 		// Start the pager after all if we are getting too wide
 		if w, ok := writer.(*columnizer); ok && w.width > ui.width {
@@ -448,6 +479,12 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			logrus.Warnf("Pager error: %s", err)
 		}
 	}
+}
+
+// Would love to use %g, but I always want %f style ouptut, just without trailing zeroes
+// strconv.FormatFloat wit precision -1 comes close too, but can have more than 2 digits of precision
+func f2s(f float64) string {
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", f), "0"), ".")
 }
 
 func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {

@@ -28,6 +28,7 @@ func init() {
 	f.Bool("header", true, "Print attribute names in a header line before printing host data")
 	f.String("template", "", "Template to use for showing hosts")
 	f.StringSlice("count", []string{}, "Show counts for the values of these attributes")
+	f.String("group", "", "Group hosts by the values of this attribute")
 	bindFlagsAndEnv(f)
 	rootCmd.AddCommand(listCmd)
 }
@@ -64,6 +65,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		Template:      viper.GetString("Template"),
 		Count:         viper.GetStringSlice("Count"),
 		SortByCount:   !viper.IsSet("Sort"),
+		Group:         viper.GetString("Group"),
 	}
 	engine.Ui.PrintHostList(opts)
 	return nil
