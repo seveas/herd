@@ -18,11 +18,6 @@ var pingCmd = &cobra.Command{
 	Example:               "  herd ping *.site2.example.com os=Debian",
 	DisableFlagsInUseLine: true,
 	RunE:                  runPing,
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if !rootCmd.PersistentFlags().Lookup("loglevel").Changed {
-			logrus.SetLevel(logrus.WarnLevel)
-		}
-	},
 }
 
 func init() {
