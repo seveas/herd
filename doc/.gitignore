@@ -1,0 +1,5 @@
+sass_embedded/
+node_modules/
+resources/_gen
+public/
+*.lock

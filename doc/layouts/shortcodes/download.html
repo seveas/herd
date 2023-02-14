@@ -1,0 +1,14 @@
+{{ range getJSON "https://api.github.com/repos/seveas/herd/releases?per_page=3" }}
+<div class="container clearfix">
+{{ $tag := .tag_name }}
+<h2>{{ .name }}</h2>
+{{ range $.Site.Data.downloads }}
+<div class="col-3 mr-2 d-inline-block">
+<div class="Toast width-full">
+  <span class="Toast-icon"><i class="{{ if eq .icon "download" }}fas{{ else }}fab{{ end }} fa-{{ default .os (index . "icon") }} fa-2xl"></i></span>
+  <span class="Toast-content px-2 py-4"><a href="https://github.com/seveas/herd/releases/download/{{ $tag }}/herd-{{ substr $tag 1 }}-{{ .os }}-{{ default "amd64" (index . "arch") }}.tar.gz">Download for {{ default .os (index . "title") }}</a></span>
+</div>
+</div>
+{{ end }}
+</div>
+{{ end }}

@@ -1,0 +1,12 @@
+ <nav class="SideNav border">
+   {{ range .Pages }}
+   <a class="SideNav-item" href="{{ .Permalink }}">{{ .Title }}</a>
+   {{ $permalink := .Permalink }}
+   <nav class="SideNav">
+   {{ $links := findRESubmatch `<a href="([^"]+)">([^<]+)</a>`  .TableOfContents }}
+   {{ range $links }}
+   <a class="SideNav-subItem pl-6" href="{{ $permalink }}{{ index . 1 }}">{{ index . 2 }}</a>
+   {{ end }}
+   </nav>
+   {{ end }}
+ </nav>

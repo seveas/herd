@@ -1,0 +1,11 @@
+{{ define "main" }}
+<div class="Layout">
+  <div class="Layout-main md">
+    <h1 class="py-4">{{ .Title }}</h1>
+    {{ .Content }}
+  </div>
+  <div class="Layout-sidebar">
+    {{ partial "toc.html" .CurrentSection }}
+  </div>
+</div>
+{{ end }}

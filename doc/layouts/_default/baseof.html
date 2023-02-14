@@ -1,0 +1,26 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>$ herd - massively parallel ssh client</title>
+    {{ $sass := resources.Get "/sass/main.scss" }}
+    {{ $style := $sass | resources.ToCSS (dict "includePaths" (slice "node_modules") "transpiler" "dartsass") | resources.Minify | resources.Fingerprint }}
+    <link rel="stylesheet" href="{{ $style.Permalink }}">
+  </head>
+  <body>
+    <div class="Header">
+      <div class="Header-item Header-item--full h1"><a href="/" class="Header-link">$ herd</a></div>
+      <div class="Header-item mr-0 h3">
+        <a class="Header-link mx-4" href="{{ .Site.BaseURL }}documentation">Documentation</a>
+        <a class="Header-link mx-4" href="{{ .Site.BaseURL }}download">Download</a>
+      </div>
+    </div>
+
+{{ block "main" . }}
+
+{{ end }}
+  <footer class="my-2 f6 color-fg-subtle text-center">&copy;2019-2023 Dennis Kaarsemaker </footer>
+  </body>
+</html>

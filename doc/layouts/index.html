@@ -1,0 +1,95 @@
+{{ define "main" }}
+<div class="container-lg clearfix">
+  <div class="col-12 p-4">
+    <h1>Lightning-fast parallel ssh</h1>
+    <p>
+      Herd is a massively parallel ssh client that will replace all your
+      hacky for loops, pssh, xargs and gnu parallel oneliners with something
+      that is faster, more flexible and simply more awesome! Here is an
+      example of herd in action, querying openssl package versions
+      installed on all example.com servers.
+    </p>
+    <div id="asciinema-player" class="py-4" font-size=medium></div>
+    <p>
+      While the hostnames in this example are obviously modified, the example
+      itself is real. It queried almost 1500 servers in less than 20 seconds,
+      over a relatively slow intercontinental VPN, intentionally limited to
+      100 simultaneous connections due to this connectivity. Just imagine
+      what you can do when running this inside your production environment!
+    </p>
+  </div>
+</div>
+<div class="container-lg clearfix">
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-server"></i> Find all your hosts</h3>
+    Instead of telling herd all your hosts, it can find them for you in inventory data or cloud provider API's for
+    <div class="clearfix">
+    <div class="col-6 float-left">
+    <ul>
+      <li>SSH known_hosts</li>
+      <li>PuTTY</li>
+      <li>Inventory files</li>
+      <li>HTTP api's</li>
+      <li>Consul</li>
+      <li>Prometheus</li>
+      <li>Puppet</li>
+    </ul>
+    </div>
+    <div class="col-6 float-left">
+    <ul>
+      <li>AWS</li>
+      <li>Azure</li>
+      <li>Google Cloud</li>
+      <li>TransIP</li>
+      <li>Tailscale</li>
+    </ul>
+    </div>
+    </div>
+    And custom sources are easy to add using a powerful plugin system.
+  </div>
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-person-running"></i> Run at your speed</h3>
+    You can make herd run as fast as you want. From setting global and
+    per-host timeouts to limiting parallelism and making herd pause between
+    hosts, herd will run at the speed you want and tell keep you informed
+    of its progress. You can even change the speed on the fly!
+  </div>
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-stream"></i> Output what you want</h3>
+    By default, herd shows you all output when it finished running a
+    command everywhere. If you can't wait that long, it can output full results
+    for each host as they come in. And if you like logs scrolling by, herd
+    can output each line as it comes in. Color coding helps you spot errors
+    quickly and when there's too much output, it automatically gets sent to a
+    pager.
+  </div>
+</div>
+<div class="container-lg clearfix">
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-terminal"></i> Interactive shell</h3>
+    Herd can also be run interactively, letting you quickly add/remove
+    hosts from your active set and run commands on them. You can even use the
+    results of commands as filters for your hostset.
+  </div>
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-file-code"></i> Reusable scripts</h3>
+    The commands you use in the interactive shell can also be used as simple
+    scripts for repeating tasks. Though if you find yourself writing such
+    things, you may instead want to invest in proper configuration management
+    and orchestration
+  </div>
+  <div class="col-4 p-4 float-left">
+    <h3><i class="fas fa-history"></i> Save your history</h3>
+    Even when herd works at lightning speed, it's nice not to have to run
+    commands multiple times. For this reason, herd stores all your history,
+    including the output of commands. So if you just want to analyse this
+    output a bit further, you can use tools like <a
+    href="https://stedolan.github.io/jq/">jq</a>. <a
+    href="https://jless.io/">jless</a> and <a
+    href="https://github.com/TomNomNom/gron">gron</a> to work with your history
+    instead of running commands over and over again.
+  </div>
+</div>
+{{ $js := resources.Get "js/asciinema.js" | js.Build | resources.Minify | resources.Fingerprint }}
+<script src="{{ $js.RelPermalink }}"></script>
+{{ end }}

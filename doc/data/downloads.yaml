@@ -1,0 +1,15 @@
+- os: linux
+- os: windows
+- os: darwin
+  icon: apple
+  title: mac
+- os: darwin
+  icon: apple
+  title: mac M1
+- os: freebsd
+- os: openbsd
+  icon: download
+- os: netbsd
+  icon: download
+- os: dragonflybsd
+  icon: download

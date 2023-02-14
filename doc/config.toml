@@ -1,0 +1,9 @@
+baseURL = '/'
+languageCode = 'en-us'
+title = 'Herd documentation'
+
+[markup]
+  [markup.tableOfContents]
+    endLevel = 3
+    ordered = false
+    startLevel = 1

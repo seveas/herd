@@ -1,0 +1,39 @@
+$fa-font-path: "/webfonts";
+
+@use "@primer/css/index.scss";
+@use "@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@use "@fortawesome/fontawesome-free/scss/solid.scss" with ($fa-font-path: $fa-font-path);
+@use "@fortawesome/fontawesome-free/scss/brands.scss" with ($fa-font-path: $fa-font-path);
+@use "asciinema-player/dist/bundle/asciinema-player.css";
+
+.Header {
+    background-color: #411934;
+}
+
+.Layout-main {
+    max-width: 90em;
+}
+
+ul {
+    padding-left: 1em;
+}
+
+.md pre {
+    padding: .3em
+}
+
+.md code .ansi-red {
+    color: #ff0000;
+}
+
+.md code .ansi-green {
+    color: #00ff00;
+}
+
+.md th, .md td {
+    padding: 0.1em 1em;
+}
+
+.md pre, .md table {
+    margin-bottom: 0.5em;
+}
