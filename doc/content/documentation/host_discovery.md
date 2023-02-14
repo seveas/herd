@@ -58,6 +58,9 @@ As you can see, the name of a provider section foes not imply which provider is 
 specify the. As a result of this, you can easily use multiple instances of the same provider type,
 and can wrap a provider in a cache provider without affecting other parts of the configuration.
 
+If you want to temporarily disable a provider in your configuration, you can add `enabled: false` to
+its parameters.
+
 # Host attributes
 
 Providers do not just return a list of host names. The power of Herd is that it can filter by any

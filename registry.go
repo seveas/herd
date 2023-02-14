@@ -133,6 +133,10 @@ func (r *Registry) LoadProviders(c *viper.Viper) error {
 	for key := range c.AllSettings() {
 		ps := c.Sub(key)
 		pname := ps.GetString("Provider")
+		if ps.IsSet("Enabled") && !ps.GetBool("Enabled") {
+			logrus.Debugf("Skipping disabled provider %s", key)
+			continue
+		}
 		p, err := NewProvider(pname, key)
 		if err != nil {
 			rerr.Add(fmt.Errorf("Error parsing config for %s: %s", key, err))
