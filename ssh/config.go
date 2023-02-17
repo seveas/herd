@@ -214,7 +214,6 @@ func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string
 // Find all variables relevant for a host, first match wins
 func (c *config) forHost(host *herd.Host) *configBlock {
 	b := newConfigBlock(nil)
-	b.clientConfig.User = c.user.Username
 	b.readPuttyConfig(host.Name)
 	for i := len(c.blocks) - 1; i >= 0; i-- {
 		config := c.blocks[i]
@@ -226,6 +225,9 @@ func (c *config) forHost(host *herd.Host) *configBlock {
 		}
 	}
 
+	if b.clientConfig.User == "" {
+		b.clientConfig.User = c.user.Username
+	}
 	if path, err := c.expandSshTokens(b.identityFile, host.Name, b); err == nil {
 		b.identityFile = path
 	}
