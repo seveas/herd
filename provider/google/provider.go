@@ -9,6 +9,7 @@ import (
 	"github.com/seveas/herd"
 
 	compute "cloud.google.com/go/compute/apiv1"
+	"cloud.google.com/go/compute/apiv1/computepb"
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -16,7 +17,6 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/option/internaloption"
 	httptransport "google.golang.org/api/transport/http"
-	computepb "google.golang.org/genproto/googleapis/cloud/compute/v1"
 )
 
 func init() {
