@@ -231,7 +231,11 @@ func (a *agent) Extension(extensionType string, contents []byte) ([]byte, error)
 
 func (a *agent) SignersForPathCallback(path string) func() ([]ssh.Signer, error) {
 	return func() ([]ssh.Signer, error) {
-		return a.SignersForPath(path), nil
+		signers := a.SignersForPath(path)
+		if len(signers) == 0 {
+			return nil, fmt.Errorf("SSH key %s was not found in the SSH agent", path)
+		}
+		return signers, nil
 	}
 }
 
