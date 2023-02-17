@@ -9,10 +9,10 @@ import (
 
 	"github.com/seveas/herd"
 
-	"github.com/golang/protobuf/ptypes"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GRPCClient struct {
@@ -86,7 +86,7 @@ func (c *GRPCClient) Load(ctx context.Context) (*herd.HostSet, error) {
 	if !ok {
 		deadline = time.Now().Add(10 * time.Minute)
 	}
-	ts, _ := ptypes.TimestampProto(deadline)
+	ts := timestamppb.New(deadline)
 	resp, err := c.client.Load(c.ctx, &LoadRequest{Deadline: ts})
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (s *GRPCServer) Keep(ctx context.Context, req *Empty) (*Empty, error) {
 }
 
 func (s *GRPCServer) Load(ctx context.Context, req *LoadRequest) (*LoadResponse, error) {
-	ts, _ := ptypes.Timestamp(req.Deadline)
+	ts := req.Deadline.AsTime()
 	ctx, cancel := context.WithDeadline(ctx, ts)
 	defer cancel()
 	hosts, err := s.Impl.Load(ctx)
