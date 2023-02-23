@@ -39,7 +39,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 
 	executor, err := ssh.NewExecutor(viper.GetDuration("SshAgentTimeout"), *currentUser.user)
 	if err != nil {
-		return err
+		bail(err.Error())
 	}
 	engine, err := setupScriptEngine(executor)
 	if err != nil {
