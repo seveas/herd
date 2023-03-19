@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.105
 	github.com/go-test/deep v1.0.7
 	github.com/google/uuid v1.3.0
-	github.com/hashicorp/consul/api v1.15.2
+	github.com/hashicorp/consul/api v1.20.0
 	github.com/hashicorp/go-hclog v1.3.1
 	github.com/hashicorp/go-plugin v1.4.9
 	github.com/jarcoal/httpmock v1.0.6
@@ -67,7 +67,7 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/hashicorp/serf v0.10.0 // indirect
+	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
