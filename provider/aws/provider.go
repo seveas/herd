@@ -93,7 +93,7 @@ func (p *awsProvider) setRegions() error {
 	if partition.ID() != p.config.Partition {
 		return fmt.Errorf("No such partition: %s", p.config.Partition)
 	}
-	svc := partition.Services()[endpoints.Ec2ServiceID]
+	svc := partition.Services()["ec2"]
 	p.config.Regions = make([]string, 0)
 	for region := range svc.Regions() {
 		p.config.Regions = append(p.config.Regions, region)

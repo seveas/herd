@@ -105,7 +105,7 @@ func (h *Host) init() {
 	if keys, ok := h.Attributes["__publicKeys"]; ok {
 		for _, k := range keys.([]any) {
 			if b, err := base64.StdEncoding.DecodeString(k.(string)); err != nil {
-				if key, _ := ssh.ParsePublicKey(b); err != nil {
+				if key, err := ssh.ParsePublicKey(b); err != nil {
 					h.AddPublicKey(key)
 				}
 			}
