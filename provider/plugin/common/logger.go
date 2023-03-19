@@ -20,6 +20,16 @@ var levelMap = map[hclog.Level]logrus.Level{
 	// hclog.Off:     logrus.FatalLevel,
 }
 
+var levelReverseMap = map[logrus.Level]hclog.Level{
+	logrus.TraceLevel: hclog.Trace,
+	logrus.DebugLevel: hclog.Debug,
+	logrus.InfoLevel:  hclog.Info,
+	logrus.WarnLevel:  hclog.Warn,
+	logrus.ErrorLevel: hclog.Error,
+	logrus.FatalLevel: hclog.Error,
+	logrus.PanicLevel: hclog.Error,
+}
+
 type logrusLogger struct {
 	logger *logrus.Logger
 	name   string
@@ -110,6 +120,10 @@ func (l *logrusLogger) ResetNamed(name string) hclog.Logger {
 
 func (l *logrusLogger) SetLevel(level hclog.Level) {
 	l.logger.SetLevel(levelMap[level])
+}
+
+func (l *logrusLogger) GetLevel() (level hclog.Level) {
+	return levelReverseMap[l.logger.GetLevel()]
 }
 
 func (l *logrusLogger) StandardLogger(opts *hclog.StandardLoggerOptions) *log.Logger {
