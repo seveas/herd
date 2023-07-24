@@ -110,6 +110,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	}
 	config := e.config.forHost(host)
 	cc := config.clientConfig
+	cc.Timeout = e.connectTimeout
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
 		return e.hostKeyCallback(host, key, config)
 	}

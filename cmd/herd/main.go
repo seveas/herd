@@ -110,9 +110,9 @@ Providers: %s
 		currentUser.historyDir,
 		currentUser.cacheDir,
 		strings.Join(herd.Providers(), ",")))
-	defaultAgentTimeout := 50 * time.Millisecond
+	defaultAgentTimeout := 100 * time.Millisecond
 	if _, ok := os.LookupEnv("SSH_CONNECTION"); ok {
-		defaultAgentTimeout = 200 * time.Millisecond
+		defaultAgentTimeout = 300 * time.Millisecond
 	}
 	cobra.OnInitialize(initConfig)
 	f := rootCmd.PersistentFlags()
