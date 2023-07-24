@@ -19,13 +19,20 @@ func handleSignals(r *herd.Runner) {
 	})
 	r.OnSignal(syscall.SIGUSR1, func() {
 		_, s := r.Settings()
-		p := s["Parallel"].(int) * 3 / 2
+		oldp := s["Parallel"].(int)
+		p := oldp * 3 / 2
+		if p <= 1 || p <= oldp {
+			p = oldp + 1
+		}
 		logrus.Infof("Increasing parallelism to %d", p)
 		r.SetParallel(p)
 	})
 	r.OnSignal(syscall.SIGUSR2, func() {
 		_, s := r.Settings()
 		p := s["Parallel"].(int) / 2
+		if p <= 0 {
+			p = 1
+		}
 		logrus.Infof("Decreasing parallelism to %d", p)
 		r.SetParallel(p)
 	})
