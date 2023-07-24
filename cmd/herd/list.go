@@ -29,6 +29,8 @@ func init() {
 	f.String("template", "", "Template to use for showing hosts")
 	f.StringSlice("count", []string{}, "Show counts for the values of these attributes")
 	f.String("group", "", "Group hosts by the values of this attribute")
+	// This makes `--count my_attribute` stop working and makes it require `--count=my_attribute` instead.
+	// f.Lookup("count").NoOptDefVal = "*"
 	bindFlagsAndEnv(f)
 	rootCmd.AddCommand(listCmd)
 }
@@ -64,6 +66,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		Align:         true,
 		Template:      viper.GetString("Template"),
 		Count:         viper.GetStringSlice("Count"),
+		CountAll:      len(viper.GetStringSlice("Count")) == 1 && viper.GetStringSlice("Count")[0] == "*",
 		SortByCount:   !viper.IsSet("Sort"),
 		Group:         viper.GetString("Group"),
 	}

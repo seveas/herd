@@ -73,6 +73,7 @@ type HostListOptions struct {
 	Header        bool
 	Template      string
 	Count         []string
+	CountAll      bool
 	SortByCount   bool
 	Group         string
 }
@@ -293,6 +294,11 @@ func startPager(p *pager, o *io.Writer) {
 
 func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 	hosts := ui.hosts.hosts
+	if opts.CountAll {
+		//nolint:forbidigo // The one place we actually want Printf
+		fmt.Printf("%d\n", len(hosts))
+		return
+	}
 	if len(hosts) == 0 {
 		logrus.Error("No hosts to list")
 		return

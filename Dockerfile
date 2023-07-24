@@ -1,4 +1,4 @@
-FROM golang:1.19
+FROM golang:1.19-bullseye
 
 RUN apt-get update && apt-get -y install consul
 
