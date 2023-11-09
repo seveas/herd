@@ -36,3 +36,9 @@ func TestHostDeserialization(t *testing.T) {
 		t.Errorf("float attribute did not survive the json trip: %v", host.Attributes)
 	}
 }
+
+func TestAmendWithoutProvider(t *testing.T) {
+	h := NewHost("test-host.herd.ci", "127.0.0.1", HostAttributes{})
+	h2 := NewHost("test-host.herd.ci", "127.0.0.1", HostAttributes{})
+	h.Amend(h2)
+}

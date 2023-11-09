@@ -181,7 +181,12 @@ func (h *Host) Amend(h2 *Host) {
 	if h.Address == "" {
 		h.Address = h2.Address
 	}
-	h.Attributes["herd_provider"] = append(h.Attributes["herd_provider"].([]string), h2.Attributes["herd_provider"].([]string)[0])
+	if h2.Attributes["herd_provider"] != nil {
+		if h.Attributes["herd_provider"] == nil {
+			h.Attributes["herd_provider"] = make([]string, 0)
+		}
+		h.Attributes["herd_provider"] = append(h.Attributes["herd_provider"].([]string), h2.Attributes["herd_provider"].([]string)[0])
+	}
 	for attr, value := range h2.Attributes {
 		if attr == "herd_provider" {
 			continue
