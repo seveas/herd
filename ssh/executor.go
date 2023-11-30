@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/user"
 	"strconv"
 	"time"
@@ -109,6 +110,22 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 		return host.Connection.(*ssh.Client), nil
 	}
 	config := e.config.forHost(host)
+	if config.controlMaster && config.controlPath != "" {
+		s, err := os.Stat(config.controlPath)
+		if err == nil && s.Mode()&os.ModeSocket != 0 {
+			logrus.Debugf("ssh: reusing control socket %s", config.controlPath)
+			conn, err := net.Dial("unix", config.controlPath)
+			if err != nil {
+				return nil, err
+			}
+			client, chans, reqs, err := ssh.NewControlClientConn(conn)
+			if err != nil {
+				return nil, err
+			}
+			return ssh.NewClient(client, chans, reqs), nil
+		}
+	}
+
 	cc := config.clientConfig
 	cc.Timeout = e.connectTimeout
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {

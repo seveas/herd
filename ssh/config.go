@@ -1,6 +1,8 @@
 package ssh
 
 import (
+	"crypto"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"os"
@@ -39,6 +41,8 @@ type configBlock struct {
 	strictHostKeyChecking strictHostKeyChecking
 	verifyHostKeyDns      bool
 	identityFile          string
+	controlMaster         bool
+	controlPath           string
 	clientConfig          *ssh.ClientConfig
 }
 
@@ -92,6 +96,12 @@ func (c *configBlock) updateFromBlock(o *configBlock) {
 	}
 	if c.clientConfig.User == "" {
 		c.clientConfig.User = o.clientConfig.User
+	}
+	if !c.controlMaster {
+		c.controlMaster = o.controlMaster
+	}
+	if c.controlPath == "" {
+		c.controlPath = o.controlPath
 	}
 }
 
@@ -155,6 +165,17 @@ func parseConfig(file string) ([]*configBlock, error) {
 			case "accept-new":
 				config.strictHostKeyChecking = acceptNew
 			}
+		case "controlmaster":
+			switch strings.ToLower(val) {
+			case "auto":
+				fallthrough
+			case "yes":
+				config.controlMaster = true
+			case "no":
+				config.controlMaster = false
+			}
+		case "controlpath":
+			config.controlPath = val
 		case "identityfile":
 			config.identityFile = val
 		}
@@ -175,34 +196,38 @@ func (c *config) expandSshTokens(input, hostname string, b *configBlock) (string
 	var err error
 	re := regexp.MustCompile("%[%CdhikLlnprTu]")
 	output := re.ReplaceAllStringFunc(input, func(token string) string {
-		switch token {
-		case "%":
+		switch token[1] {
+		case '%':
 			return "%"
-		case "C":
-			err = errors.New("%C is not supported")
-			return ""
-		case "d":
+		case 'C':
+			var name string
+			name, err = os.Hostname()
+			input := fmt.Sprintf("%s%s%d%s", name, hostname, b.port, c.user.Username)
+			h := crypto.SHA1.New()
+			h.Write([]byte(input))
+			return hex.EncodeToString(h.Sum(nil))
+		case 'd':
 			return c.user.HomeDir
 		// Does not quite match openssh, but the best we can do
-		case "h", "k", "n":
+		case 'h', 'k', 'n':
 			return hostname
-		case "i":
+		case 'i':
 			return c.user.Uid
-		case "L":
+		case 'L':
 			var name string
 			name, err = os.Hostname()
 			return strings.Split(name, ".")[0]
-		case "l":
+		case 'l':
 			var name string
 			name, err = os.Hostname()
 			return name
-		case "p":
+		case 'p':
 			return fmt.Sprintf("%d", b.port)
-		case "r":
+		case 'r':
 			return b.clientConfig.User
-		case "%T":
+		case 'T':
 			return "NONE"
-		case "%u":
+		case 'u':
 			return c.user.Username
 		}
 		err = fmt.Errorf("Don't know what to return for %s", token)
@@ -230,6 +255,9 @@ func (c *config) forHost(host *herd.Host) *configBlock {
 	}
 	if path, err := c.expandSshTokens(b.identityFile, host.Name, b); err == nil {
 		b.identityFile = path
+	}
+	if path, err := c.expandSshTokens(b.controlPath, host.Name, b); err == nil {
+		b.controlPath = path
 	}
 	algos := []string{}
 	for _, k := range host.PublicKeys() {
