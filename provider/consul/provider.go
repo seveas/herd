@@ -17,6 +17,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const defaultMaxConcurrency = 30
+
 func init() {
 	herd.RegisterProvider("consul", newProvider, magicProvider)
 }
@@ -30,6 +32,7 @@ type consulProvider struct {
 		Datacenters                  []string
 		ExcludeDatacenters           []string
 		IgnoreUnreachableDatacenters bool
+		MaxConcurrency               int64
 	}
 }
 
@@ -94,7 +97,20 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*her
 		return nil, err
 	}
 	logrus.Debugf("Consul datacenters: %v", datacenters)
-	sg := scattergather.New[*herd.HostSet](int64(len(datacenters)))
+	c := int64(len(datacenters))
+	switch {
+	case p.config.MaxConcurrency < 0:
+		break
+	case p.config.MaxConcurrency == 0:
+		p.config.MaxConcurrency = defaultMaxConcurrency
+		fallthrough
+	default:
+		if p.config.MaxConcurrency < c {
+			c = p.config.MaxConcurrency
+		}
+	}
+
+	sg := scattergather.New[*herd.HostSet](c)
 	sg.KeepAllResults(true)
 	for _, dc := range datacenters {
 		if len(p.config.Datacenters) != 0 && !stringInList(p.config.Datacenters, dc) {
