@@ -109,8 +109,8 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet
 		if data, err = json.Marshal(hosts); err != nil {
 			return nil, err
 		}
-		//#nosec G306 -- Cache file may be shared among users
-		if err := os.WriteFile(c.config.File, data, 0o644); err != nil {
+		err = os.WriteFile(c.config.File, data, 0o644) // #nosec G306 -- Cache file may be shared among users
+		if err != nil {
 			return nil, err
 		}
 	} else if !c.config.StrictLoading {

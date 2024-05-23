@@ -1,8 +1,7 @@
 package ssh
 
-// #nosec:G505 -- We want to support sha1 fingerprints for now
 import (
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505 -- We want to support sha1 fingerprints for now
 	"crypto/sha256"
 	"fmt"
 	"net"
