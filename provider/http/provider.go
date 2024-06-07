@@ -67,6 +67,9 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 			req.Header.Set(key, value)
 		}
 	}
+	if req.Header.Get("User-Agent") == "" {
+		req.Header.Set("User-Agent", fmt.Sprintf("herd/%s", herd.Version()))
+	}
 	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, err
