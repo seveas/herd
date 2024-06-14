@@ -104,3 +104,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace golang.org/x/crypto => github.com/seveas/crypto v0.7.1-0.20230319133709-6acef24831f8
