@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/exp/constraints"
 )
 
 type HostSet struct {
@@ -188,18 +187,4 @@ func maxNameLength(hosts []*Host) int {
 		}
 	}
 	return ml
-}
-
-func min[T constraints.Ordered](x, y T) T {
-	if x <= y {
-		return x
-	}
-	return y
-}
-
-func max[T constraints.Ordered](x, y T) T {
-	if x >= y {
-		return x
-	}
-	return y
 }

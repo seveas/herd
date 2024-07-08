@@ -32,7 +32,6 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/transip/gotransip/v6 v6.24.0
 	golang.org/x/crypto v0.25.0
-	golang.org/x/exp v0.0.0-20240707233637-46b078467d37
 	golang.org/x/sys v0.22.0
 	google.golang.org/api v0.187.0
 	google.golang.org/grpc v1.65.0
@@ -111,6 +110,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go4.org/mem v0.0.0-20240501181205-ae6ca9944745 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
+	golang.org/x/exp v0.0.0-20240707233637-46b078467d37 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
