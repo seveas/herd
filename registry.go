@@ -270,6 +270,7 @@ func (r *Registry) Search(hostnameGlob string, attributes MatchAttributes, sampl
 		}
 	}
 	if len(sampled) != 0 {
+		ret.Sort()
 		ret.Sample(sampled, count)
 	}
 	return ret
