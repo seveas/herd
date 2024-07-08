@@ -65,3 +65,20 @@ func TestGetHostsTimeout(t *testing.T) {
 		t.Error("Expected a timeout")
 	}
 }
+
+func TestSearchSampling(t *testing.T) {
+	h1 := NewHost("host-a.example.com", "", HostAttributes{"site": "site1", "role": "db"})
+	h2 := NewHost("host-b.example.com", "", HostAttributes{"site": "site1", "role": "db"})
+	hosts := HostSet{hosts: []*Host{h2, h1}}
+	r := Registry{hosts: &hosts}
+
+	hosts = *r.Search("*", []MatchAttribute{{Name: "site", Value: "site1"}}, []string{"site"}, 1)
+
+	if len(hosts.hosts) != 1 {
+		t.Error("Sampling failed")
+		return
+	}
+	if hosts.hosts[0] != h1 {
+		t.Error("Sampling failed to sort first")
+	}
+}
