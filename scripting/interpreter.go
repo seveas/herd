@@ -10,7 +10,7 @@ import (
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/scripting/parser"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/sirupsen/logrus"
 )
 

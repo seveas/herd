@@ -1,4 +1,4 @@
-// Code generated from java-escape by ANTLR 4.11.1. DO NOT EDIT.
+// Code generated from Herd.g4 by ANTLR 4.13.1. DO NOT EDIT.
 
 package parser // Herd
 
@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/antlr/antlr4/runtime/Go/antlr/v4"
+	"github.com/antlr4-go/antlr/v4"
 )
 
 // Suppress unused import errors
@@ -19,34 +19,34 @@ type HerdParser struct {
 	*antlr.BaseParser
 }
 
-var herdParserStaticData struct {
+var HerdParserStaticData struct {
 	once                   sync.Once
 	serializedATN          []int32
-	literalNames           []string
-	symbolicNames          []string
-	ruleNames              []string
-	predictionContextCache *antlr.PredictionContextCache
+	LiteralNames           []string
+	SymbolicNames          []string
+	RuleNames              []string
+	PredictionContextCache *antlr.PredictionContextCache
 	atn                    *antlr.ATN
 	decisionToDFA          []*antlr.DFA
 }
 
 func herdParserInit() {
-	staticData := &herdParserStaticData
-	staticData.literalNames = []string{
+	staticData := &HerdParserStaticData
+	staticData.LiteralNames = []string{
 		"", "'\\n'", "']'", "','", "'}'", "':'", "", "'['", "'{'", "'set'",
 		"'add'", "'remove'", "'list'", "'hosts'", "", "", "", "", "'=='", "'=~'",
 		"'!='", "'!~'",
 	}
-	staticData.symbolicNames = []string{
+	staticData.SymbolicNames = []string{
 		"", "", "", "", "", "", "RUN", "SB_OPEN", "CB_OPEN", "SET", "ADD", "REMOVE",
 		"LIST", "HOSTS", "DURATION", "NUMBER", "IDENTIFIER", "GLOB", "EQUALS",
 		"MATCHES", "NOT_EQUALS", "NOT_MATCHES", "STRING", "REGEXP", "SKIP_",
 	}
-	staticData.ruleNames = []string{
+	staticData.RuleNames = []string{
 		"prog", "line", "run", "set", "add", "remove", "list", "filter", "scalar",
 		"value", "array", "hash",
 	}
-	staticData.predictionContextCache = antlr.NewPredictionContextCache()
+	staticData.PredictionContextCache = antlr.NewPredictionContextCache()
 	staticData.serializedATN = []int32{
 		4, 1, 24, 134, 2, 0, 7, 0, 2, 1, 7, 1, 2, 2, 7, 2, 2, 3, 7, 3, 2, 4, 7,
 		4, 2, 5, 7, 5, 2, 6, 7, 6, 2, 7, 7, 7, 2, 8, 7, 8, 2, 9, 7, 9, 2, 10, 7,
@@ -121,7 +121,7 @@ func herdParserInit() {
 // NewHerdParser(). You can call this function if you wish to initialize the static state ahead
 // of time.
 func HerdParserInit() {
-	staticData := &herdParserStaticData
+	staticData := &HerdParserStaticData
 	staticData.once.Do(herdParserInit)
 }
 
@@ -130,12 +130,12 @@ func NewHerdParser(input antlr.TokenStream) *HerdParser {
 	HerdParserInit()
 	this := new(HerdParser)
 	this.BaseParser = antlr.NewBaseParser(input)
-	staticData := &herdParserStaticData
-	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.predictionContextCache)
-	this.RuleNames = staticData.ruleNames
-	this.LiteralNames = staticData.literalNames
-	this.SymbolicNames = staticData.symbolicNames
-	this.GrammarFileName = "java-escape"
+	staticData := &HerdParserStaticData
+	this.Interpreter = antlr.NewParserATNSimulator(this, staticData.atn, staticData.decisionToDFA, staticData.PredictionContextCache)
+	this.RuleNames = staticData.RuleNames
+	this.LiteralNames = staticData.LiteralNames
+	this.SymbolicNames = staticData.SymbolicNames
+	this.GrammarFileName = "Herd.g4"
 
 	return this
 }
@@ -192,20 +192,30 @@ type IProgContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	EOF() antlr.TerminalNode
+	AllLine() []ILineContext
+	Line(i int) ILineContext
+
 	// IsProgContext differentiates from other interfaces.
 	IsProgContext()
 }
 
 type ProgContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyProgContext() *ProgContext {
 	var p = new(ProgContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_prog
 	return p
+}
+
+func InitEmptyProgContext(p *ProgContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_prog
 }
 
 func (*ProgContext) IsProgContext() {}
@@ -213,7 +223,7 @@ func (*ProgContext) IsProgContext() {}
 func NewProgContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ProgContext {
 	var p = new(ProgContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_prog
@@ -289,32 +299,16 @@ func (s *ProgContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Prog() (localctx IProgContext) {
-	this := p
-	_ = this
-
 	localctx = NewProgContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 0, HerdParserRULE_prog)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(27)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	for (int64(_la) & ^0x3f) == 0 && ((int64(1)<<_la)&7746) != 0 {
@@ -325,14 +319,31 @@ func (p *HerdParser) Prog() (localctx IProgContext) {
 
 		p.SetState(29)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 	}
 	{
 		p.SetState(30)
 		p.Match(HerdParserEOF)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ILineContext is an interface to support dynamic dispatch.
@@ -342,20 +353,32 @@ type ILineContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Run() IRunContext
+	Set() ISetContext
+	Add() IAddContext
+	Remove() IRemoveContext
+	List() IListContext
+
 	// IsLineContext differentiates from other interfaces.
 	IsLineContext()
 }
 
 type LineContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyLineContext() *LineContext {
 	var p = new(LineContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_line
 	return p
+}
+
+func InitEmptyLineContext(p *LineContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_line
 }
 
 func (*LineContext) IsLineContext() {}
@@ -363,7 +386,7 @@ func (*LineContext) IsLineContext() {}
 func NewLineContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *LineContext {
 	var p = new(LineContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_line
@@ -474,32 +497,14 @@ func (s *LineContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Line() (localctx ILineContext) {
-	this := p
-	_ = this
-
 	localctx = NewLineContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 2, HerdParserRULE_line)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(37)
 	p.GetErrorHandler().Sync(p)
-
+	if p.HasError() {
+		goto errorExit
+	}
 	switch p.GetTokenStream().LA(1) {
 	case HerdParserRUN:
 		{
@@ -538,9 +543,23 @@ func (p *HerdParser) Line() (localctx ILineContext) {
 	{
 		p.SetState(39)
 		p.Match(HerdParserT__0)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IRunContext is an interface to support dynamic dispatch.
@@ -550,20 +569,28 @@ type IRunContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	RUN() antlr.TerminalNode
+
 	// IsRunContext differentiates from other interfaces.
 	IsRunContext()
 }
 
 type RunContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyRunContext() *RunContext {
 	var p = new(RunContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_run
 	return p
+}
+
+func InitEmptyRunContext(p *RunContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_run
 }
 
 func (*RunContext) IsRunContext() {}
@@ -571,7 +598,7 @@ func (*RunContext) IsRunContext() {}
 func NewRunContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *RunContext {
 	var p = new(RunContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_run
@@ -606,35 +633,29 @@ func (s *RunContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Run() (localctx IRunContext) {
-	this := p
-	_ = this
-
 	localctx = NewRunContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 4, HerdParserRULE_run)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(41)
 		p.Match(HerdParserRUN)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // ISetContext is an interface to support dynamic dispatch.
@@ -656,12 +677,17 @@ type ISetContext interface {
 	// SetVarvalue sets the varvalue rule contexts.
 	SetVarvalue(IScalarContext)
 
+	// Getter signatures
+	SET() antlr.TerminalNode
+	IDENTIFIER() antlr.TerminalNode
+	Scalar() IScalarContext
+
 	// IsSetContext differentiates from other interfaces.
 	IsSetContext()
 }
 
 type SetContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser   antlr.Parser
 	varname  antlr.Token
 	varvalue IScalarContext
@@ -669,9 +695,14 @@ type SetContext struct {
 
 func NewEmptySetContext() *SetContext {
 	var p = new(SetContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_set
 	return p
+}
+
+func InitEmptySetContext(p *SetContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_set
 }
 
 func (*SetContext) IsSetContext() {}
@@ -679,7 +710,7 @@ func (*SetContext) IsSetContext() {}
 func NewSetContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *SetContext {
 	var p = new(SetContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_set
@@ -742,36 +773,24 @@ func (s *SetContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Set() (localctx ISetContext) {
-	this := p
-	_ = this
-
 	localctx = NewSetContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 6, HerdParserRULE_set)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(43)
 		p.Match(HerdParserSET)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(46)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == HerdParserIDENTIFIER {
@@ -781,6 +800,10 @@ func (p *HerdParser) Set() (localctx ISetContext) {
 			var _m = p.Match(HerdParserIDENTIFIER)
 
 			localctx.(*SetContext).varname = _m
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(45)
@@ -792,7 +815,17 @@ func (p *HerdParser) Set() (localctx ISetContext) {
 
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IAddContext is an interface to support dynamic dispatch.
@@ -814,12 +847,20 @@ type IAddContext interface {
 	// SetFilters sets the filters rule contexts.
 	SetFilters(IFilterContext)
 
+	// Getter signatures
+	ADD() antlr.TerminalNode
+	HOSTS() antlr.TerminalNode
+	GLOB() antlr.TerminalNode
+	IDENTIFIER() antlr.TerminalNode
+	AllFilter() []IFilterContext
+	Filter(i int) IFilterContext
+
 	// IsAddContext differentiates from other interfaces.
 	IsAddContext()
 }
 
 type AddContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser  antlr.Parser
 	glob    antlr.Token
 	filters IFilterContext
@@ -827,9 +868,14 @@ type AddContext struct {
 
 func NewEmptyAddContext() *AddContext {
 	var p = new(AddContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_add
 	return p
+}
+
+func InitEmptyAddContext(p *AddContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_add
 }
 
 func (*AddContext) IsAddContext() {}
@@ -837,7 +883,7 @@ func (*AddContext) IsAddContext() {}
 func NewAddContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *AddContext {
 	var p = new(AddContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_add
@@ -933,41 +979,34 @@ func (s *AddContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Add() (localctx IAddContext) {
-	this := p
-	_ = this
-
 	localctx = NewAddContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 8, HerdParserRULE_add)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(48)
 		p.Match(HerdParserADD)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(49)
 		p.Match(HerdParserHOSTS)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(62)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 5, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 5, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(50)
@@ -989,6 +1028,9 @@ func (p *HerdParser) Add() (localctx IAddContext) {
 		}
 		p.SetState(54)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == HerdParserIDENTIFIER {
@@ -1002,12 +1044,18 @@ func (p *HerdParser) Add() (localctx IAddContext) {
 
 			p.SetState(56)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 
 	case 2:
 		p.SetState(58)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for ok := true; ok; ok = _la == HerdParserIDENTIFIER {
@@ -1021,12 +1069,27 @@ func (p *HerdParser) Add() (localctx IAddContext) {
 
 			p.SetState(60)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IRemoveContext is an interface to support dynamic dispatch.
@@ -1048,12 +1111,20 @@ type IRemoveContext interface {
 	// SetFilters sets the filters rule contexts.
 	SetFilters(IFilterContext)
 
+	// Getter signatures
+	REMOVE() antlr.TerminalNode
+	HOSTS() antlr.TerminalNode
+	GLOB() antlr.TerminalNode
+	IDENTIFIER() antlr.TerminalNode
+	AllFilter() []IFilterContext
+	Filter(i int) IFilterContext
+
 	// IsRemoveContext differentiates from other interfaces.
 	IsRemoveContext()
 }
 
 type RemoveContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser  antlr.Parser
 	glob    antlr.Token
 	filters IFilterContext
@@ -1061,9 +1132,14 @@ type RemoveContext struct {
 
 func NewEmptyRemoveContext() *RemoveContext {
 	var p = new(RemoveContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_remove
 	return p
+}
+
+func InitEmptyRemoveContext(p *RemoveContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_remove
 }
 
 func (*RemoveContext) IsRemoveContext() {}
@@ -1071,7 +1147,7 @@ func (*RemoveContext) IsRemoveContext() {}
 func NewRemoveContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *RemoveContext {
 	var p = new(RemoveContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_remove
@@ -1167,41 +1243,34 @@ func (s *RemoveContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Remove() (localctx IRemoveContext) {
-	this := p
-	_ = this
-
 	localctx = NewRemoveContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 10, HerdParserRULE_remove)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(64)
 		p.Match(HerdParserREMOVE)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(65)
 		p.Match(HerdParserHOSTS)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(78)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 8, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 8, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(66)
@@ -1223,6 +1292,9 @@ func (p *HerdParser) Remove() (localctx IRemoveContext) {
 		}
 		p.SetState(70)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == HerdParserIDENTIFIER {
@@ -1236,12 +1308,18 @@ func (p *HerdParser) Remove() (localctx IRemoveContext) {
 
 			p.SetState(72)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 
 	case 2:
 		p.SetState(74)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for ok := true; ok; ok = _la == HerdParserIDENTIFIER {
@@ -1255,12 +1333,27 @@ func (p *HerdParser) Remove() (localctx IRemoveContext) {
 
 			p.SetState(76)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IListContext is an interface to support dynamic dispatch.
@@ -1276,21 +1369,31 @@ type IListContext interface {
 	// SetOpts sets the opts rule contexts.
 	SetOpts(IHashContext)
 
+	// Getter signatures
+	LIST() antlr.TerminalNode
+	HOSTS() antlr.TerminalNode
+	Hash() IHashContext
+
 	// IsListContext differentiates from other interfaces.
 	IsListContext()
 }
 
 type ListContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	opts   IHashContext
 }
 
 func NewEmptyListContext() *ListContext {
 	var p = new(ListContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_list
 	return p
+}
+
+func InitEmptyListContext(p *ListContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_list
 }
 
 func (*ListContext) IsListContext() {}
@@ -1298,7 +1401,7 @@ func (*ListContext) IsListContext() {}
 func NewListContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ListContext {
 	var p = new(ListContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_list
@@ -1357,40 +1460,32 @@ func (s *ListContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) List() (localctx IListContext) {
-	this := p
-	_ = this
-
 	localctx = NewListContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 12, HerdParserRULE_list)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
 		p.SetState(80)
 		p.Match(HerdParserLIST)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	{
 		p.SetState(81)
 		p.Match(HerdParserHOSTS)
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(83)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 	_la = p.GetTokenStream().LA(1)
 
 	if _la == HerdParserCB_OPEN {
@@ -1404,7 +1499,17 @@ func (p *HerdParser) List() (localctx IListContext) {
 
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IFilterContext is an interface to support dynamic dispatch.
@@ -1438,12 +1543,21 @@ type IFilterContext interface {
 	// SetVal sets the val rule contexts.
 	SetVal(IScalarContext)
 
+	// Getter signatures
+	IDENTIFIER() antlr.TerminalNode
+	Scalar() IScalarContext
+	REGEXP() antlr.TerminalNode
+	EQUALS() antlr.TerminalNode
+	NOT_EQUALS() antlr.TerminalNode
+	MATCHES() antlr.TerminalNode
+	NOT_MATCHES() antlr.TerminalNode
+
 	// IsFilterContext differentiates from other interfaces.
 	IsFilterContext()
 }
 
 type FilterContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 	key    antlr.Token
 	comp   antlr.Token
@@ -1453,9 +1567,14 @@ type FilterContext struct {
 
 func NewEmptyFilterContext() *FilterContext {
 	var p = new(FilterContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_filter
 	return p
+}
+
+func InitEmptyFilterContext(p *FilterContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_filter
 }
 
 func (*FilterContext) IsFilterContext() {}
@@ -1463,7 +1582,7 @@ func (*FilterContext) IsFilterContext() {}
 func NewFilterContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *FilterContext {
 	var p = new(FilterContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_filter
@@ -1550,28 +1669,9 @@ func (s *FilterContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Filter() (localctx IFilterContext) {
-	this := p
-	_ = this
-
 	localctx = NewFilterContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 14, HerdParserRULE_filter)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -1580,9 +1680,16 @@ func (p *HerdParser) Filter() (localctx IFilterContext) {
 		var _m = p.Match(HerdParserIDENTIFIER)
 
 		localctx.(*FilterContext).key = _m
+		if p.HasError() {
+			// Recognition error - abort rule
+			goto errorExit
+		}
 	}
 	p.SetState(90)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case HerdParserEQUALS, HerdParserNOT_EQUALS:
@@ -1637,13 +1744,28 @@ func (p *HerdParser) Filter() (localctx IFilterContext) {
 			var _m = p.Match(HerdParserREGEXP)
 
 			localctx.(*FilterContext).rx = _m
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IScalarContext is an interface to support dynamic dispatch.
@@ -1653,20 +1775,31 @@ type IScalarContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	NUMBER() antlr.TerminalNode
+	STRING() antlr.TerminalNode
+	DURATION() antlr.TerminalNode
+	IDENTIFIER() antlr.TerminalNode
+
 	// IsScalarContext differentiates from other interfaces.
 	IsScalarContext()
 }
 
 type ScalarContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyScalarContext() *ScalarContext {
 	var p = new(ScalarContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_scalar
 	return p
+}
+
+func InitEmptyScalarContext(p *ScalarContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_scalar
 }
 
 func (*ScalarContext) IsScalarContext() {}
@@ -1674,7 +1807,7 @@ func (*ScalarContext) IsScalarContext() {}
 func NewScalarContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ScalarContext {
 	var p = new(ScalarContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_scalar
@@ -1721,28 +1854,9 @@ func (s *ScalarContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Scalar() (localctx IScalarContext) {
-	this := p
-	_ = this
-
 	localctx = NewScalarContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 16, HerdParserRULE_scalar)
 	var _la int
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
 
 	p.EnterOuterAlt(localctx, 1)
 	{
@@ -1757,7 +1871,17 @@ func (p *HerdParser) Scalar() (localctx IScalarContext) {
 		}
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IValueContext is an interface to support dynamic dispatch.
@@ -1767,20 +1891,30 @@ type IValueContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	Scalar() IScalarContext
+	Array() IArrayContext
+	Hash() IHashContext
+
 	// IsValueContext differentiates from other interfaces.
 	IsValueContext()
 }
 
 type ValueContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyValueContext() *ValueContext {
 	var p = new(ValueContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_value
 	return p
+}
+
+func InitEmptyValueContext(p *ValueContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_value
 }
 
 func (*ValueContext) IsValueContext() {}
@@ -1788,7 +1922,7 @@ func (*ValueContext) IsValueContext() {}
 func NewValueContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ValueContext {
 	var p = new(ValueContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_value
@@ -1867,30 +2001,13 @@ func (s *ValueContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Value() (localctx IValueContext) {
-	this := p
-	_ = this
-
 	localctx = NewValueContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 18, HerdParserRULE_value)
-
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.SetState(97)
 	p.GetErrorHandler().Sync(p)
+	if p.HasError() {
+		goto errorExit
+	}
 
 	switch p.GetTokenStream().LA(1) {
 	case HerdParserDURATION, HerdParserNUMBER, HerdParserIDENTIFIER, HerdParserSTRING:
@@ -1915,10 +2032,21 @@ func (p *HerdParser) Value() (localctx IValueContext) {
 		}
 
 	default:
-		panic(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		p.SetError(antlr.NewNoViableAltException(p, nil, nil, nil, nil, nil))
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IArrayContext is an interface to support dynamic dispatch.
@@ -1928,20 +2056,30 @@ type IArrayContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	SB_OPEN() antlr.TerminalNode
+	AllValue() []IValueContext
+	Value(i int) IValueContext
+
 	// IsArrayContext differentiates from other interfaces.
 	IsArrayContext()
 }
 
 type ArrayContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyArrayContext() *ArrayContext {
 	var p = new(ArrayContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_array
 	return p
+}
+
+func InitEmptyArrayContext(p *ArrayContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_array
 }
 
 func (*ArrayContext) IsArrayContext() {}
@@ -1949,7 +2087,7 @@ func (*ArrayContext) IsArrayContext() {}
 func NewArrayContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *ArrayContext {
 	var p = new(ArrayContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_array
@@ -2025,47 +2163,44 @@ func (s *ArrayContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Array() (localctx IArrayContext) {
-	this := p
-	_ = this
-
 	localctx = NewArrayContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 20, HerdParserRULE_array)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(112)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 13, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 13, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(99)
 			p.Match(HerdParserSB_OPEN)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(100)
 			p.Match(HerdParserT__1)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case 2:
 		{
 			p.SetState(101)
 			p.Match(HerdParserSB_OPEN)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(102)
@@ -2073,12 +2208,19 @@ func (p *HerdParser) Array() (localctx IArrayContext) {
 		}
 		p.SetState(107)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == HerdParserT__2 {
 			{
 				p.SetState(103)
 				p.Match(HerdParserT__2)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(104)
@@ -2087,16 +2229,35 @@ func (p *HerdParser) Array() (localctx IArrayContext) {
 
 			p.SetState(109)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 		{
 			p.SetState(110)
 			p.Match(HerdParserT__1)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }
 
 // IHashContext is an interface to support dynamic dispatch.
@@ -2106,20 +2267,32 @@ type IHashContext interface {
 	// GetParser returns the parser.
 	GetParser() antlr.Parser
 
+	// Getter signatures
+	CB_OPEN() antlr.TerminalNode
+	AllIDENTIFIER() []antlr.TerminalNode
+	IDENTIFIER(i int) antlr.TerminalNode
+	AllValue() []IValueContext
+	Value(i int) IValueContext
+
 	// IsHashContext differentiates from other interfaces.
 	IsHashContext()
 }
 
 type HashContext struct {
-	*antlr.BaseParserRuleContext
+	antlr.BaseParserRuleContext
 	parser antlr.Parser
 }
 
 func NewEmptyHashContext() *HashContext {
 	var p = new(HashContext)
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(nil, -1)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
 	p.RuleIndex = HerdParserRULE_hash
 	return p
+}
+
+func InitEmptyHashContext(p *HashContext) {
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, nil, -1)
+	p.RuleIndex = HerdParserRULE_hash
 }
 
 func (*HashContext) IsHashContext() {}
@@ -2127,7 +2300,7 @@ func (*HashContext) IsHashContext() {}
 func NewHashContext(parser antlr.Parser, parent antlr.ParserRuleContext, invokingState int) *HashContext {
 	var p = new(HashContext)
 
-	p.BaseParserRuleContext = antlr.NewBaseParserRuleContext(parent, invokingState)
+	antlr.InitBaseParserRuleContext(&p.BaseParserRuleContext, parent, invokingState)
 
 	p.parser = parser
 	p.RuleIndex = HerdParserRULE_hash
@@ -2211,55 +2384,60 @@ func (s *HashContext) ExitRule(listener antlr.ParseTreeListener) {
 }
 
 func (p *HerdParser) Hash() (localctx IHashContext) {
-	this := p
-	_ = this
-
 	localctx = NewHashContext(p, p.GetParserRuleContext(), p.GetState())
 	p.EnterRule(localctx, 22, HerdParserRULE_hash)
 	var _la int
 
-	defer func() {
-		p.ExitRule()
-	}()
-
-	defer func() {
-		if err := recover(); err != nil {
-			if v, ok := err.(antlr.RecognitionException); ok {
-				localctx.SetException(v)
-				p.GetErrorHandler().ReportError(p, v)
-				p.GetErrorHandler().Recover(p, v)
-			} else {
-				panic(err)
-			}
-		}
-	}()
-
 	p.EnterOuterAlt(localctx, 1)
 	p.SetState(131)
 	p.GetErrorHandler().Sync(p)
-	switch p.GetInterpreter().AdaptivePredict(p.GetTokenStream(), 15, p.GetParserRuleContext()) {
+	if p.HasError() {
+		goto errorExit
+	}
+
+	switch p.GetInterpreter().AdaptivePredict(p.BaseParser, p.GetTokenStream(), 15, p.GetParserRuleContext()) {
 	case 1:
 		{
 			p.SetState(114)
 			p.Match(HerdParserCB_OPEN)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(115)
 			p.Match(HerdParserT__3)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
 	case 2:
 		{
 			p.SetState(116)
 			p.Match(HerdParserCB_OPEN)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(117)
 			p.Match(HerdParserIDENTIFIER)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(118)
 			p.Match(HerdParserT__4)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 		{
 			p.SetState(119)
@@ -2267,20 +2445,35 @@ func (p *HerdParser) Hash() (localctx IHashContext) {
 		}
 		p.SetState(126)
 		p.GetErrorHandler().Sync(p)
+		if p.HasError() {
+			goto errorExit
+		}
 		_la = p.GetTokenStream().LA(1)
 
 		for _la == HerdParserT__2 {
 			{
 				p.SetState(120)
 				p.Match(HerdParserT__2)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(121)
 				p.Match(HerdParserIDENTIFIER)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(122)
 				p.Match(HerdParserT__4)
+				if p.HasError() {
+					// Recognition error - abort rule
+					goto errorExit
+				}
 			}
 			{
 				p.SetState(123)
@@ -2289,14 +2482,33 @@ func (p *HerdParser) Hash() (localctx IHashContext) {
 
 			p.SetState(128)
 			p.GetErrorHandler().Sync(p)
+			if p.HasError() {
+				goto errorExit
+			}
 			_la = p.GetTokenStream().LA(1)
 		}
 		{
 			p.SetState(129)
 			p.Match(HerdParserT__3)
+			if p.HasError() {
+				// Recognition error - abort rule
+				goto errorExit
+			}
 		}
 
+	case antlr.ATNInvalidAltNumber:
+		goto errorExit
 	}
 
+errorExit:
+	if p.HasError() {
+		v := p.GetError()
+		localctx.SetException(v)
+		p.GetErrorHandler().ReportError(p, v)
+		p.GetErrorHandler().Recover(p, v)
+		p.SetError(nil)
+	}
+	p.ExitRule()
 	return localctx
+	goto errorExit // Trick to prevent compiler error if the label is not used
 }

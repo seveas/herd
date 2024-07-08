@@ -1,8 +1,5 @@
 run:
   tests: true
-  skip-files:
-    - ".*\\.pb\\.go$"
-    - "scripting/parser/herd_.*\\.go$"
 
 linters:
   enable:
@@ -34,7 +31,6 @@ linters:
     - nilerr
     - nilnil
     - noctx
-    - nolintlint
     - nosprintfhostport
     - prealloc
     - predeclared
@@ -58,6 +54,9 @@ linters:
 issues:
   max-same-issues: 0
   max-issues-per-linter: 0
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - "scripting/parser/herd_.*\\.go$"
   exclude-rules:
     # This needs to be disabled until we update the protobuf dependency
     - path: provider/plugin/common/grpc.go
