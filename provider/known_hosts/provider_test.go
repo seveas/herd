@@ -44,6 +44,8 @@ func TestParser(t *testing.T) {
 				return
 			}
 			expect := 3
+			hosts.SetSortFields([]string{"name"})
+			hosts.Sort()
 			if len(hosts.Get(0).PublicKeys()) != expect {
 				t.Errorf("Incorrect number of keys (%d) returned for the first host, expected %d", len(hosts.Get(0).PublicKeys()), expect)
 			}
