@@ -21,7 +21,7 @@ require (
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/miekg/dns v1.1.61
+	github.com/miekg/dns v1.1.62
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v1.2.0
 	github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351
@@ -32,16 +32,16 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/transip/gotransip/v6 v6.25.0
 	golang.org/x/crypto v0.26.0
-	golang.org/x/sys v0.23.0
-	google.golang.org/api v0.191.0
+	golang.org/x/sys v0.24.0
+	google.golang.org/api v0.192.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v2 v2.4.0
-	tailscale.com v1.70.0
+	tailscale.com v1.72.0
 )
 
 require (
-	cloud.google.com/go/auth v0.8.0 // indirect
+	cloud.google.com/go/auth v0.8.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.3 // indirect
 	cloud.google.com/go/compute/metadata v0.5.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
