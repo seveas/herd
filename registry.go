@@ -235,7 +235,6 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	sg.KeepAllResults(true)
 
 	for _, p := range r.providers {
-		p := p
 		sg.Run(ctx, func() (*HostSet, error) {
 			hosts, err := p.Load(ctx, lm)
 			lm(p.Name(), true, err)

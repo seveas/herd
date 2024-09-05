@@ -45,15 +45,15 @@ func (l *logrusLogger) format(msg string, args ...interface{}) string {
 }
 
 func (l *logrusLogger) Log(level hclog.Level, msg string, args ...interface{}) {
-	l.logger.Logf(levelMap[level], l.format(msg, args...))
+	l.logger.Log(levelMap[level], l.format(msg, args...))
 }
 
 func (l *logrusLogger) Trace(msg string, args ...interface{}) {
-	l.logger.Tracef(l.format(msg, args...))
+	l.logger.Trace(l.format(msg, args...))
 }
 
 func (l *logrusLogger) Debug(msg string, args ...interface{}) {
-	l.logger.Debugf(l.format(msg, args...))
+	l.logger.Debug(l.format(msg, args...))
 }
 
 func (l *logrusLogger) Info(msg string, args ...interface{}) {
@@ -64,15 +64,15 @@ func (l *logrusLogger) Info(msg string, args ...interface{}) {
 		l.Debug(msg, args...)
 		return
 	}
-	l.logger.Infof(l.format(msg, args...))
+	l.logger.Info(l.format(msg, args...))
 }
 
 func (l *logrusLogger) Warn(msg string, args ...interface{}) {
-	l.logger.Warnf(l.format(msg, args...))
+	l.logger.Warn(l.format(msg, args...))
 }
 
 func (l *logrusLogger) Error(msg string, args ...interface{}) {
-	l.logger.Errorf(l.format(msg, args...))
+	l.logger.Error(l.format(msg, args...))
 }
 
 func (l *logrusLogger) IsTrace() bool {

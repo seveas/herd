@@ -119,7 +119,6 @@ func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*her
 		if len(p.config.ExcludeDatacenters) != 0 && stringInList(p.config.ExcludeDatacenters, dc) {
 			continue
 		}
-		dc := dc
 		sg.Run(ctx, func() (*herd.HostSet, error) {
 			name := fmt.Sprintf("%s@%s", p.name, dc)
 			lm(name, false, nil)
@@ -179,7 +178,6 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (*herd.H
 	}
 	sg := scattergather.New[map[string]serviceInfo](5)
 	for service := range services {
-		service := service
 		sg.Run(ctx, func() (map[string]serviceInfo, error) {
 			ret := make(serviceInfo)
 			servicenodes, _, err := catalog.Service(service, "", opts)

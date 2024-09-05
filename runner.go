@@ -125,8 +125,6 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	}
 	r.current = scattergather.New[*Result](int64(count))
 	for index, host := range r.hosts.hosts {
-		index := index
-		host := host
 		r.current.Run(ctx, func() (*Result, error) {
 			if r.splay > 0 {
 				pc <- ProgressMessage{Host: host, State: Waiting}

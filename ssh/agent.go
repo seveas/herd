@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"sync"
@@ -153,8 +154,11 @@ func (a *agent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
 		return a.sshAgent.Sign(key, data)
 	}
 	req := ssh.Marshal(agentSignRequest{Key: key.Marshal(), Data: data, Flags: uint32(0)})
+	if len(req) > math.MaxUint32 {
+		return nil, errors.New("ssh agent request too large")
+	}
 	msg := make([]byte, 4+len(req))
-	binary.BigEndian.PutUint32(msg, uint32(len(req)))
+	binary.BigEndian.PutUint32(msg, uint32(len(req))) // nolint:gosec // Overflow is checked above
 	copy(msg[4:], req)
 
 	ch := make(chan agentResponse)

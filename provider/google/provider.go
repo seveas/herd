@@ -72,7 +72,6 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 	logrus.Debugf("GCP zones: %v", p.config.Zones)
 	sg := scattergather.New[*herd.HostSet](int64(len(p.config.Zones)))
 	for _, zone := range p.config.Zones {
-		zone := zone
 		sg.Run(ctx, func() (*herd.HostSet, error) {
 			name := fmt.Sprintf("%s@%s", p.name, zone)
 			lm(name, false, nil)
@@ -125,11 +124,11 @@ func sv(s *string) string {
 	return *s
 }
 
-func iv(i *uint64) int {
+func iv(i *uint64) uint64 {
 	if i == nil {
 		return 0
 	}
-	return int(*i)
+	return *i
 }
 
 func (p *googleProvider) loadZone(ctx context.Context, zone string) (*herd.HostSet, error) {
