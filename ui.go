@@ -151,7 +151,7 @@ func NewSimpleUI(hosts *HostSet) *SimpleUI {
 }
 
 func (ui *SimpleUI) getSize() {
-	w, h, err := readline.GetSize(int(ui.output.Fd()))
+	w, h, err := readline.GetSize(int(ui.output.Fd())) // nolint:gosec // FD's shouldn'tt reach higher than 2^31-1
 	if err == nil {
 		ui.width, ui.height = w, h
 		if w < 40 {

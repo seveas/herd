@@ -112,7 +112,6 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *
 	logrus.Debugf("AWS regions: %v", p.config.Regions)
 	sg := scattergather.New[*herd.HostSet](int64(len(p.config.Regions)))
 	for _, region := range p.config.Regions {
-		region := region
 		if len(p.config.ExcludeRegions) != 0 && stringInList(p.config.ExcludeRegions, region) {
 			continue
 		}

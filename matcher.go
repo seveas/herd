@@ -59,16 +59,20 @@ func (m MatchAttribute) Match(value interface{}) (matches bool) {
 		if m.Value == "nil" {
 			return value == nil
 		}
-		myival, err := strconv.ParseInt(m.Value.(string), 0, 64)
-		if err != nil {
-			return false
-		}
 		v := reflect.ValueOf(value)
 		switch v.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			myival, err := strconv.ParseInt(m.Value.(string), 0, 64)
+			if err != nil {
+				return false
+			}
 			return v.Int() == myival
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return int64(v.Uint()) == myival
+			myival, err := strconv.ParseUint(m.Value.(string), 0, 64)
+			if err != nil {
+				return false
+			}
+			return v.Uint() == myival
 		}
 	}
 	// Let's be gentle on all the int types in attributes
@@ -78,7 +82,7 @@ func (m MatchAttribute) Match(value interface{}) (matches bool) {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			return v.Int() == myival
 		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-			return int64(v.Uint()) == myival
+			return int64(v.Uint()) == myival // nolint:gosec // FIXME I need to take another look at this. Security implications are limited as this only affects which hosts to match.
 		}
 	}
 	return false

@@ -7,12 +7,12 @@ linters:
     - asciicheck
     - bidichk
     - bodyclose
+    - copyloopvar
     - dogsled
     - dupl
     - durationcheck
     - errcheck
     - errname
-    - exportloopref
     - forbidigo
     - gci
     - gocritic
