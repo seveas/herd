@@ -389,8 +389,11 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		counts := make(map[string]int)
 		groupCounts := make(map[string]map[any]int)
 		groupValues := make(map[string]bool)
+		totals := make(map[string]int)
+		total := 0
 
 		for _, host := range hosts {
+			total++
 			v := make([]string, len(opts.Count))
 			for i, attr := range opts.Count {
 				v[i] = fmt.Sprintf("%v", host.Attributes[attr])
@@ -410,6 +413,7 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				attr := fmt.Sprintf("%v", host.Attributes[opts.Group])
 				groupCounts[vs][attr]++
 				groupValues[attr] = true
+				totals[attr]++
 			}
 		}
 		if opts.SortByCount {
@@ -447,9 +451,9 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			copy(attrline, opts.Count)
 			copy(attrline[len(opts.Count):], groups)
 			if len(groups) == 0 {
-				attrline = append(attrline, "count")
+				attrline = append(attrline, "count", "percentage")
 			} else {
-				attrline = append(attrline, "total", "average", "stddev")
+				attrline = append(attrline, "total", "percentage", "average", "stddev")
 			}
 			writer.Write(attrline)
 		}
@@ -460,11 +464,28 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				v = append(v, fmt.Sprintf("%v", groupCounts[k][group]))
 				stats.Add(float64(groupCounts[k][group]))
 			}
-			v = append(v, fmt.Sprintf("%v", counts[k]))
+			v = append(v, fmt.Sprintf("%v", counts[k]), fmt.Sprintf("%v%%", f2s(float64(counts[k])/float64(total)*100)))
 			if stats.NumDataValues() != 0 {
 				v = append(v, f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
 			}
 
+			writer.Write(v)
+		}
+		if opts.Header {
+			v := []string{"total"}
+			for range len(opts.Count) - 1 {
+				v = append(v, "")
+			}
+			if opts.Group != "" {
+				stats := variance.New()
+				for _, group := range groups {
+					v = append(v, fmt.Sprintf("%v", totals[group]))
+					stats.Add(float64(totals[group]))
+				}
+				v = append(v, fmt.Sprintf("%v", total), "", f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
+			} else {
+				v = append(v, fmt.Sprintf("%v", total), "")
+			}
 			writer.Write(v)
 		}
 		// Start the pager after all if we are getting too wide
