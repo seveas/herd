@@ -1,6 +1,7 @@
 package ssh
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -30,7 +31,11 @@ func newAgent(pipelineTimeout time.Duration) (*agent, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Unable to connect to SSH agent: %s", err)
 	}
-	a := &agent{sshAgent: sshagent.NewClient(sock), waiters: make([]chan agentResponse, 0, 64)}
+	a := &agent{
+		sshAgent:      sshagent.NewClient(sock),
+		waiters:       make([]chan agentResponse, 0, 64),
+		signersByPath: make(map[string]ssh.Signer),
+	}
 
 	if _, ok := sock.(*net.UnixConn); ok {
 		// Determine whether we can use the faster pipelined ssh agent protocol
@@ -48,12 +53,6 @@ func newAgent(pipelineTimeout time.Duration) (*agent, error) {
 	}
 	if len(a.signers) == 0 {
 		return nil, fmt.Errorf("No keys found in ssh agent")
-	}
-
-	a.signersByPath = make(map[string]ssh.Signer)
-	for _, signer := range a.signers {
-		comment := signer.PublicKey().(*sshagent.Key).Comment
-		a.signersByPath[comment] = signer
 	}
 
 	return a, nil
@@ -244,14 +243,36 @@ func (a *agent) SignersForPathCallback(path string) func() ([]ssh.Signer, error)
 }
 
 func (a *agent) SignersForPath(path string) []ssh.Signer {
-	if path != "" {
-		if k, ok := a.signersByPath[path]; ok {
-			return []ssh.Signer{k}
-		} else {
-			return []ssh.Signer{}
+	if path == "" {
+		return a.signers
+	}
+	if k, ok := a.signersByPath[path]; ok {
+		return []ssh.Signer{k}
+	}
+	for _, signer := range a.signers {
+		if signer.PublicKey().(*sshagent.Key).Comment == path {
+			a.signersByPath[path] = signer
+			return []ssh.Signer{signer}
 		}
 	}
-	return a.signers
+
+	// If we didn't find the key, try again by parsing the public key and matching by key data
+	data, err := os.ReadFile(path + ".pub")
+	if err != nil {
+		return []ssh.Signer{}
+	}
+	key, _, _, _, err := ssh.ParseAuthorizedKey(data) //nolint:dogsled // Can't help it that we don't need the rest
+	if err != nil {
+		return []ssh.Signer{}
+	}
+	mkey := key.Marshal()
+	for _, signer := range a.signers {
+		if bytes.Equal(signer.PublicKey().Marshal(), mkey) {
+			a.signersByPath[path] = signer
+			return []ssh.Signer{signer}
+		}
+	}
+	return []ssh.Signer{}
 }
 
 type signer struct {
