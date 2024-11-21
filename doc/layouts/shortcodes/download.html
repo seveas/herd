@@ -1,4 +1,4 @@
-{{ range getJSON "https://api.github.com/repos/seveas/herd/releases?per_page=3" }}
+{{ range resources.GetRemote "https://api.github.com/repos/seveas/herd/releases?per_page=3" | transform.Unmarshal }}
 <div class="container clearfix">
 {{ $tag := .tag_name }}
 <h2>{{ .name }}</h2>
