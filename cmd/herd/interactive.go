@@ -37,7 +37,7 @@ func runInteractive(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	executor, err := ssh.NewExecutor(viper.GetDuration("SshAgentTimeout"), *currentUser.user, false)
+	executor, err := ssh.NewExecutor(viper.GetInt("SshAgentCount"), viper.GetDuration("SshAgentTimeout"), *currentUser.user, false)
 	if err != nil {
 		bail(err.Error())
 	}

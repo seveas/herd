@@ -118,6 +118,7 @@ Providers: %s
 	f.Duration("host-timeout", time.Minute, "Per-host timeout for commands")
 	f.Duration("connect-timeout", 15*time.Second, "Per-host ssh connect timeout")
 	f.Duration("ssh-agent-timeout", time.Second, "SSH agent timeout when checking functionality")
+	f.Int("ssh-agent-count", 50, "Number of parallel connections to the ssh agent")
 	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	f.Bool("no-pager", false, "Disable the use of the pager")
@@ -163,6 +164,12 @@ func initConfig() {
 	}
 
 	// Check configuration variables
+
+	// Limit concurrent ssh connections to parallelism
+	if viper.GetInt("Parallel") != 0 && viper.GetInt("Parallel") < viper.GetInt("SshAgentCount") {
+		viper.Set("SshAgentCount", viper.GetInt("Parallel"))
+	}
+
 	level, err := logrus.ParseLevel(viper.GetString("LogLevel"))
 	if err != nil {
 		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
