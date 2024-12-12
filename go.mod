@@ -29,7 +29,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
 	github.com/transip/gotransip/v6 v6.26.0
-	golang.org/x/crypto v0.30.0
+	golang.org/x/crypto v0.31.0
 	golang.org/x/sys v0.28.0
 	google.golang.org/api v0.205.0
 	google.golang.org/grpc v1.68.1
