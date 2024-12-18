@@ -19,9 +19,10 @@ type Executor struct {
 	agent          *agent
 	config         *config
 	connectTimeout time.Duration
+	disconnect     bool
 }
 
-func NewExecutor(agentTimeout time.Duration, user user.User) (herd.Executor, error) {
+func NewExecutor(agentTimeout time.Duration, user user.User, disconnect bool) (herd.Executor, error) {
 	agent, err := newAgent(agentTimeout)
 	if err != nil {
 		return nil, err
@@ -32,8 +33,9 @@ func NewExecutor(agentTimeout time.Duration, user user.User) (herd.Executor, err
 	}
 
 	return &Executor{
-		agent:  agent,
-		config: config,
+		agent:      agent,
+		config:     config,
+		disconnect: disconnect,
 	}, nil
 }
 
@@ -98,6 +100,10 @@ func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc 
 		}
 	} else {
 		r.ExitStatus = 0
+	}
+	if e.disconnect {
+		connection.Close()
+		host.Connection = nil
 	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()

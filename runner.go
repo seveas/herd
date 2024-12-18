@@ -218,6 +218,7 @@ func (r *Runner) End() {
 		if h.Connection != nil {
 			logrus.Debugf("Disconnecting from %s", h.Name)
 			h.Connection.Close()
+			h.Connection = nil
 		}
 	}
 }
