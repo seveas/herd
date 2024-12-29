@@ -55,8 +55,6 @@ func NewRunner(hosts *HostSet, executor Executor) *Runner {
 	return &Runner{
 		hosts:          hosts,
 		executor:       executor,
-		timeout:        60 * time.Second,
-		hostTimeout:    10 * time.Second,
 		signalHandlers: make(map[os.Signal]func()),
 	}
 }
@@ -77,11 +75,29 @@ func (r *Runner) SetTimeout(t time.Duration) {
 }
 
 func (r *Runner) GetTimeout() time.Duration {
-	return r.timeout
+	if r.timeout != 0 {
+		return r.timeout
+	}
+	if r.parallel == 0 || r.hostTimeout == 0 {
+		return r.hostTimeout
+	}
+	batches := len(r.hosts.hosts)/r.parallel + 1
+	return r.hostTimeout * time.Duration(batches)
 }
 
 func (r *Runner) SetHostTimeout(t time.Duration) {
 	r.hostTimeout = t
+}
+
+func (r *Runner) GetHostTimeout() time.Duration {
+	if r.hostTimeout != 0 {
+		return r.hostTimeout
+	}
+	if r.parallel == 0 || r.timeout == 0 {
+		return r.timeout
+	}
+	batches := len(r.hosts.hosts)/r.parallel + 1
+	return r.timeout / time.Duration(batches)
 }
 
 func (r *Runner) SetConnectTimeout(t time.Duration) {
@@ -131,7 +147,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 				r.splayDelay(ctx)
 			}
 			pc <- ProgressMessage{Host: host, State: Running}
-			ctx, cancel := context.WithTimeout(ctx, r.hostTimeout)
+			ctx, cancel := context.WithTimeout(ctx, r.GetHostTimeout())
 			defer cancel()
 			result := r.executor.Run(ctx, host, command, oc)
 			result.index = index
@@ -141,7 +157,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 		})
 	}
 	go func() {
-		timeout := time.After(r.timeout)
+		timeout := time.After(r.GetTimeout())
 		signals := make(chan os.Signal, 5)
 		for s := range r.signalHandlers {
 			signal.Notify(signals, s)

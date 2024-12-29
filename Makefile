@@ -64,7 +64,6 @@ test-build: provider-plugins-source
 
 ABORT ?= --exit-code-from herd --abort-on-container-exit
 test-integration:
-	go mod vendor
 	make -C integration/pki
 	test -e integration/openssh/user.key || ssh-keygen -t ecdsa -f integration/openssh/user.key -N ""
 	docker compose down || true

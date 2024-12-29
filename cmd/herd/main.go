@@ -110,18 +110,14 @@ Providers: %s
 		currentUser.historyDir,
 		currentUser.cacheDir,
 		strings.Join(herd.Providers(), ",")))
-	defaultAgentTimeout := 100 * time.Millisecond
-	if _, ok := os.LookupEnv("SSH_CONNECTION"); ok {
-		defaultAgentTimeout = 300 * time.Millisecond
-	}
 	cobra.OnInitialize(initConfig)
 	f := rootCmd.PersistentFlags()
 	f.Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
-	f.DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
+	f.DurationP("timeout", "t", 5*time.Minute, "Global timeout for commands")
 	f.Duration("load-timeout", 30*time.Second, "Timeout for loading host data from providers")
-	f.Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
-	f.Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
-	f.Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
+	f.Duration("host-timeout", time.Minute, "Per-host timeout for commands")
+	f.Duration("connect-timeout", 15*time.Second, "Per-host ssh connect timeout")
+	f.Duration("ssh-agent-timeout", time.Second, "SSH agent timeout when checking functionality")
 	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	f.Bool("no-pager", false, "Disable the use of the pager")
@@ -241,8 +237,13 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	handleSignals(runner)
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
-	runner.SetTimeout(viper.GetDuration("Timeout"))
-	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
+	// If only one of the timeouts was specified, we adjust the other based on batch size
+	if viper.IsSet("Timeout") || !viper.IsSet("HostTimeout") {
+		runner.SetTimeout(viper.GetDuration("Timeout"))
+	}
+	if viper.IsSet("HostTimeout") || !viper.IsSet("Timeout") {
+		runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
+	}
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
 	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
 }
