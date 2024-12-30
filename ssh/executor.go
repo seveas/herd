@@ -16,14 +16,14 @@ import (
 )
 
 type Executor struct {
-	agent          *agent
+	agent          *agentPool
 	config         *config
 	connectTimeout time.Duration
 	disconnect     bool
 }
 
-func NewExecutor(agentTimeout time.Duration, user user.User, disconnect bool) (herd.Executor, error) {
-	agent, err := newAgent(agentTimeout)
+func NewExecutor(agentCount int, agentTimeout time.Duration, user user.User, disconnect bool) (herd.Executor, error) {
+	agent, err := newAgentPool(agentCount, agentTimeout)
 	if err != nil {
 		return nil, err
 	}
