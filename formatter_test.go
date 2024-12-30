@@ -5,19 +5,11 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/sirupsen/logrus"
 )
 
 var results []*Result
 
-var testformatter = prettyFormatter{
-	colors: map[logrus.Level]string{
-		logrus.WarnLevel:  "yellow",
-		logrus.ErrorLevel: "red+b",
-		logrus.DebugLevel: "black+h",
-	},
-}
+var testformatter = newPrettyFormatter(defaultColorConfigDark)
 
 func init() {
 	i := 0
@@ -55,7 +47,7 @@ func init() {
 		},
 		{
 			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
-			Err:         fmt.Errorf("Process exited with status 1"),
+			Err:         fmt.Errorf("exited with status 1"),
 			ExitStatus:  1,
 			Stdout:      []byte{},
 			Stderr:      []byte("Text on stderr\nMore text\n"),
@@ -65,7 +57,7 @@ func init() {
 		},
 		{
 			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
-			Err:         fmt.Errorf("Process exited with status 1"),
+			Err:         fmt.Errorf("exited with status 1"),
 			ExitStatus:  1,
 			Stdout:      []byte("Text on stdout\n"),
 			Stderr:      []byte("Text on stderr\nMore text\n"),
@@ -95,8 +87,8 @@ func TestPrettyFormatterFormatStatus(t *testing.T) {
 		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"\033[0;32mtest-host-002.example.com  completed successfully after 12s\033[0m\n",
 		"\033[0;32mtest-host-003.example.com  completed successfully after 12s\033[0m\n",
-		"\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
-		"\033[0;31mtest-host-005.example.com  Process exited with status 1 after 12s\033[0m\n",
+		"\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n",
+		"\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n",
 		"\033[0;32mtest-host-006.example.com  completed successfully after 12s\033[0m\n",
 	}
 	for i, r := range results {
@@ -111,9 +103,9 @@ func TestPrettyFormatterFormatOutput(t *testing.T) {
 		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"\033[0;32mtest-host-002.example.com  \033[0mMay the forks be with you\n  And you\n",
 		"\033[0;32mtest-host-003.example.com  \033[0mNewline is added automatically\n",
-		"\033[0;31mtest-host-004.example.com  \033[0mText on stderr\n  More text\n\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n",
-		"\033[0;31mtest-host-005.example.com  \033[0mText on stdout\n\033[0;31mtest-host-005.example.com  \033[0mText on stderr\n  More text\n\033[0;31mtest-host-005.example.com  Process exited with status 1 after 12s\033[0m\n",
-		"\033[0;32mtest-host-006.example.com  \033[0mText on stdout without newline\n\x1b[0;31mtest-host-006.example.com  \x1b[0mText on stderr\n  More text\n",
+		"\033[0;33mtest-host-004.example.com  \033[0mText on stderr\n  More text\n\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n",
+		"\033[0;33mtest-host-005.example.com  \033[0mText on stdout\n\033[0;33mtest-host-005.example.com  \033[0mText on stderr\n  More text\n\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n",
+		"\033[0;32mtest-host-006.example.com  \033[0mText on stdout without newline\n\x1b[0;33mtest-host-006.example.com  \x1b[0mText on stderr\n  More text\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatOutput(r, 0); s != expected[i] {
@@ -127,8 +119,8 @@ func TestPrettyFormatterFormatResult(t *testing.T) {
 		"\033[0;31mtest-host-001.example.com  It's always DNS after 12s\033[0m\n",
 		"\033[0;32mtest-host-002.example.com  completed successfully after 12s\033[0m\n    May the forks be with you\n    And you\n",
 		"\033[0;32mtest-host-003.example.com  completed successfully after 12s\033[0m\n    Newline is added automatically\n",
-		"\033[0;31mtest-host-004.example.com  Process exited with status 1 after 12s\033[0m\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
-		"\033[0;31mtest-host-005.example.com  Process exited with status 1 after 12s\033[0m\n    Text on stdout\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
+		"\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
+		"\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n    Text on stdout\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
 		"\033[0;32mtest-host-006.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[0;90m----\x1b[0m\n    Text on stderr\n    More text\n",
 	}
 	for i, r := range results {
