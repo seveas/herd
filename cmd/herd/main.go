@@ -193,7 +193,25 @@ func bail(format string, args ...interface{}) {
 func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) {
 	hosts := new(herd.HostSet)
 	hosts.SetSortFields(viper.GetStringSlice("Sort"))
-	ui := herd.NewSimpleUI(hosts)
+	colors := viper.Sub("Colors")
+	colorConfig := herd.ColorConfig{}
+	if colors != nil {
+		colorConfig.LogDebug = colors.GetString("LogDebug")
+		colorConfig.LogInfo = colors.GetString("LogInfo")
+		colorConfig.LogWarn = colors.GetString("LogWarn")
+		colorConfig.LogError = colors.GetString("LogError")
+		colorConfig.Command = colors.GetString("Command")
+		colorConfig.Summary = colors.GetString("Summary")
+		colorConfig.Provider = colors.GetString("Provider")
+		colorConfig.HostStdout = colors.GetString("HostStdout")
+		colorConfig.HostStderr = colors.GetString("HostStderr")
+		colorConfig.HostOK = colors.GetString("HostOK")
+		colorConfig.HostFail = colors.GetString("HostFail")
+		colorConfig.HostError = colors.GetString("HostError")
+		colorConfig.HostCancel = colors.GetString("HostCancel")
+	}
+
+	ui := herd.NewSimpleUI(colorConfig, hosts)
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
 	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))

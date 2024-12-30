@@ -82,6 +82,29 @@ corresponds to the `--host-timeout` environment variable.
 | `Sort`            | List of strings | How to sort hosts before showing their results, not used for `tail` and `per-host` output                                             |
 | `Timestamp`       | Boolean         | Show a timestamp in front of command output in tail mode                                                                              |
 
+# Theming
+
+All colors used by herd can be customized with a `Colors` section in the configuration. The colors
+it understands are the standard ansi colors with some attributes. For a full specification, see
+https://github.com/mgutz/ansi
+
+```yaml
+Colors:
+  LogDebug:   black+h
+  LogInfo:    default
+  LogWarn:    yellow
+  LogError:   red+b
+  Command:    cyan
+  Summary:    black+h
+  Provider:   green
+  HostStdout: default
+  HostStderr: yellow
+  HostOK:     green
+  HostFail:   yellow
+  HostError:  red
+  HostCancel: black+h
+```
+
 # Other environment variables
 
 - Herd will automatically start a pager when its output spans more than one screen. This defaults to `less`, but can be overridden with the `PAGER` environment variable.

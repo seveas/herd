@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -30,6 +31,34 @@ type LoadingMessage func(string, bool, error)
 
 const clearLine string = "\r\033[2K"
 
+// A 256 bit bitmap mapping the 256 possible background colors to light (0) or dark (1)
+var darkBackground [4]uint64 = [4]uint64{
+	0xfff0_0003_ffff_00ff,
+	0xf000_3fff_ff00_003f,
+	0x0003_ffff_0000_3fff,
+	0x000f_ff00_003f_fff0,
+}
+
+func isBackgroundDark() bool {
+	color := os.Getenv("COLORFGBG")
+	if color == "" {
+		return false
+	}
+	parts := strings.Split(color, ";")
+	if len(parts) != 2 {
+		return false
+	}
+	bg, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return false
+	}
+	if bg > 255 {
+		return false
+	}
+	// The 256 bit bitmap is split into 4 64 bit integers, so we need to shift and mask
+	return darkBackground[bg>>6]&(1<<(bg&0x3f)) != 0
+}
+
 const (
 	OutputTail OutputMode = iota
 	OutputPerhost
@@ -42,6 +71,98 @@ var outputModeString map[OutputMode]string = map[OutputMode]string{
 	OutputPerhost: "per-host",
 	OutputInline:  "inline",
 	OutputAll:     "all",
+}
+
+type ColorConfig struct {
+	LogDebug   string
+	LogInfo    string
+	LogWarn    string
+	LogError   string
+	Command    string
+	Summary    string
+	Provider   string
+	HostStdout string
+	HostStderr string
+	HostOK     string
+	HostFail   string
+	HostError  string
+	HostCancel string
+}
+
+func (c ColorConfig) Merge(other ColorConfig) ColorConfig {
+	if c.LogDebug == "" {
+		c.LogDebug = other.LogDebug
+	}
+	if c.LogInfo == "" {
+		c.LogInfo = other.LogInfo
+	}
+	if c.LogWarn == "" {
+		c.LogWarn = other.LogWarn
+	}
+	if c.LogError == "" {
+		c.LogError = other.LogError
+	}
+	if c.Command == "" {
+		c.Command = other.Command
+	}
+	if c.Summary == "" {
+		c.Summary = other.Summary
+	}
+	if c.Provider == "" {
+		c.Provider = other.Provider
+	}
+	if c.HostStdout == "" {
+		c.HostStdout = other.HostStdout
+	}
+	if c.HostStderr == "" {
+		c.HostStderr = other.HostStderr
+	}
+	if c.HostOK == "" {
+		c.HostOK = other.HostOK
+	}
+	if c.HostFail == "" {
+		c.HostFail = other.HostFail
+	}
+	if c.HostError == "" {
+		c.HostError = other.HostError
+	}
+	if c.HostCancel == "" {
+		c.HostCancel = other.HostCancel
+	}
+	return c
+}
+
+// FIXME: this is just a copy of the dark theme
+var defaultColorConfigLight = ColorConfig{
+	LogDebug:   "black+h",
+	LogInfo:    "default",
+	LogWarn:    "yellow",
+	LogError:   "red+b",
+	Command:    "cyan",
+	Summary:    "black+h",
+	Provider:   "green",
+	HostStdout: "default",
+	HostStderr: "yellow",
+	HostOK:     "green",
+	HostFail:   "yellow",
+	HostError:  "red",
+	HostCancel: "black+h",
+}
+
+var defaultColorConfigDark = ColorConfig{
+	LogDebug:   "black+h",
+	LogInfo:    "default",
+	LogWarn:    "yellow",
+	LogError:   "red+b",
+	Command:    "cyan",
+	Summary:    "black+h",
+	Provider:   "green",
+	HostStdout: "default",
+	HostStderr: "yellow",
+	HostOK:     "green",
+	HostFail:   "yellow",
+	HostError:  "red",
+	HostCancel: "black+h",
 }
 
 type SettingsFunc func() (string, map[string]interface{})
@@ -80,6 +201,7 @@ type HostListOptions struct {
 
 type SimpleUI struct {
 	hosts           *HostSet
+	colors          ColorConfig
 	output          *os.File
 	atStart         bool
 	lastProgress    string
@@ -117,15 +239,16 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
-func NewSimpleUI(hosts *HostSet) *SimpleUI {
-	f := prettyFormatter{
-		colors: map[logrus.Level]string{
-			logrus.WarnLevel:  "yellow",
-			logrus.ErrorLevel: "red+b",
-			logrus.DebugLevel: "black+h",
-		},
+func NewSimpleUI(colors ColorConfig, hosts *HostSet) *SimpleUI {
+	defaultColorConfig := defaultColorConfigLight
+	if isBackgroundDark() {
+		defaultColorConfig = defaultColorConfigDark
 	}
+	colors = colors.Merge(defaultColorConfig)
+
+	f := newPrettyFormatter(colors)
 	ui := &SimpleUI{
+		colors:       colors,
 		hosts:        hosts,
 		output:       os.Stdout,
 		outputMode:   OutputAll,
@@ -562,7 +685,7 @@ func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	if len(cs) > ui.width-25 {
 		cs = cs[:ui.width-30] + "..."
 	}
-	ui.pchan <- clearLine + fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, "green"))
+	ui.pchan <- clearLine + fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, ui.colors.Provider))
 }
 
 func (ui *SimpleUI) OutputChannel() chan OutputLine {
@@ -582,7 +705,7 @@ func (ui *SimpleUI) OutputChannel() chan OutputLine {
 			}
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
 			if msg.Stderr {
-				name = ansi.Color(name, "red")
+				name = ansi.Color(name, ui.colors.HostStderr)
 			}
 			line := msg.Data
 			// Strip all text up to the last embedded \r, unless that is part of a \r\n
