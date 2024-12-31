@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"runtime/pprof"
 	"runtime/trace"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -271,4 +273,72 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	}
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
 	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
+}
+
+func historyFile(dir string) string {
+	// Read existing history, migrate if needed
+	hist, err := os.ReadDir(dir)
+	if err != nil {
+		logrus.Warnf("Could not read history directory %s: %s", dir, err)
+		return filepath.Join(dir, time.Now().Format("2006-01-02_150405.json"))
+	}
+	mustMigrate := false
+	seq := 0
+	hist = slices.DeleteFunc(hist, func(e os.DirEntry) bool {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			return true
+		}
+		parts := strings.Split(e.Name(), "_")
+		if len(parts) != 3 {
+			mustMigrate = true
+			return false
+		}
+		s, err := strconv.Atoi(parts[0])
+		if err != nil {
+			logrus.Warnf("Could not parse history file name %s: %s", hist[len(hist)-1].Name(), err)
+			return true
+		}
+		if s > seq {
+			seq = s
+		}
+		return false
+	})
+	if mustMigrate {
+		migrateHistory(dir, hist)
+		hist, _ = os.ReadDir(dir)
+		hist = slices.DeleteFunc(hist, func(e os.DirEntry) bool {
+			return e.IsDir() || !strings.HasSuffix(e.Name(), ".json")
+		})
+	}
+
+	return filepath.Join(dir, fmt.Sprintf("%d_%s.json", seq+1, time.Now().Format("2006-01-02_150405")))
+}
+
+func migrateHistory(dir string, hist []os.DirEntry) {
+	logrus.Warnf("Migrating history in %s", dir)
+	type entry struct {
+		oldName string
+		newName string
+	}
+	entries := make([]entry, 0, len(hist))
+	for i, e := range hist {
+		parts := strings.Split(e.Name(), "_")
+		if len(parts) != 2 && len(parts) != 3 {
+			logrus.Warnf("Could not parse history file name %s, skipping migration", e.Name())
+			continue
+		}
+		entries = append(entries, entry{
+			oldName: e.Name(),
+			newName: fmt.Sprintf("%d_%s_%s", i+1, parts[len(parts)-2], parts[len(parts)-1]),
+		})
+	}
+	for _, e := range entries {
+		if e.oldName == e.newName {
+			continue
+		}
+		logrus.Infof("Migrating history: %s => %s\n", e.oldName, e.newName)
+		if err := os.Rename(filepath.Join(dir, e.oldName), filepath.Join(dir, e.newName)); err != nil {
+			logrus.Warnf("Could not rename %s to %s: %s", e.oldName, e.newName, err)
+		}
+	}
 }
