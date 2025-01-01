@@ -54,6 +54,16 @@ func (s *HostSet) Search(hostnameGlob string, attributes MatchAttributes) *HostS
 	return &HostSet{hosts: hosts, maxNameLength: maxNameLength(hosts)}
 }
 
+func (s *HostSet) Filter(f func(*Host) bool) *HostSet {
+	hosts := make([]*Host, 0)
+	for _, host := range s.hosts {
+		if f(host) {
+			hosts = append(hosts, host)
+		}
+	}
+	return &HostSet{hosts: hosts, maxNameLength: maxNameLength(hosts)}
+}
+
 func (s *HostSet) AddHost(host *Host) {
 	s.hosts = append(s.hosts, host)
 	if l := len(host.Name); l > s.maxNameLength {

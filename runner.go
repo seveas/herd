@@ -151,7 +151,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			defer cancel()
 			result := r.executor.Run(ctx, host, command, oc)
 			result.index = index
-			host.lastResult = result
+			host.LastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			return result, nil
 		})
@@ -198,7 +198,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	for index, host := range r.hosts.hosts {
 		if hi.Results[index] == nil {
 			result := &Result{Host: host.Name, ExitStatus: -1, Err: errors.New("context canceled")}
-			host.lastResult = result
+			host.LastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
 			hi.Results[index] = result
 			hi.Summary.Err++
@@ -209,7 +209,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			// We re-sort hosts and results according to the result of the last command
 			r.hosts.Sort()
 			for idx, host := range r.hosts.hosts {
-				host.lastResult.index = idx
+				host.LastResult.index = idx
 			}
 			sort.Slice(hi.Results, func(i, j int) bool { return hi.Results[i].index < hi.Results[j].index })
 			break

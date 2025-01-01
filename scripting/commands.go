@@ -66,9 +66,6 @@ type addHostsCommand struct {
 
 func (c addHostsCommand) execute(e *ScriptEngine) {
 	hosts := e.Registry.Search(c.glob, c.attributes, c.sampled, c.count)
-	if strings.HasPrefix(c.glob, "file:") {
-		e.Hosts.SetSortFields([]string{})
-	}
 	e.Hosts.AddHosts(hosts)
 }
 

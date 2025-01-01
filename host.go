@@ -34,8 +34,8 @@ type Host struct {
 	Address    string
 	Attributes HostAttributes
 	Connection io.Closer
+	LastResult *Result
 	publicKeys []ssh.PublicKey
-	lastResult *Result
 	csum       uint32
 }
 
@@ -154,7 +154,7 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 	if ok {
 		return value, ok
 	}
-	r := h.lastResult
+	r := h.LastResult
 	if r == nil {
 		r = &Result{ExitStatus: -1}
 	}
