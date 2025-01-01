@@ -38,6 +38,18 @@ type Result struct {
 	index       int
 }
 
+type resultx struct {
+	Host        string
+	ExitStatus  int
+	Stdout      string
+	Stderr      string
+	Err         any
+	ErrString   string
+	StartTime   time.Time
+	EndTime     time.Time
+	ElapsedTime float64
+}
+
 func newHistoryItem(command string, nhosts int) *HistoryItem {
 	return &HistoryItem{
 		Command:   command,
@@ -63,21 +75,36 @@ func (h *HistoryItem) end() {
 }
 
 func (r Result) MarshalJSON() ([]byte, error) {
-	r_ := map[string]interface{}{
-		"Host":        r.Host,
-		"ExitStatus":  r.ExitStatus,
-		"Stdout":      string(r.Stdout),
-		"Stderr":      string(r.Stderr),
-		"Err":         r.Err,
-		"ErrString":   "",
-		"StartTime":   r.StartTime,
-		"EndTime":     r.EndTime,
-		"ElapsedTime": r.ElapsedTime,
+	r_ := resultx{
+		Host:        r.Host,
+		ExitStatus:  r.ExitStatus,
+		Stdout:      string(r.Stdout),
+		Stderr:      string(r.Stderr),
+		Err:         r.Err,
+		ErrString:   "",
+		StartTime:   r.StartTime,
+		EndTime:     r.EndTime,
+		ElapsedTime: r.ElapsedTime,
 	}
 	if r.Err != nil {
-		r_["ErrString"] = r.Err.Error()
+		r_.ErrString = r.Err.Error()
 	}
 	return json.Marshal(r_)
+}
+
+func (r *Result) UnmarshalJSON(data []byte) error {
+	r_ := resultx{}
+	if err := json.Unmarshal(data, &r_); err != nil {
+		return err
+	}
+	r.Host = r_.Host
+	r.ExitStatus = r_.ExitStatus
+	r.Stdout = []byte(r_.Stdout)
+	r.Stderr = []byte(r_.Stderr)
+	r.StartTime = r_.StartTime
+	r.EndTime = r_.EndTime
+	r.ElapsedTime = r_.ElapsedTime
+	return nil
 }
 
 func (r Result) String() string {

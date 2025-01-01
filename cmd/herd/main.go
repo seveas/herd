@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
@@ -10,6 +11,7 @@ import (
 	"runtime/pprof"
 	"runtime/trace"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -227,6 +229,9 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	ui.BindLogrus()
 
 	registry := herd.NewRegistry(currentUser.dataDir, currentUser.cacheDir)
+	registry.AddGlobPrefix("hist:", func(glob string, hs *herd.HostSet) (*herd.HostSet, error) {
+		return historyFilter(currentUser.historyDir, glob, hs)
+	})
 	conf := viper.Sub("Providers")
 	if conf != nil {
 		if err := registry.LoadProviders(conf); err != nil {
@@ -341,4 +346,93 @@ func migrateHistory(dir string, hist []os.DirEntry) {
 			logrus.Warnf("Could not rename %s to %s: %s", e.oldName, e.newName, err)
 		}
 	}
+}
+
+func historyFilter(historyDir, glob string, hs *herd.HostSet) (*herd.HostSet, error) {
+	num, err := strconv.Atoi(glob)
+	if err != nil {
+		return nil, err
+	}
+
+	hist, err := getHistoryByIndex(historyDir, num)
+	if err != nil {
+		return nil, err
+	}
+
+	hi := hist[len(hist)-1]
+
+	seen := make(map[string]*herd.Result)
+	for _, r := range hi.Results {
+		seen[r.Host] = r
+	}
+
+	return hs.Filter(func(h *herd.Host) bool {
+		if _, ok := seen[h.Name]; !ok {
+			return false
+		}
+		h.LastResult = seen[h.Name]
+		return true
+	}), nil
+}
+
+func getHistoryByIndex(historyDir string, index int) (herd.History, error) {
+	hd, err := os.ReadDir(historyDir)
+	if err != nil {
+		return nil, err
+	}
+	fn := ""
+	if index >= 0 {
+		prefix := fmt.Sprintf("%d_", index)
+		for _, e := range hd {
+			if strings.HasPrefix(e.Name(), prefix) {
+				fn = e.Name()
+				break
+			}
+		}
+		if fn == "" {
+			return nil, fmt.Errorf("No history file found for %d", index)
+		}
+	} else {
+		type entry struct {
+			name string
+			num  int
+		}
+		entries := make([]entry, 0, len(hd))
+		for _, e := range hd {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+				continue
+			}
+			parts := strings.Split(e.Name(), "_")
+			if len(parts) != 3 {
+				continue
+			}
+			n, err := strconv.Atoi(parts[0])
+			if err != nil {
+				continue
+			}
+			entries = append(entries, entry{name: e.Name(), num: n})
+		}
+
+		if index < -len(entries) {
+			return nil, fmt.Errorf("Fewer than %d history files available", -index)
+		}
+
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].num < entries[j].num
+		})
+		fn = entries[len(entries)+index].name
+	}
+	logrus.Debugf("Mapped history index %d to filename %s", index, fn)
+	var hist herd.History
+
+	data, err := os.ReadFile(filepath.Join(historyDir, fn))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(data, &hist); err != nil {
+		return nil, err
+	}
+
+	return hist, nil
 }
