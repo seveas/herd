@@ -97,7 +97,11 @@ func (c *Cache) mustRefresh() bool {
 func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
-		return c.loadCache()
+		name := fmt.Sprintf("cache (%s)", c.source.Name())
+		lm(name, false, nil)
+		hs, err := c.loadCache()
+		lm(name, true, err)
+		return hs, err
 	}
 	hosts, err := c.source.Load(ctx, lm)
 	if err == nil {
