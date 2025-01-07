@@ -310,9 +310,18 @@ func fileFilter(fn string, hs *HostSet) (*HostSet, error) {
 	for scanner.Scan() {
 		seen[strings.TrimSpace(scanner.Text())] = true
 	}
-	return hs.Filter(func(h *Host) bool {
-		return seen[h.Name]
-	}), nil
+	hs = hs.Filter(func(h *Host) bool {
+		if _, ok := seen[h.Name]; !ok {
+			return false
+		}
+		delete(seen, h.Name)
+		return true
+	})
+	// We synthesize hosts that were not yet seen in the inventory
+	for h := range seen {
+		hs.hosts = append(hs.hosts, NewHost(h, "", HostAttributes{}))
+	}
+	return hs, nil
 }
 
 func (r *Registry) Settings() (string, map[string]interface{}) {
