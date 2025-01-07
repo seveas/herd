@@ -314,6 +314,7 @@ func historyFile(dir string) string {
 		hist = slices.DeleteFunc(hist, func(e os.DirEntry) bool {
 			return e.IsDir() || !strings.HasSuffix(e.Name(), ".json")
 		})
+		seq = len(hist)
 	}
 
 	return filepath.Join(dir, fmt.Sprintf("%d_%s.json", seq+1, time.Now().Format("2006-01-02_150405")))
@@ -326,7 +327,7 @@ func migrateHistory(dir string, hist []os.DirEntry) {
 		newName string
 	}
 	entries := make([]entry, 0, len(hist))
-	for i, e := range hist {
+	for _, e := range hist {
 		parts := strings.Split(e.Name(), "_")
 		if len(parts) != 2 && len(parts) != 3 {
 			logrus.Warnf("Could not parse history file name %s, skipping migration", e.Name())
@@ -334,14 +335,18 @@ func migrateHistory(dir string, hist []os.DirEntry) {
 		}
 		entries = append(entries, entry{
 			oldName: e.Name(),
-			newName: fmt.Sprintf("%d_%s_%s", i+1, parts[len(parts)-2], parts[len(parts)-1]),
+			newName: fmt.Sprintf("%s_%s", parts[len(parts)-2], parts[len(parts)-1]),
 		})
 	}
-	for _, e := range entries {
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].newName < entries[j].newName
+	})
+	for i, e := range entries {
+		e.newName = fmt.Sprintf("%d_%s", i+1, e.newName)
 		if e.oldName == e.newName {
 			continue
 		}
-		logrus.Infof("Migrating history: %s => %s\n", e.oldName, e.newName)
+		logrus.Debugf("Migrating history: %s => %s", e.oldName, e.newName)
 		if err := os.Rename(filepath.Join(dir, e.oldName), filepath.Join(dir, e.newName)); err != nil {
 			logrus.Warnf("Could not rename %s to %s: %s", e.oldName, e.newName, err)
 		}
