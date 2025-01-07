@@ -125,6 +125,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	} else {
 		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.Signers)}
 	}
+	cc.Auth = append(cc.Auth, ssh.KeyboardInteractive(e.emptyPasswordCallback))
 	address := host.Address
 	if address == "" {
 		address = host.Name
@@ -177,6 +178,15 @@ func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *config
 	default:
 		return fmt.Errorf("ssh: no host key found for %s", host.Name)
 	}
+}
+
+func (e *Executor) emptyPasswordCallback(name, instruction string, questions []string, echos []bool) (answers []string, err error) {
+	// All we support is an empty challenge, which does not require a response
+	// but can be added by some 2fa stacks if the 2fa part is bypassed
+	if name == "" && instruction == "" && len(questions) == 0 {
+		return []string{}, nil
+	}
+	return make([]string, len(questions)), fmt.Errorf("keyboard-interactive authentication not supported")
 }
 
 var _ herd.Executor = &Executor{}
