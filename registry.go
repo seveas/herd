@@ -298,6 +298,14 @@ func (r *Registry) AddGlobPrefix(prefix string, fnc func(string, *HostSet) (*Hos
 	r.globPrefixes[prefix] = fnc
 }
 
+func (r *Registry) GlobPrefixes() []string {
+	ret := make([]string, 0, len(r.globPrefixes))
+	for k := range r.globPrefixes {
+		ret = append(ret, k)
+	}
+	return ret
+}
+
 func fileFilter(fn string, hs *HostSet) (*HostSet, error) {
 	seen := make(map[string]bool)
 	file, err := os.Open(fn)
