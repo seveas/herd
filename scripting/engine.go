@@ -40,7 +40,7 @@ func (e *ScriptEngine) ParseCommandLine(args []string, splitAt int) error {
 		filters = filters[:splitAt]
 	}
 	comparison := regexp.MustCompile("^(.*?)(=~|==?|!=|!~)(.*)$")
-	sampling := regexp.MustCompile("((?:(?:[^:]*):)+)([0-9]+)")
+	sampling := regexp.MustCompile("^((?:(?:[^:]*):)+)([0-9]+)$")
 	// First we add hosts from the command line, in all modes
 	commands := make([]command, 0)
 	add := true
@@ -48,7 +48,19 @@ hostspecLoop:
 	for len(filters) > 0 {
 		glob := filters[0]
 		// Do we have a glob or not?
-		if comparison.MatchString(glob) || sampling.MatchString(glob) {
+		haveGlob := true
+		if comparison.MatchString(glob) {
+			haveGlob = false
+		} else if sampling.MatchString(glob) {
+			haveGlob = false
+			for _, prefix := range e.Registry.GlobPrefixes() {
+				if strings.HasPrefix(glob, prefix) {
+					haveGlob = true
+					break
+				}
+			}
+		}
+		if !haveGlob {
 			glob = "*"
 		} else {
 			filters = filters[1:]
