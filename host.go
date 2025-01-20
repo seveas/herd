@@ -124,8 +124,7 @@ func (h Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s}", h.Name, len(h.publicKeys), h.Attributes)
 }
 
-// Adds a public key to a host. Used by the ssh know hosts provider, but can be
-// used by any other code as well.
+// Adds a public key to a host, it will be used by the SSH client when connecting
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }

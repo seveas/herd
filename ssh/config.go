@@ -73,6 +73,22 @@ func newConfigBlock(globs []string) *configBlock {
 		clientConfig: &ssh.ClientConfig{
 			ClientVersion: clientVersion,
 			Timeout:       3 * time.Second,
+			HostKeyAlgorithms: []string{
+				// We make this match openssh's default host key algorithms minus the sk- variants
+				ssh.CertAlgoED25519v01,
+				ssh.CertAlgoECDSA256v01,
+				ssh.CertAlgoECDSA384v01,
+				ssh.CertAlgoECDSA521v01,
+				ssh.CertAlgoRSASHA512v01,
+				ssh.CertAlgoRSASHA256v01,
+				ssh.KeyAlgoED25519,
+				ssh.KeyAlgoECDSA256,
+				ssh.KeyAlgoECDSA384,
+				ssh.KeyAlgoECDSA521,
+				ssh.KeyAlgoRSASHA512,
+				ssh.KeyAlgoRSASHA256,
+				ssh.KeyAlgoRSA,
+			},
 		},
 	}
 }
