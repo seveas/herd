@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"golang.org/x/crypto/ssh"
 )
@@ -104,11 +105,16 @@ func (h *Host) init() {
 	}
 	if keys, ok := h.Attributes["__publicKeys"]; ok {
 		for _, k := range keys.([]any) {
-			if b, err := base64.StdEncoding.DecodeString(k.(string)); err != nil {
-				if key, err := ssh.ParsePublicKey(b); err != nil {
-					h.AddPublicKey(key)
-				}
+			b, err := base64.StdEncoding.DecodeString(k.(string))
+			if err != nil {
+				logrus.Errorf("Unable to decode marshaledpublic key for %s: %s", h.Name, err)
+				continue
 			}
+			key, err := ssh.ParsePublicKey(b)
+			if err != nil {
+				logrus.Errorf("Unable to parse public key for %s: %s", h.Name, err)
+			}
+			h.AddPublicKey(key)
 		}
 		delete(h.Attributes, "__publicKeys")
 	}
