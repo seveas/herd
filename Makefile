@@ -12,7 +12,7 @@ ifeq ("", "$(strip $(shell which protoc))")
 	protobuf_sources :=
 else ifeq ("", "$(strip $(shell which protoc-gen-go))")
 	protobuf_sources :=
-else ifeq ("", "$(strip $(shell which protoc-gen-go-crpc))")
+else ifeq ("", "$(strip $(shell which protoc-gen-go-grpc))")
 	protobuf_sources :=
 else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
