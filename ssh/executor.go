@@ -22,7 +22,7 @@ import (
 type Executor struct {
 	agent          *agentPool
 	knownHosts     ssh.HostKeyCallback
-	config         *config
+	user           user.User
 	connectTimeout time.Duration
 	disconnect     bool
 }
@@ -30,10 +30,6 @@ type Executor struct {
 func NewExecutor(agentCount int, agentTimeout time.Duration, user user.User, disconnect bool) (herd.Executor, error) {
 	agent, err := newAgentPool(agentCount, agentTimeout)
 	if err != nil {
-		return nil, err
-	}
-	config := newConfig(user)
-	if err := config.readOpenSSHConfig(); err != nil {
 		return nil, err
 	}
 
@@ -55,7 +51,7 @@ func NewExecutor(agentCount int, agentTimeout time.Duration, user user.User, dis
 
 	return &Executor{
 		agent:      agent,
-		config:     config,
+		user:       user,
 		knownHosts: knownHosts,
 		disconnect: disconnect,
 	}, nil
@@ -136,7 +132,10 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	if host.Connection != nil {
 		return host.Connection.(*ssh.Client), nil
 	}
-	config := e.config.forHost(host)
+	config, err := configForHost(host, &e.user)
+	if err != nil {
+		return nil, err
+	}
 	cc := config.clientConfig
 	cc.Timeout = e.connectTimeout
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
@@ -175,7 +174,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	}
 }
 
-func (e *Executor) hostKeyCallback(host *herd.Host, port int, remote net.Addr, key ssh.PublicKey, c *configBlock) error {
+func (e *Executor) hostKeyCallback(host *herd.Host, port int, remote net.Addr, key ssh.PublicKey, c *config) error {
 	// Do we have the key?
 	bkey := key.Marshal()
 	for _, pkey := range host.PublicKeys() {

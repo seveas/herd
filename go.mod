@@ -16,6 +16,7 @@ require (
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.2
 	github.com/jarcoal/httpmock v1.3.1
+	github.com/kevinburke/ssh_config v1.2.0
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
