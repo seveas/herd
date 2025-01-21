@@ -17,7 +17,7 @@ import (
 )
 
 func init() {
-	herd.RegisterProvider("known_hosts", newProvider, magicProvider)
+	herd.RegisterProvider("known_hosts", newProvider, nil)
 }
 
 type knownHostsProvider struct {

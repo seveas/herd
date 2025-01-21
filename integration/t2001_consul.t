@@ -1,6 +1,6 @@
 #!/bin/sh
 
-test_description="HTTP provider"
+test_description="Consul provider"
 
 . ./sharness.sh
 
