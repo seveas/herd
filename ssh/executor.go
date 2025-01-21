@@ -3,9 +3,12 @@ package ssh
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -13,10 +16,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type Executor struct {
 	agent          *agentPool
+	knownHosts     ssh.HostKeyCallback
 	config         *config
 	connectTimeout time.Duration
 	disconnect     bool
@@ -32,9 +37,26 @@ func NewExecutor(agentCount int, agentTimeout time.Duration, user user.User, dis
 		return nil, err
 	}
 
+	files := []string{}
+	if _, err := os.Stat("/etc/ssh/ssh_known_hosts"); err == nil {
+		files = append(files, "/etc/ssh/ssh_known_hosts")
+	}
+	if home, ok := os.LookupEnv("HOME"); ok {
+		f := filepath.Join(home, ".ssh", "known_hosts")
+		if _, err := os.Stat(f); err == nil {
+			files = append(files, f)
+		}
+	}
+
+	knownHosts, err := knownhosts.New(files...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Executor{
 		agent:      agent,
 		config:     config,
+		knownHosts: knownHosts,
 		disconnect: disconnect,
 	}, nil
 }
@@ -118,7 +140,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	cc := config.clientConfig
 	cc.Timeout = e.connectTimeout
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-		return e.hostKeyCallback(host, key, config)
+		return e.hostKeyCallback(host, config.port, remote, key, config)
 	}
 	if config.identityFile != "" {
 		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.SignersForPathCallback(config.identityFile))}
@@ -153,7 +175,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	}
 }
 
-func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *configBlock) error {
+func (e *Executor) hostKeyCallback(host *herd.Host, port int, remote net.Addr, key ssh.PublicKey, c *configBlock) error {
 	// Do we have the key?
 	bkey := key.Marshal()
 	for _, pkey := range host.PublicKeys() {
@@ -166,6 +188,27 @@ func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *config
 	if c.verifyHostKeyDns && verifyHostKeyDns(host.Name, key) {
 		host.AddPublicKey(key)
 		return nil
+	}
+
+	// We don't have a key, but is it in known_hosts?
+	err := e.knownHosts(net.JoinHostPort(host.Name, strconv.Itoa(port)), remote, key)
+	if err == nil {
+		host.AddPublicKey(key)
+		return nil
+	}
+
+	if errors.Is(err, &knownhosts.RevokedError{}) {
+		return fmt.Errorf("ssh: host key for %s revoked", host.Name)
+	}
+
+	var ke *knownhosts.KeyError
+	if errors.As(err, &ke) {
+		for _, k := range ke.Want {
+			if k.Key.Type() == key.Type() {
+				logrus.Errorf("ssh: host key mismatch for %s, expected %v, got %v", host.Name, ke.Want[0].Key.Type(), key.Type())
+				return fmt.Errorf("ssh: host key mismatch for %s", host.Name)
+			}
+		}
 	}
 
 	switch c.strictHostKeyChecking {
