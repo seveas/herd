@@ -23,15 +23,18 @@ this is all you need. But if either of those is not true, you'll quickly run int
 
 ## Timeouts
 
-Herd has very aggressive default timeouts, mostly to force you to think about reasonable timeouts
-for your commands if they take more than a few seconds. There are three timeouts:
+Herd has default timeouts that should work well for shorter commands. If you run longer commands,
+make sure you increase either timeout or host timeout
 
-- `--connect-timeout` is how long TCP connections and SSH sessions may take to establish (3s by default)
-- `--host-timeout` is how long a command may take on a host, including connection setup (10s by default)
-- `--timeout` is a global timeout, 1 minute by default
+- `--connect-timeout` is how long TCP connections and SSH sessions may take to establish (15s by default)
+- `--host-timeout` is how long a command may take on a host, including connection setup (1 minute by default)
+- `--timeout` is a global timeout, 5 minutes by default
 
 These parameters take go-style arguments, so `1` means one nanosecond, `1s` means one second, `1m` one
 minute and `1h` one hour.
+
+If you specify either a global timeout or a host timeout, the other timeout will be adjusted based
+on the parallelism you specify.
 
 ## Thundering herds
 
