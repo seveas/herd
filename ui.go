@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"text/template"
@@ -30,6 +31,34 @@ type LoadingMessage func(string, bool, error)
 
 const clearLine string = "\r\033[2K"
 
+// A 256 bit bitmap mapping the 256 possible background colors to light (0) or dark (1)
+var darkBackground [4]uint64 = [4]uint64{
+	0xfff0_0003_ffff_00ff,
+	0xf000_3fff_ff00_003f,
+	0x0003_ffff_0000_3fff,
+	0x000f_ff00_003f_fff0,
+}
+
+func isBackgroundDark() bool {
+	color := os.Getenv("COLORFGBG")
+	if color == "" {
+		return false
+	}
+	parts := strings.Split(color, ";")
+	if len(parts) != 2 {
+		return false
+	}
+	bg, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return false
+	}
+	if bg > 255 {
+		return false
+	}
+	// The 256 bit bitmap is split into 4 64 bit integers, so we need to shift and mask
+	return darkBackground[bg>>6]&(1<<(bg&0x3f)) != 0
+}
+
 const (
 	OutputTail OutputMode = iota
 	OutputPerhost
@@ -44,6 +73,98 @@ var outputModeString map[OutputMode]string = map[OutputMode]string{
 	OutputAll:     "all",
 }
 
+type ColorConfig struct {
+	LogDebug   string
+	LogInfo    string
+	LogWarn    string
+	LogError   string
+	Command    string
+	Summary    string
+	Provider   string
+	HostStdout string
+	HostStderr string
+	HostOK     string
+	HostFail   string
+	HostError  string
+	HostCancel string
+}
+
+func (c ColorConfig) Merge(other ColorConfig) ColorConfig {
+	if c.LogDebug == "" {
+		c.LogDebug = other.LogDebug
+	}
+	if c.LogInfo == "" {
+		c.LogInfo = other.LogInfo
+	}
+	if c.LogWarn == "" {
+		c.LogWarn = other.LogWarn
+	}
+	if c.LogError == "" {
+		c.LogError = other.LogError
+	}
+	if c.Command == "" {
+		c.Command = other.Command
+	}
+	if c.Summary == "" {
+		c.Summary = other.Summary
+	}
+	if c.Provider == "" {
+		c.Provider = other.Provider
+	}
+	if c.HostStdout == "" {
+		c.HostStdout = other.HostStdout
+	}
+	if c.HostStderr == "" {
+		c.HostStderr = other.HostStderr
+	}
+	if c.HostOK == "" {
+		c.HostOK = other.HostOK
+	}
+	if c.HostFail == "" {
+		c.HostFail = other.HostFail
+	}
+	if c.HostError == "" {
+		c.HostError = other.HostError
+	}
+	if c.HostCancel == "" {
+		c.HostCancel = other.HostCancel
+	}
+	return c
+}
+
+// FIXME: this is just a copy of the dark theme
+var defaultColorConfigLight = ColorConfig{
+	LogDebug:   "black+h",
+	LogInfo:    "default",
+	LogWarn:    "yellow",
+	LogError:   "red+b",
+	Command:    "cyan",
+	Summary:    "black+h",
+	Provider:   "green",
+	HostStdout: "default",
+	HostStderr: "yellow",
+	HostOK:     "green",
+	HostFail:   "yellow",
+	HostError:  "red",
+	HostCancel: "black+h",
+}
+
+var defaultColorConfigDark = ColorConfig{
+	LogDebug:   "black+h",
+	LogInfo:    "default",
+	LogWarn:    "yellow",
+	LogError:   "red+b",
+	Command:    "cyan",
+	Summary:    "black+h",
+	Provider:   "green",
+	HostStdout: "default",
+	HostStderr: "yellow",
+	HostOK:     "green",
+	HostFail:   "yellow",
+	HostError:  "red",
+	HostCancel: "black+h",
+}
+
 type SettingsFunc func() (string, map[string]interface{})
 
 type UI interface {
@@ -53,7 +174,6 @@ type UI interface {
 	SetOutputMode(OutputMode)
 	SetOutputTimestamp(bool)
 	SetPagerEnabled(bool)
-	Write([]byte) (int, error)
 	Sync()
 	End()
 	LoadingMessage(what string, done bool, err error)
@@ -73,30 +193,46 @@ type HostListOptions struct {
 	Header        bool
 	Template      string
 	Count         []string
+	CountAll      bool
 	SortByCount   bool
 	Group         string
 }
 
 type SimpleUI struct {
 	hosts           *HostSet
+	colors          ColorConfig
 	output          *os.File
-	atStart         bool
+	altOutput       *os.File
 	lastProgress    string
-	pchan           chan string
+	pchan           chan outputMessage
 	formatter       formatter
 	outputMode      OutputMode
 	outputTimestamp bool
 	pagerEnabled    bool
 	width           int
 	height          int
-	lineBuf         string
-	isTerminal      bool
 	syncCond        *sync.Cond
 	loading         []string
 	loadStart       time.Time
 	loadOnce        sync.Once
 	loadLock        sync.Mutex
 	loadTicker      *time.Ticker
+}
+
+type outputMessageType int
+
+const (
+	outputMessageFlush outputMessageType = iota
+	outputMessageLog
+	outputMessageCommandOutput
+	outputMessageResult
+	outputMessageProgress
+	outputMessageHostlist
+)
+
+type outputMessage struct {
+	messageType outputMessageType
+	message     string
 }
 
 var templateFuncs = template.FuncMap{
@@ -116,48 +252,49 @@ var templateFuncs = template.FuncMap{
 	},
 }
 
-func NewSimpleUI(hosts *HostSet) *SimpleUI {
-	f := prettyFormatter{
-		colors: map[logrus.Level]string{
-			logrus.WarnLevel:  "yellow",
-			logrus.ErrorLevel: "red+b",
-			logrus.DebugLevel: "black+h",
-		},
+func NewSimpleUI(colors ColorConfig, hosts *HostSet) *SimpleUI {
+	defaultColorConfig := defaultColorConfigLight
+	if isBackgroundDark() {
+		defaultColorConfig = defaultColorConfigDark
 	}
+	colors = colors.Merge(defaultColorConfig)
+
+	f := newPrettyFormatter(colors)
 	ui := &SimpleUI{
+		colors:       colors,
 		hosts:        hosts,
 		output:       os.Stdout,
+		altOutput:    os.Stderr,
 		outputMode:   OutputAll,
-		atStart:      true,
 		lastProgress: "",
-		pchan:        make(chan string),
+		pchan:        make(chan outputMessage, 100),
 		syncCond:     &sync.Cond{L: new(sync.Mutex)},
 		formatter:    f,
-		isTerminal:   isatty.IsTerminal(os.Stdout.Fd()),
 	}
-	if ui.isTerminal {
+	if isatty.IsTerminal(ui.output.Fd()) {
+		ui.altOutput = ui.output
+	}
+	ui.getSize()
+	readline.DefaultOnWidthChanged(func() {
 		ui.getSize()
-		readline.DefaultOnWidthChanged(func() {
-			ui.getSize()
-		})
-	} else {
-		ansi.DisableColors(true)
-		ui.pagerEnabled = false
-		ui.width = 80
-	}
+	})
 	go ui.printer()
 	return ui
 }
 
 func (ui *SimpleUI) getSize() {
-	w, h, err := readline.GetSize(int(ui.output.Fd()))
+	w, h, err := readline.GetSize(int(ui.output.Fd())) // nolint:gosec // FD's shouldn'tt reach higher than 2^31-1
+	if err != nil {
+		ui.pagerEnabled = false
+		ansi.DisableColors(true)
+		w, h, err = readline.GetSize(int(ui.altOutput.Fd())) // nolint:gosec // FD's shouldn'tt reach higher than 2^31-1
+	}
 	if err == nil {
 		ui.width, ui.height = w, h
 		if w < 40 {
 			ui.width = 40
 		}
 	} else {
-		ui.pagerEnabled = false
 		ui.width = 80
 	}
 }
@@ -176,47 +313,60 @@ func (ui *SimpleUI) SetPagerEnabled(e bool) {
 
 func (ui *SimpleUI) printer() {
 	for msg := range ui.pchan {
-		if msg == "\000" {
+		if msg.messageType == outputMessageFlush {
 			ui.syncCond.L.Lock()
 			ui.syncCond.Broadcast()
 			ui.syncCond.L.Unlock()
 			continue
 		}
+
+		out := ui.output
+		if ui.output != ui.altOutput && (msg.messageType == outputMessageLog || msg.messageType == outputMessageProgress) {
+			out = ui.altOutput
+		}
+
 		// If we're getting a normal message in the middle of printing
 		// progress, wipe the progress message and reprint it after this
 		// message
-		if !ui.atStart && msg[0] != '\r' && msg[0] != '\n' {
-			ui.output.WriteString(clearLine + msg + ui.lastProgress)
-		} else {
-			ui.output.WriteString(msg)
-			if msg[len(msg)-1] == '\n' || msg == clearLine {
-				ui.atStart = true
-			} else {
-				ui.atStart = false
-				ui.lastProgress = msg
-			}
+		if ui.lastProgress != "" && msg.messageType != outputMessageProgress && out == ui.altOutput {
+			out.WriteString(clearLine + msg.message + ui.lastProgress)
+			out.Sync()
+			continue
 		}
-		ui.output.Sync()
+
+		if msg.messageType == outputMessageProgress {
+			out.WriteString(clearLine)
+			ui.lastProgress = msg.message
+		}
+
+		out.WriteString(msg.message)
+		out.Sync()
 	}
 }
 
-func (ui *SimpleUI) BindLogrus() {
-	logrus.SetFormatter(ui.formatter)
-	logrus.SetOutput(ui)
+type simpleUIWriter struct {
+	messageType outputMessageType
+	lineBuf     string
+	ui          *SimpleUI
 }
 
-func (ui *SimpleUI) Write(msg []byte) (int, error) {
-	ui.lineBuf += string(msg)
-	if strings.HasSuffix(ui.lineBuf, "\n") {
-		ui.pchan <- ui.lineBuf
-		ui.lineBuf = ""
+func (w *simpleUIWriter) Write(msg []byte) (int, error) {
+	w.lineBuf += string(msg)
+	for i := strings.IndexRune(w.lineBuf, '\n'); i != -1; i = strings.IndexRune(w.lineBuf, '\n') {
+		w.ui.pchan <- outputMessage{w.messageType, w.lineBuf[:i+1]}
+		w.lineBuf = w.lineBuf[i+1:]
 	}
 	return len(msg), nil
 }
 
+func (ui *SimpleUI) BindLogrus() {
+	logrus.SetFormatter(ui.formatter)
+	logrus.SetOutput(&simpleUIWriter{outputMessageLog, "", ui})
+}
+
 func (ui *SimpleUI) Sync() {
 	ui.syncCond.L.Lock()
-	ui.pchan <- "\000"
+	ui.pchan <- outputMessage{outputMessageFlush, ""}
 	defer ui.syncCond.L.Unlock()
 	ui.syncCond.Wait()
 }
@@ -247,7 +397,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 			txt = ui.formatter.formatOutput(result, hlen)
 		}
 		if !usePager {
-			ui.pchan <- txt
+			ui.pchan <- outputMessage{outputMessageResult, txt}
 		} else if pgr != nil {
 			pgr.WriteString(txt)
 		} else {
@@ -257,7 +407,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 				pgr = &pager{}
 				if err := pgr.start(); err != nil {
 					logrus.Warnf("Unable to start pager, displaying on stdout: %s", err)
-					ui.pchan <- buffer
+					ui.pchan <- outputMessage{outputMessageResult, buffer}
 					usePager = false
 				} else {
 					pgr.WriteString(ui.formatter.formatCommand(hi.Command))
@@ -269,7 +419,7 @@ func (ui *SimpleUI) PrintHistoryItem(hi *HistoryItem) {
 		}
 	}
 	if buffer != "" {
-		ui.pchan <- buffer
+		ui.pchan <- outputMessage{outputMessageResult, buffer}
 	}
 	if pgr != nil {
 		if err := pgr.Wait(); err != nil {
@@ -293,6 +443,10 @@ func startPager(p *pager, o *io.Writer) {
 
 func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 	hosts := ui.hosts.hosts
+	if opts.CountAll {
+		ui.pchan <- outputMessage{outputMessageHostlist, fmt.Sprintf("%d\n", len(hosts))}
+		return
+	}
 	if len(hosts) == 0 {
 		logrus.Error("No hosts to list")
 		return
@@ -302,11 +456,11 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		for i, host := range hosts {
 			names[i] = host.Name
 		}
-		ui.pchan <- strings.Join(names, opts.Separator) + "\n"
+		ui.pchan <- outputMessage{outputMessageHostlist, strings.Join(names, opts.Separator) + "\n"}
 		return
 	}
 	var writer datawriter
-	var out io.Writer = ui
+	var out io.Writer = &simpleUIWriter{outputMessageHostlist, "", ui}
 	pgr := &pager{}
 	if !ui.pagerEnabled {
 		pgr = nil
@@ -383,8 +537,11 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		counts := make(map[string]int)
 		groupCounts := make(map[string]map[any]int)
 		groupValues := make(map[string]bool)
+		totals := make(map[string]int)
+		total := 0
 
 		for _, host := range hosts {
+			total++
 			v := make([]string, len(opts.Count))
 			for i, attr := range opts.Count {
 				v[i] = fmt.Sprintf("%v", host.Attributes[attr])
@@ -404,6 +561,7 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				attr := fmt.Sprintf("%v", host.Attributes[opts.Group])
 				groupCounts[vs][attr]++
 				groupValues[attr] = true
+				totals[attr]++
 			}
 		}
 		if opts.SortByCount {
@@ -441,9 +599,9 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			copy(attrline, opts.Count)
 			copy(attrline[len(opts.Count):], groups)
 			if len(groups) == 0 {
-				attrline = append(attrline, "count")
+				attrline = append(attrline, "count", "percentage")
 			} else {
-				attrline = append(attrline, "total", "average", "stddev")
+				attrline = append(attrline, "total", "percentage", "average", "stddev")
 			}
 			writer.Write(attrline)
 		}
@@ -454,11 +612,28 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				v = append(v, fmt.Sprintf("%v", groupCounts[k][group]))
 				stats.Add(float64(groupCounts[k][group]))
 			}
-			v = append(v, fmt.Sprintf("%v", counts[k]))
+			v = append(v, fmt.Sprintf("%v", counts[k]), fmt.Sprintf("%v%%", f2s(float64(counts[k])/float64(total)*100)))
 			if stats.NumDataValues() != 0 {
 				v = append(v, f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
 			}
 
+			writer.Write(v)
+		}
+		if opts.Header {
+			v := []string{"total"}
+			for range len(opts.Count) - 1 {
+				v = append(v, "")
+			}
+			if opts.Group != "" {
+				stats := variance.New()
+				for _, group := range groups {
+					v = append(v, fmt.Sprintf("%v", totals[group]))
+					stats.Add(float64(totals[group]))
+				}
+				v = append(v, fmt.Sprintf("%v", total), "", f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
+			} else {
+				v = append(v, fmt.Sprintf("%v", total), "")
+			}
 			writer.Write(v)
 		}
 		// Start the pager after all if we are getting too wide
@@ -488,7 +663,7 @@ func f2s(f float64) string {
 }
 
 func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
-	if !logrus.IsLevelEnabled(logrus.InfoLevel) || !ui.isTerminal {
+	if !logrus.IsLevelEnabled(logrus.InfoLevel) {
 		return
 	}
 
@@ -496,7 +671,7 @@ func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	defer ui.loadLock.Unlock()
 	if what == "" && done {
 		if ui.loadTicker != nil {
-			ui.pchan <- clearLine
+			ui.pchan <- outputMessage{outputMessageProgress, ""}
 			ui.loadTicker.Stop()
 		}
 		return
@@ -535,7 +710,7 @@ func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	if len(cs) > ui.width-25 {
 		cs = cs[:ui.width-30] + "..."
 	}
-	ui.pchan <- clearLine + fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, "green"))
+	ui.pchan <- outputMessage{outputMessageProgress, fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, ui.colors.Provider))}
 }
 
 func (ui *SimpleUI) OutputChannel() chan OutputLine {
@@ -555,7 +730,7 @@ func (ui *SimpleUI) OutputChannel() chan OutputLine {
 			}
 			name := fmt.Sprintf("%-*s", hlen, msg.Host.Name)
 			if msg.Stderr {
-				name = ansi.Color(name, "red")
+				name = ansi.Color(name, ui.colors.HostStderr)
 			}
 			line := msg.Data
 			// Strip all text up to the last embedded \r, unless that is part of a \r\n
@@ -576,7 +751,7 @@ func (ui *SimpleUI) OutputChannel() chan OutputLine {
 			if colors == nil && len(lastcolor) != 0 {
 				suffix = reset
 			}
-			ui.pchan <- fmt.Sprintf("%s%s  %s%s%s", ts, name, lastcolor, line, suffix)
+			ui.pchan <- outputMessage{outputMessageCommandOutput, fmt.Sprintf("%s%s  %s%s%s", ts, name, lastcolor, line, suffix)}
 		}
 	}()
 	return oc
@@ -588,6 +763,9 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 		start := time.Now()
 		ticker := time.NewTicker(time.Second / 2)
 		defer ticker.Stop()
+		defer func() {
+			ui.pchan <- outputMessage{outputMessageProgress, ""}
+		}()
 		total := len(ui.hosts.hosts)
 		queued, todo, waiting, running, done := total, total, 0, 0, 0
 		nok, nfail, nerr := 0, 0, 0
@@ -625,22 +803,22 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 						nfail++
 					}
 					if ui.outputMode == OutputPerhost {
-						ui.pchan <- ui.formatter.formatResult(msg.Result, hlen)
+						ui.pchan <- outputMessage{outputMessageResult, ui.formatter.formatResult(msg.Result, hlen)}
 					} else if ui.outputMode == OutputTail {
 						status := ui.formatter.formatStatus(msg.Result, hlen)
 						if ui.outputTimestamp {
 							status = msg.Result.EndTime.Format("15:04:05.000 ") + status
 						}
-						ui.pchan <- status
+						ui.pchan <- outputMessage{outputMessageResult, status}
 					}
 				}
 			}
 			since := (time.Since(start) + time.Second/2).Truncate(time.Second)
 			if todo == 0 {
-				ui.pchan <- clearLine + fmt.Sprintf("%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)
+				ui.pchan <- outputMessage{outputMessageProgress, fmt.Sprintf("%d done, %d ok, %d fail, %d error in %s\n", total, nok, nfail, nerr, since)}
 			} else {
 				togo := (time.Until(deadline) + time.Second/2).Truncate(time.Second)
-				msg := clearLine + fmt.Sprintf("Waiting (%s/%s)... %d/%d done", since, togo, done, total)
+				msg := fmt.Sprintf("Waiting (%s/%s)... %d/%d done", since, togo, done, total)
 				if queued > 0 {
 					msg += fmt.Sprintf(", %d queued", queued)
 				}
@@ -648,7 +826,7 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 					msg += fmt.Sprintf(", %d waiting", waiting)
 				}
 				msg += fmt.Sprintf(", %d in progress, %d ok, %d fail, %d error", running, nok, nfail, nerr)
-				ui.pchan <- msg
+				ui.pchan <- outputMessage{outputMessageProgress, msg}
 			}
 		}
 	}()
@@ -658,7 +836,7 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 func (ui *SimpleUI) PrintSettings(funcs ...SettingsFunc) {
 	for _, f := range funcs {
 		name, settings := f()
-		ui.pchan <- name + "\n"
+		ui.pchan <- outputMessage{outputMessageLog, name + "\n"}
 		l := 0
 		keys := make([]string, 0, len(settings))
 		for k := range settings {
@@ -670,7 +848,7 @@ func (ui *SimpleUI) PrintSettings(funcs ...SettingsFunc) {
 		l += 5
 		sort.Strings(keys)
 		for _, k := range keys {
-			ui.pchan <- fmt.Sprintf("    %-*s %v\n", l, k+":", settings[k])
+			ui.pchan <- outputMessage{outputMessageLog, fmt.Sprintf("    %-*s %v\n", l, k+":", settings[k])}
 		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	"golang.org/x/crypto/ssh"
 )
@@ -34,8 +35,8 @@ type Host struct {
 	Address    string
 	Attributes HostAttributes
 	Connection io.Closer
+	LastResult *Result
 	publicKeys []ssh.PublicKey
-	lastResult *Result
 	csum       uint32
 }
 
@@ -104,11 +105,16 @@ func (h *Host) init() {
 	}
 	if keys, ok := h.Attributes["__publicKeys"]; ok {
 		for _, k := range keys.([]any) {
-			if b, err := base64.StdEncoding.DecodeString(k.(string)); err != nil {
-				if key, err := ssh.ParsePublicKey(b); err != nil {
-					h.AddPublicKey(key)
-				}
+			b, err := base64.StdEncoding.DecodeString(k.(string))
+			if err != nil {
+				logrus.Errorf("Unable to decode marshaledpublic key for %s: %s", h.Name, err)
+				continue
 			}
+			key, err := ssh.ParsePublicKey(b)
+			if err != nil {
+				logrus.Errorf("Unable to parse public key for %s: %s", h.Name, err)
+			}
+			h.AddPublicKey(key)
 		}
 		delete(h.Attributes, "__publicKeys")
 	}
@@ -118,8 +124,7 @@ func (h Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s}", h.Name, len(h.publicKeys), h.Attributes)
 }
 
-// Adds a public key to a host. Used by the ssh know hosts provider, but can be
-// used by any other code as well.
+// Adds a public key to a host, it will be used by the SSH client when connecting
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }
@@ -154,7 +159,7 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 	if ok {
 		return value, ok
 	}
-	r := h.lastResult
+	r := h.LastResult
 	if r == nil {
 		r = &Result{ExitStatus: -1}
 	}
@@ -181,7 +186,12 @@ func (h *Host) Amend(h2 *Host) {
 	if h.Address == "" {
 		h.Address = h2.Address
 	}
-	h.Attributes["herd_provider"] = append(h.Attributes["herd_provider"].([]string), h2.Attributes["herd_provider"].([]string)[0])
+	if h2.Attributes["herd_provider"] != nil {
+		if h.Attributes["herd_provider"] == nil {
+			h.Attributes["herd_provider"] = make([]string, 0)
+		}
+		h.Attributes["herd_provider"] = append(h.Attributes["herd_provider"].([]string), h2.Attributes["herd_provider"].([]string)[0])
+	}
 	for attr, value := range h2.Attributes {
 		if attr == "herd_provider" {
 			continue

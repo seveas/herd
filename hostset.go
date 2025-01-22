@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"golang.org/x/crypto/ssh"
-	"golang.org/x/exp/constraints"
 )
 
 type HostSet struct {
@@ -49,6 +48,16 @@ func (s *HostSet) Search(hostnameGlob string, attributes MatchAttributes) *HostS
 	hosts := make([]*Host, 0)
 	for _, host := range s.hosts {
 		if host.Match(hostnameGlob, attributes) {
+			hosts = append(hosts, host)
+		}
+	}
+	return &HostSet{hosts: hosts, maxNameLength: maxNameLength(hosts)}
+}
+
+func (s *HostSet) Filter(f func(*Host) bool) *HostSet {
+	hosts := make([]*Host, 0)
+	for _, host := range s.hosts {
+		if f(host) {
 			hosts = append(hosts, host)
 		}
 	}
@@ -188,18 +197,4 @@ func maxNameLength(hosts []*Host) int {
 		}
 	}
 	return ml
-}
-
-func min[T constraints.Ordered](x, y T) T {
-	if x <= y {
-		return x
-	}
-	return y
-}
-
-func max[T constraints.Ordered](x, y T) T {
-	if x >= y {
-		return x
-	}
-	return y
 }

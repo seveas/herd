@@ -1,6 +1,7 @@
 package herd
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"net"
@@ -40,11 +41,12 @@ func RegisterProvider(name string, constructor func(string) HostProvider, magic 
 }
 
 type Registry struct {
-	providers   []HostProvider
-	hosts       *HostSet
-	dataDir     string
-	cacheDir    string
-	magicLoaded bool
+	providers    []HostProvider
+	hosts        *HostSet
+	globPrefixes map[string]func(string, *HostSet) (*HostSet, error)
+	dataDir      string
+	cacheDir     string
+	magicLoaded  bool
 }
 
 type HostProvider interface {
@@ -75,6 +77,9 @@ func NewRegistry(dataDir, cacheDir string) *Registry {
 		providers: []HostProvider{},
 		dataDir:   dataDir,
 		cacheDir:  cacheDir,
+		globPrefixes: map[string]func(string, *HostSet) (*HostSet, error){
+			"file:": fileFilter,
+		},
 	}
 }
 
@@ -235,7 +240,6 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 	sg.KeepAllResults(true)
 
 	for _, p := range r.providers {
-		p := p
 		sg.Run(ctx, func() (*HostSet, error) {
 			hosts, err := p.Load(ctx, lm)
 			lm(p.Name(), true, err)
@@ -260,45 +264,72 @@ func (r *Registry) LoadHosts(ctx context.Context, lm LoadingMessage) error {
 }
 
 func (r *Registry) Search(hostnameGlob string, attributes MatchAttributes, sampled []string, count int) *HostSet {
-	if strings.HasPrefix(hostnameGlob, "file:") {
-		return r.getHostsFromFile(hostnameGlob[5:], attributes)
+	ret := r.hosts
+	for glob, fnc := range r.globPrefixes {
+		if strings.HasPrefix(hostnameGlob, glob) {
+			var err error
+			ret, err = fnc(hostnameGlob[len(glob):], ret)
+			if err != nil {
+				logrus.Errorf("Error applying filter %s: %s", glob, err)
+				ret = &HostSet{}
+			}
+			hostnameGlob = "*"
+			break
+		}
 	}
-	ret := r.hosts.Search(hostnameGlob, attributes)
+
+	ret = ret.Search(hostnameGlob, attributes)
 	if len(ret.hosts) == 0 && attributes != nil && len(attributes) == 0 {
 		if _, err := net.LookupHost(hostnameGlob); err == nil {
 			ret = &HostSet{hosts: []*Host{NewHost(hostnameGlob, "", HostAttributes{})}}
 		}
 	}
 	if len(sampled) != 0 {
+		ret.Sort()
 		ret.Sample(sampled, count)
 	}
 	return ret
 }
 
-func (r *Registry) getHostsFromFile(fn string, attributes MatchAttributes) *HostSet {
-	hosts := make([]*Host, 0)
-	seen := make(map[string]int)
-	data, err := os.ReadFile(fn)
+func (r *Registry) AddGlobPrefix(prefix string, fnc func(string, *HostSet) (*HostSet, error)) {
+	if _, ok := r.globPrefixes[prefix]; ok {
+		logrus.Warnf("Overwriting glob prefix `%s`", prefix)
+	}
+	r.globPrefixes[prefix] = fnc
+}
+
+func (r *Registry) GlobPrefixes() []string {
+	ret := make([]string, 0, len(r.globPrefixes))
+	for k := range r.globPrefixes {
+		ret = append(ret, k)
+	}
+	return ret
+}
+
+func fileFilter(fn string, hs *HostSet) (*HostSet, error) {
+	seen := make(map[string]bool)
+	file, err := os.Open(fn)
 	if err != nil {
-		logrus.Errorf("Error reading %s: %s", fn, err)
-		return nil
+		return nil, err
 	}
-	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
-	for i, host := range r.hosts.hosts {
-		seen[host.Name] = i
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		seen[strings.TrimSpace(scanner.Text())] = true
 	}
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if i, ok := seen[line]; ok {
-			host := r.hosts.hosts[i]
-			if host.Match("*", attributes) {
-				hosts = append(hosts, host)
-			}
-		} else {
-			logrus.Warnf("Host %s not found", line)
+	hs = hs.Filter(func(h *Host) bool {
+		if _, ok := seen[h.Name]; !ok {
+			return false
 		}
+		delete(seen, h.Name)
+		return true
+	})
+	// We synthesize hosts that were not yet seen in the inventory
+	for h := range seen {
+		hs.hosts = append(hs.hosts, NewHost(h, "", HostAttributes{}))
 	}
-	return &HostSet{hosts: hosts}
+	return hs, nil
 }
 
 func (r *Registry) Settings() (string, map[string]interface{}) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/user"
@@ -9,6 +10,9 @@ import (
 	"regexp"
 	"runtime/pprof"
 	"runtime/trace"
+	"slices"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,18 +114,15 @@ Providers: %s
 		currentUser.historyDir,
 		currentUser.cacheDir,
 		strings.Join(herd.Providers(), ",")))
-	defaultAgentTimeout := 50 * time.Millisecond
-	if _, ok := os.LookupEnv("SSH_CONNECTION"); ok {
-		defaultAgentTimeout = 200 * time.Millisecond
-	}
 	cobra.OnInitialize(initConfig)
 	f := rootCmd.PersistentFlags()
 	f.Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
-	f.DurationP("timeout", "t", 60*time.Second, "Global timeout for commands")
+	f.DurationP("timeout", "t", 5*time.Minute, "Global timeout for commands")
 	f.Duration("load-timeout", 30*time.Second, "Timeout for loading host data from providers")
-	f.Duration("host-timeout", 10*time.Second, "Per-host timeout for commands")
-	f.Duration("connect-timeout", 3*time.Second, "Per-host ssh connect timeout")
-	f.Duration("ssh-agent-timeout", defaultAgentTimeout, "SSH agent timeout when checking functionality")
+	f.Duration("host-timeout", time.Minute, "Per-host timeout for commands")
+	f.Duration("connect-timeout", 15*time.Second, "Per-host ssh connect timeout")
+	f.Duration("ssh-agent-timeout", time.Second, "SSH agent timeout when checking functionality")
+	f.Int("ssh-agent-count", 50, "Number of parallel connections to the ssh agent")
 	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
 	f.Bool("no-pager", false, "Disable the use of the pager")
@@ -167,6 +168,12 @@ func initConfig() {
 	}
 
 	// Check configuration variables
+
+	// Limit concurrent ssh connections to parallelism
+	if viper.GetInt("Parallel") != 0 && viper.GetInt("Parallel") < viper.GetInt("SshAgentCount") {
+		viper.Set("SshAgentCount", viper.GetInt("Parallel"))
+	}
+
 	level, err := logrus.ParseLevel(viper.GetString("LogLevel"))
 	if err != nil {
 		bail("Unknown loglevel: %s. Known loglevels: DEBUG, INFO, NORMAL, WARNING, ERROR", viper.GetString("LogLevel"))
@@ -197,13 +204,34 @@ func bail(format string, args ...interface{}) {
 func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) {
 	hosts := new(herd.HostSet)
 	hosts.SetSortFields(viper.GetStringSlice("Sort"))
-	ui := herd.NewSimpleUI(hosts)
+	colors := viper.Sub("Colors")
+	colorConfig := herd.ColorConfig{}
+	if colors != nil {
+		colorConfig.LogDebug = colors.GetString("LogDebug")
+		colorConfig.LogInfo = colors.GetString("LogInfo")
+		colorConfig.LogWarn = colors.GetString("LogWarn")
+		colorConfig.LogError = colors.GetString("LogError")
+		colorConfig.Command = colors.GetString("Command")
+		colorConfig.Summary = colors.GetString("Summary")
+		colorConfig.Provider = colors.GetString("Provider")
+		colorConfig.HostStdout = colors.GetString("HostStdout")
+		colorConfig.HostStderr = colors.GetString("HostStderr")
+		colorConfig.HostOK = colors.GetString("HostOK")
+		colorConfig.HostFail = colors.GetString("HostFail")
+		colorConfig.HostError = colors.GetString("HostError")
+		colorConfig.HostCancel = colors.GetString("HostCancel")
+	}
+
+	ui := herd.NewSimpleUI(colorConfig, hosts)
 	ui.SetOutputMode(viper.Get("Output").(herd.OutputMode))
 	ui.SetOutputTimestamp(viper.GetBool("Timestamp"))
 	ui.SetPagerEnabled(!viper.GetBool("NoPager"))
 	ui.BindLogrus()
 
 	registry := herd.NewRegistry(currentUser.dataDir, currentUser.cacheDir)
+	registry.AddGlobPrefix("hist:", func(glob string, hs *herd.HostSet) (*herd.HostSet, error) {
+		return historyFilter(currentUser.historyDir, glob, hs)
+	})
 	conf := viper.Sub("Providers")
 	if conf != nil {
 		if err := registry.LoadProviders(conf); err != nil {
@@ -241,8 +269,175 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	handleSignals(runner)
 	runner.SetSplay(viper.GetDuration("Splay"))
 	runner.SetParallel(viper.GetInt("Parallel"))
-	runner.SetTimeout(viper.GetDuration("Timeout"))
-	runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
+	// If only one of the timeouts was specified, we adjust the other based on batch size
+	if viper.IsSet("Timeout") || !viper.IsSet("HostTimeout") {
+		runner.SetTimeout(viper.GetDuration("Timeout"))
+	}
+	if viper.IsSet("HostTimeout") || !viper.IsSet("Timeout") {
+		runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
+	}
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
 	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
+}
+
+func historyFile(dir string) string {
+	// Read existing history, migrate if needed
+	hist, err := os.ReadDir(dir)
+	if err != nil {
+		logrus.Warnf("Could not read history directory %s: %s", dir, err)
+		return filepath.Join(dir, time.Now().Format("2006-01-02_150405.json"))
+	}
+	mustMigrate := false
+	seq := 0
+	hist = slices.DeleteFunc(hist, func(e os.DirEntry) bool {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			return true
+		}
+		parts := strings.Split(e.Name(), "_")
+		if len(parts) != 3 {
+			mustMigrate = true
+			return false
+		}
+		s, err := strconv.Atoi(parts[0])
+		if err != nil {
+			logrus.Warnf("Could not parse history file name %s: %s", hist[len(hist)-1].Name(), err)
+			return true
+		}
+		if s > seq {
+			seq = s
+		}
+		return false
+	})
+	if mustMigrate {
+		migrateHistory(dir, hist)
+		hist, _ = os.ReadDir(dir)
+		hist = slices.DeleteFunc(hist, func(e os.DirEntry) bool {
+			return e.IsDir() || !strings.HasSuffix(e.Name(), ".json")
+		})
+		seq = len(hist)
+	}
+
+	return filepath.Join(dir, fmt.Sprintf("%d_%s.json", seq+1, time.Now().Format("2006-01-02_150405")))
+}
+
+func migrateHistory(dir string, hist []os.DirEntry) {
+	logrus.Warnf("Migrating history in %s", dir)
+	type entry struct {
+		oldName string
+		newName string
+	}
+	entries := make([]entry, 0, len(hist))
+	for _, e := range hist {
+		parts := strings.Split(e.Name(), "_")
+		if len(parts) != 2 && len(parts) != 3 {
+			logrus.Warnf("Could not parse history file name %s, skipping migration", e.Name())
+			continue
+		}
+		entries = append(entries, entry{
+			oldName: e.Name(),
+			newName: fmt.Sprintf("%s_%s", parts[len(parts)-2], parts[len(parts)-1]),
+		})
+	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].newName < entries[j].newName
+	})
+	for i, e := range entries {
+		e.newName = fmt.Sprintf("%d_%s", i+1, e.newName)
+		if e.oldName == e.newName {
+			continue
+		}
+		logrus.Debugf("Migrating history: %s => %s", e.oldName, e.newName)
+		if err := os.Rename(filepath.Join(dir, e.oldName), filepath.Join(dir, e.newName)); err != nil {
+			logrus.Warnf("Could not rename %s to %s: %s", e.oldName, e.newName, err)
+		}
+	}
+}
+
+func historyFilter(historyDir, glob string, hs *herd.HostSet) (*herd.HostSet, error) {
+	num, err := strconv.Atoi(glob)
+	if err != nil {
+		return nil, err
+	}
+
+	hist, err := getHistoryByIndex(historyDir, num)
+	if err != nil {
+		return nil, err
+	}
+
+	hi := hist[len(hist)-1]
+
+	seen := make(map[string]*herd.Result)
+	for _, r := range hi.Results {
+		seen[r.Host] = r
+	}
+
+	return hs.Filter(func(h *herd.Host) bool {
+		if _, ok := seen[h.Name]; !ok {
+			return false
+		}
+		h.LastResult = seen[h.Name]
+		return true
+	}), nil
+}
+
+func getHistoryByIndex(historyDir string, index int) (herd.History, error) {
+	hd, err := os.ReadDir(historyDir)
+	if err != nil {
+		return nil, err
+	}
+	fn := ""
+	if index >= 0 {
+		prefix := fmt.Sprintf("%d_", index)
+		for _, e := range hd {
+			if strings.HasPrefix(e.Name(), prefix) {
+				fn = e.Name()
+				break
+			}
+		}
+		if fn == "" {
+			return nil, fmt.Errorf("No history file found for %d", index)
+		}
+	} else {
+		type entry struct {
+			name string
+			num  int
+		}
+		entries := make([]entry, 0, len(hd))
+		for _, e := range hd {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+				continue
+			}
+			parts := strings.Split(e.Name(), "_")
+			if len(parts) != 3 {
+				continue
+			}
+			n, err := strconv.Atoi(parts[0])
+			if err != nil {
+				continue
+			}
+			entries = append(entries, entry{name: e.Name(), num: n})
+		}
+
+		if index < -len(entries) {
+			return nil, fmt.Errorf("Fewer than %d history files available", -index)
+		}
+
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].num < entries[j].num
+		})
+		fn = entries[len(entries)+index].name
+	}
+	logrus.Debugf("Mapped history index %d to filename %s", index, fn)
+	var hist herd.History
+
+	data, err := os.ReadFile(filepath.Join(historyDir, fn))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(data, &hist); err != nil {
+		return nil, err
+	}
+
+	return hist, nil
 }

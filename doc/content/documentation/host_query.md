@@ -39,6 +39,19 @@ A special type of glob-like match is when the name starts with `file:`. This loa
 from a file. Because no matter how powerful the queries are that you learn later on in this file,
 sometimes you just have a list of hosts to work on.
 
+Another special glob prefix is `hist:`. This will load the list of hosts from the output of a
+command from your history, and adds attributes to the hosts that correspond to the last result. This
+lets you easily retry commands on hosts where they failed before.
+
+```console
+$ herd run hist:-1 exitstatus!=0 -- /usr/bin/command-to-retry
+```
+
+Where `file:` needs a relative or absolute path to a file, `hist:` needs a number that is either
+negative to specify the n-last command or positive to specify a specific history item. This number
+corresponds to the prefix of the history file in your history, which you see as the last line inf
+the output of a `herd run` command.
+
 ## Multiple sets of hosts
 
 You can also specify multiple sets of hosts this way:
@@ -99,7 +112,8 @@ You can also filter for inequality or do regular expression matches on attribute
 | `!~`         | Regular expression does not match | `availability_zone!~us`       |
 
 Combined with set arithmetic, this can lead to queries that really give you only the hosts you are
-looking for.
+looking for. Attribute matching also works with the `file:` and `hist:` pseudo-globs. This makes it
+possible to do something like easily retrying a command.
 
 ### Attribute types
 
@@ -127,16 +141,16 @@ different meaning
 Host attributes come from the host providers you use, but there are also some built-in attributes
 that are always available:
 
-| Attribute       | Type            | Meaning                                                                                                                  |
-|-----------------|-----------------|--------------------------------------------------------------------------------------------------------------------------|
-| `name`          | String          | The name of the host                                                                                                     |
-| `domainname`    | String          | The domainname of the host                                                                                               |
-| `random`        | Integer         | A not-really-random number for stable not-really-random sorting                                                          |
-| `stdout`        | String          | The output of the last command in interactive/scripted mode                                                              |
-| `stderr`        | String          | The output of the last command in interactive/scripted mode                                                              |
-| `exitstatus`    | Integer         | The exit status of the last command in interactive/scripted mode, `-1` when there wan error establishing a connection    |
-| `err`           | Error           | The error that occurred during the last command in interactive/scripted mode. Note that a non-zero exit is also an error |
-| `herd_provider` | List of strings | The name(s) of the provider(s) that found information about this host                                                    |
+| Attribute       | Type            | Meaning                                                                                                                                           |
+|-----------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`          | String          | The name of the host                                                                                                                              |
+| `domainname`    | String          | The domainname of the host                                                                                                                        |
+| `random`        | Integer         | A not-really-random number for stable not-really-random sorting                                                                                   |
+| `stdout`        | String          | The output of the last command in interactive/scripted mode or when using `hist:` globs                                                           |
+| `stderr`        | String          | The output of the last command in interactive/scripted mode or when using `hist:` globs                                                           |
+| `exitstatus`    | Integer         | The exit status of the last command in interactive/scripted mode or when using `hist:` globs, `-1` when there wan error establishing a connection |
+| `err`           | Error           | The error that occurred during the last command in interactive/scripted mode. Note that a non-zero exit is also an error                          |
+| `herd_provider` | List of strings | The name(s) of the provider(s) that found information about this host                                                                             |
 
 ## Sampling
 

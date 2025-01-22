@@ -97,7 +97,11 @@ func (c *Cache) mustRefresh() bool {
 func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	if !c.mustRefresh() {
 		logrus.Debugf("Loading cached data from %s for %s", c.config.File, c.source.Name())
-		return c.loadCache()
+		name := fmt.Sprintf("cache (%s)", c.source.Name())
+		lm(name, false, nil)
+		hs, err := c.loadCache()
+		lm(name, true, err)
+		return hs, err
 	}
 	hosts, err := c.source.Load(ctx, lm)
 	if err == nil {
@@ -109,8 +113,8 @@ func (c *Cache) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet
 		if data, err = json.Marshal(hosts); err != nil {
 			return nil, err
 		}
-		//#nosec G306 -- Cache file may be shared among users
-		if err := os.WriteFile(c.config.File, data, 0o644); err != nil {
+		err = os.WriteFile(c.config.File, data, 0o644) // #nosec G306 -- Cache file may be shared among users
+		if err != nil {
 			return nil, err
 		}
 	} else if !c.config.StrictLoading {

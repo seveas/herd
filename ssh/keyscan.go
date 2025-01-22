@@ -17,18 +17,14 @@ import (
 
 type KeyScanExecutor struct {
 	keyTypes       []string
-	config         *config
+	user           user.User
 	connectTimeout time.Duration
 }
 
 func NewKeyScanExecutor(keyTypes []string, user user.User) (herd.Executor, error) {
-	config := newConfig(user)
-	if err := config.readOpenSSHConfig(); err != nil {
-		return nil, err
-	}
 	return &KeyScanExecutor{
 		keyTypes: keyTypes,
-		config:   config,
+		user:     user,
 	}, nil
 }
 
@@ -42,7 +38,10 @@ func (e *KeyScanExecutor) Run(ctx context.Context, host *herd.Host, cmd string, 
 	if address == "" {
 		address = host.Name
 	}
-	config := e.config.forHost(host)
+	config, err := configForHost(host, &e.user)
+	if err != nil {
+		return &herd.Result{Host: host.Name, Err: err}
+	}
 	config.strictHostKeyChecking = no
 	cc := config.clientConfig
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {

@@ -198,12 +198,13 @@ automatically configured.
 
 This provider accepts the following parameters:
 
-| Parameter            | Type            | Meaning                        | Example                         | Default                                                                 |
-|----------------------|-----------------|--------------------------------|---------------------------------|-------------------------------------------------------------------------|
-| `prefix`             | String          | Attribute prefix               | `consul:`                       | `''` (empty string)                                                     |
-| `address`            | String          | Address of the consul server   | http://consul.example/com:8500` | `http://consul.service.consul:8500` or the value of `$CONSUL_HTTP_ADDR` |
-| `datadcenters`       | List of strings | Which datacenter to query      | [dc1 dc2]                       | `[]` (empty list, meaning all datacenters)                              |
-| `excludedatacenters` | List of strings | Which datacenters not to query | [dc3]                           | `[]`                                                                    |
+| Parameter            | Type            | Meaning                                    | Example                         | Default                                                                 |
+|----------------------|-----------------|--------------------------------------------|---------------------------------|-------------------------------------------------------------------------|
+| `prefix`             | String          | Attribute prefix                           | `consul:`                       | `''` (empty string)                                                     |
+| `address`            | String          | Address of the consul server               | http://consul.example/com:8500` | `http://consul.service.consul:8500` or the value of `$CONSUL_HTTP_ADDR` |
+| `datadcenters`       | List of strings | Which datacenter to query                  | [dc1 dc2]                       | `[]` (empty list, meaning all datacenters)                              |
+| `excludedatacenters` | List of strings | Which datacenters not to query             | [dc3]                           | `[]`                                                                    |
+| `maxconcurrency`     | Boolean         | How many datancenters to query in parallel | 10                              | 30                                                                      |
 
 This provider provides the following host attributes
 

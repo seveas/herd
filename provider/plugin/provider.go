@@ -133,13 +133,13 @@ func (p *pluginProvider) connect() error {
 		Managed:          true,
 		HandshakeConfig:  common.Handshake,
 		Plugins:          pluginMap,
-		Cmd:              exec.Command(p.config.Command),
+		Cmd:              exec.Command(p.config.Command), // #nosec G204 -- Cmd is user-supplied by design
 		Logger:           common.NewLogrusLogger(logrus.StandardLogger(), fmt.Sprintf("plugin-%s", p.name)),
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 		SecureConfig:     &plugin.SecureConfig{Hash: crypto.SHA256.New(), Checksum: p.config.checksum},
-	}) //#nosec G204 -- Cmd is user-supplied by design
+	})
 
 	rpcClient, err := client.Client()
 	if err != nil {

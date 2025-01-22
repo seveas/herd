@@ -13,8 +13,8 @@ type PingExecutor struct {
 	Executor
 }
 
-func NewPingExecutor(agentTimeout time.Duration, user user.User) (herd.Executor, error) {
-	executor, err := NewExecutor(agentTimeout, user)
+func NewPingExecutor(agentCount int, agentTimeout time.Duration, user user.User) (herd.Executor, error) {
+	executor, err := NewExecutor(agentCount, agentTimeout, user, true)
 	if err != nil {
 		return nil, err
 	}

@@ -3,9 +3,12 @@ package ssh
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"os"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -13,27 +16,44 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 )
 
 type Executor struct {
-	agent          *agent
-	config         *config
+	agent          *agentPool
+	knownHosts     ssh.HostKeyCallback
+	user           user.User
 	connectTimeout time.Duration
+	disconnect     bool
 }
 
-func NewExecutor(agentTimeout time.Duration, user user.User) (herd.Executor, error) {
-	agent, err := newAgent(agentTimeout)
+func NewExecutor(agentCount int, agentTimeout time.Duration, user user.User, disconnect bool) (herd.Executor, error) {
+	agent, err := newAgentPool(agentCount, agentTimeout)
 	if err != nil {
 		return nil, err
 	}
-	config := newConfig(user)
-	if err := config.readOpenSSHConfig(); err != nil {
+
+	files := []string{}
+	if _, err := os.Stat("/etc/ssh/ssh_known_hosts"); err == nil {
+		files = append(files, "/etc/ssh/ssh_known_hosts")
+	}
+	if home, ok := os.LookupEnv("HOME"); ok {
+		f := filepath.Join(home, ".ssh", "known_hosts")
+		if _, err := os.Stat(f); err == nil {
+			files = append(files, f)
+		}
+	}
+
+	knownHosts, err := knownhosts.New(files...)
+	if err != nil {
 		return nil, err
 	}
 
 	return &Executor{
-		agent:  agent,
-		config: config,
+		agent:      agent,
+		user:       user,
+		knownHosts: knownHosts,
+		disconnect: disconnect,
 	}, nil
 }
 
@@ -99,6 +119,10 @@ func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc 
 	} else {
 		r.ExitStatus = 0
 	}
+	if e.disconnect {
+		connection.Close()
+		host.Connection = nil
+	}
 	r.Stdout = stdout.Bytes()
 	r.Stderr = stderr.Bytes()
 	return r
@@ -108,16 +132,21 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	if host.Connection != nil {
 		return host.Connection.(*ssh.Client), nil
 	}
-	config := e.config.forHost(host)
+	config, err := configForHost(host, &e.user)
+	if err != nil {
+		return nil, err
+	}
 	cc := config.clientConfig
+	cc.Timeout = e.connectTimeout
 	cc.HostKeyCallback = func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-		return e.hostKeyCallback(host, key, config)
+		return e.hostKeyCallback(host, config.port, remote, key, config)
 	}
 	if config.identityFile != "" {
 		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.SignersForPathCallback(config.identityFile))}
 	} else {
 		cc.Auth = []ssh.AuthMethod{ssh.PublicKeysCallback(e.agent.Signers)}
 	}
+	cc.Auth = append(cc.Auth, ssh.KeyboardInteractive(e.emptyPasswordCallback))
 	address := host.Address
 	if address == "" {
 		address = host.Name
@@ -145,7 +174,7 @@ func (e *Executor) connect(ctx context.Context, host *herd.Host) (*ssh.Client, e
 	}
 }
 
-func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *configBlock) error {
+func (e *Executor) hostKeyCallback(host *herd.Host, port int, remote net.Addr, key ssh.PublicKey, c *config) error {
 	// Do we have the key?
 	bkey := key.Marshal()
 	for _, pkey := range host.PublicKeys() {
@@ -160,6 +189,27 @@ func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *config
 		return nil
 	}
 
+	// We don't have a key, but is it in known_hosts?
+	err := e.knownHosts(net.JoinHostPort(host.Name, strconv.Itoa(port)), remote, key)
+	if err == nil {
+		host.AddPublicKey(key)
+		return nil
+	}
+
+	if errors.Is(err, &knownhosts.RevokedError{}) {
+		return fmt.Errorf("ssh: host key for %s revoked", host.Name)
+	}
+
+	var ke *knownhosts.KeyError
+	if errors.As(err, &ke) {
+		for _, k := range ke.Want {
+			if k.Key.Type() == key.Type() {
+				logrus.Errorf("ssh: host key mismatch for %s, expected %v, got %v", host.Name, ke.Want[0].Key.Type(), key.Type())
+				return fmt.Errorf("ssh: host key mismatch for %s", host.Name)
+			}
+		}
+	}
+
 	switch c.strictHostKeyChecking {
 	case acceptNew:
 		logrus.Warnf("ssh: no known host key for %s, accepting new key", host.Name)
@@ -170,6 +220,15 @@ func (e *Executor) hostKeyCallback(host *herd.Host, key ssh.PublicKey, c *config
 	default:
 		return fmt.Errorf("ssh: no host key found for %s", host.Name)
 	}
+}
+
+func (e *Executor) emptyPasswordCallback(name, instruction string, questions []string, echos []bool) (answers []string, err error) {
+	// All we support is an empty challenge, which does not require a response
+	// but can be added by some 2fa stacks if the 2fa part is bypassed
+	if name == "" && instruction == "" && len(questions) == 0 {
+		return []string{}, nil
+	}
+	return make([]string, len(questions)), fmt.Errorf("keyboard-interactive authentication not supported")
 }
 
 var _ herd.Executor = &Executor{}

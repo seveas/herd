@@ -35,7 +35,7 @@ func runPing(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	executor, err := ssh.NewPingExecutor(viper.GetDuration("SshAgentTimeout"), *currentUser.user)
+	executor, err := ssh.NewPingExecutor(viper.GetInt("SshAgentCount"), viper.GetDuration("SshAgentTimeout"), *currentUser.user)
 	if err != nil {
 		bail(err.Error())
 	}

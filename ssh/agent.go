@@ -3,71 +3,31 @@ package ssh
 import (
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
-	"net"
-	"os"
+	"math"
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 	sshagent "golang.org/x/crypto/ssh/agent"
 )
 
 type agent struct {
-	sshAgent            sshagent.ExtendedAgent
-	pipelinedConnection io.ReadWriter
-	waiters             []chan agentResponse
-	lock                sync.Mutex
-	signers             []ssh.Signer
-	signersByPath       map[string]ssh.Signer
+	sshAgent   sshagent.ExtendedAgent
+	connection io.ReadWriter
+	waiters    []chan agentResponse
+	lock       sync.Mutex
 }
 
-func newAgent(pipelineTimeout time.Duration) (*agent, error) {
-	sock, err := agentConnection()
-	if err != nil {
-		return nil, fmt.Errorf("Unable to connect to SSH agent: %s", err)
+func newAgent(sshAgent sshagent.ExtendedAgent, sock io.ReadWriter) *agent {
+	a := &agent{
+		sshAgent:   sshAgent,
+		connection: sock,
+		waiters:    make([]chan agentResponse, 0, 64),
 	}
-	a := &agent{sshAgent: sshagent.NewClient(sock), waiters: make([]chan agentResponse, 0, 64)}
+	go a.readLoop()
 
-	if _, ok := sock.(*net.UnixConn); ok {
-		// Determine whether we can use the faster pipelined ssh agent protocol
-		a.pipelinedConnection, _ = agentConnection()
-		go a.readLoop()
-		if !a.canDoPipelinedSigning(pipelineTimeout) {
-			a.pipelinedConnection.(*net.UnixConn).Close()
-			a.pipelinedConnection = nil
-			logrus.Warnf("Using slow ssh agent, see https://herd.seveas.net/documentation/ssh_agent.html to fix this")
-		}
-	}
-	a.signers, err = a.Signers()
-	if err != nil {
-		return nil, fmt.Errorf("Unable to retrieve keys from SSH agent: %s", err)
-	}
-	if len(a.signers) == 0 {
-		return nil, fmt.Errorf("No keys found in ssh agent")
-	}
-
-	a.signersByPath = make(map[string]ssh.Signer)
-	for _, signer := range a.signers {
-		comment := signer.PublicKey().(*sshagent.Key).Comment
-		a.signersByPath[comment] = signer
-	}
-
-	return a, nil
-}
-
-func agentConnection() (io.ReadWriter, error) {
-	if sockPath, ok := os.LookupEnv("SSH_AUTH_SOCK"); ok {
-		return net.Dial("unix", sockPath)
-	} else if sock := findPageant(); sock != nil {
-		return sock, nil
-	}
-	if _, ok := os.LookupEnv("SSH_CONNECTION"); ok {
-		return nil, fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running and forwarded")
-	}
-	return nil, fmt.Errorf("No ssh agent found in environment, make sure your ssh agent is running")
+	return a
 }
 
 type agentResponse struct {
@@ -79,21 +39,15 @@ type agentResponse struct {
 // they are not answered within the specified interval (50ms by default), the
 // ssh agent is too old and suffers from the bug solved in
 // https://github.com/openssh/openssh-portable/pull/183
-func (a *agent) canDoPipelinedSigning(timeout time.Duration) bool {
-	keys, err := a.List()
-	if err != nil || len(keys) == 0 {
-		// This is a lie, but avoids double errors: the next step checks
-		// whether there even are keys and will throw a better error
-		return true
-	}
+func (a *agent) functional(key ssh.PublicKey, timeout time.Duration) bool {
 	tests := 10
 	c := make(chan bool)
 	t := time.NewTicker(timeout)
 	defer t.Stop()
-	for i := 0; i < tests; i++ {
-		go func() { _, err = a.Sign(keys[0], []byte("Test")); c <- (err == nil) }()
+	for range tests {
+		go func() { _, err := a.Sign(key, []byte("Test")); c <- (err == nil) }()
 	}
-	for i := 0; i < tests; i++ {
+	for range tests {
 		select {
 		case v := <-c:
 			if !v {
@@ -127,12 +81,12 @@ func (a *agent) readLoop() {
 
 func (a *agent) readSingleReply() ([]byte, error) {
 	var respSizeBuf [4]byte
-	if _, err := io.ReadFull(a.pipelinedConnection, respSizeBuf[:]); err != nil {
+	if _, err := io.ReadFull(a.connection, respSizeBuf[:]); err != nil {
 		return nil, err
 	}
 	respSize := binary.BigEndian.Uint32(respSizeBuf[:])
 	buf := make([]byte, respSize)
-	if _, err := io.ReadFull(a.pipelinedConnection, buf); err != nil {
+	if _, err := io.ReadFull(a.connection, buf); err != nil {
 		return nil, err
 	}
 	return buf, nil
@@ -149,17 +103,17 @@ type agentSignRequest struct {
 }
 
 func (a *agent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
-	if a.pipelinedConnection == nil {
-		return a.sshAgent.Sign(key, data)
-	}
 	req := ssh.Marshal(agentSignRequest{Key: key.Marshal(), Data: data, Flags: uint32(0)})
+	if len(req) > math.MaxUint32 {
+		return nil, errors.New("ssh agent request too large")
+	}
 	msg := make([]byte, 4+len(req))
-	binary.BigEndian.PutUint32(msg, uint32(len(req)))
+	binary.BigEndian.PutUint32(msg, uint32(len(req))) // nolint:gosec // Overflow is checked above
 	copy(msg[4:], req)
 
 	ch := make(chan agentResponse)
 	a.lock.Lock()
-	_, err := a.pipelinedConnection.Write(msg)
+	_, err := a.connection.Write(msg)
 	if err != nil {
 		a.lock.Unlock()
 		return nil, err
@@ -205,20 +159,7 @@ func (a *agent) Unlock(passphrase []byte) error {
 }
 
 func (a *agent) Signers() ([]ssh.Signer, error) {
-	signers, err := a.sshAgent.Signers()
-	if err != nil {
-		return nil, err
-	}
-	if a.pipelinedConnection == nil {
-		return signers, nil
-	}
-
-	ret := make([]ssh.Signer, len(signers))
-	for i, s := range signers {
-		ret[i] = &signer{a, s.PublicKey()}
-	}
-
-	return ret, nil
+	return a.sshAgent.Signers()
 }
 
 func (a *agent) SignWithFlags(key ssh.PublicKey, data []byte, flags sshagent.SignatureFlags) (*ssh.Signature, error) {
@@ -229,36 +170,4 @@ func (a *agent) Extension(extensionType string, contents []byte) ([]byte, error)
 	return a.sshAgent.Extension(extensionType, contents)
 }
 
-func (a *agent) SignersForPathCallback(path string) func() ([]ssh.Signer, error) {
-	return func() ([]ssh.Signer, error) {
-		signers := a.SignersForPath(path)
-		if len(signers) == 0 {
-			return nil, fmt.Errorf("SSH key %s was not found in the SSH agent", path)
-		}
-		return signers, nil
-	}
-}
-
-func (a *agent) SignersForPath(path string) []ssh.Signer {
-	if path != "" {
-		if k, ok := a.signersByPath[path]; ok {
-			return []ssh.Signer{k}
-		} else {
-			return []ssh.Signer{}
-		}
-	}
-	return a.signers
-}
-
-type signer struct {
-	agent *agent
-	key   ssh.PublicKey
-}
-
-func (s *signer) PublicKey() ssh.PublicKey {
-	return s.key
-}
-
-func (s *signer) Sign(rand io.Reader, data []byte) (*ssh.Signature, error) {
-	return s.agent.Sign(s.key, data)
-}
+var _ sshagent.ExtendedAgent = &agent{}

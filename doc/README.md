@@ -5,6 +5,4 @@ files in here. The source for the documentation lives in content/documentation/
 
 Building the docs
 =================
-You will need go, hugo, dart-sass-embedded and npm. All but dart-sass-embedded can be installed with
-homebrew, dart-sass-embedded can be found at https://github.com/sass/dart-sass-embedded/releases.
-Grab a tarball, untar into /usr/local/bin
+You will need go, hugo, dart-sass and npm. All can be installed with homebrew: `brew install go hugo sass/sass/sass`

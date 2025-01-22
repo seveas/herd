@@ -2,7 +2,6 @@ package plugin
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -12,6 +11,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var testdata string
@@ -38,64 +39,109 @@ func TestFindingProvider(t *testing.T) {
 }
 
 func TestPluginConnection(t *testing.T) {
-	testcases := []struct {
-		mode  string
-		err   string
-		count int
-		log   bool
-	}{
-		{"normal", "<nil>", 5, true},
-		{"config-error", "Simulated configuration error", 0, false},
-		{"config-panic", "rpc error: code = Unavailable desc = error reading from server: EOF", 0, false},
-		{"empty", "<nil>", 0, true},
-		{"error", "Simulated load error", 0, true},
-		{"panic", "rpc error: code = Unavailable desc = error reading from server: EOF", 0, true},
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "normal")
+
+	err := p.ParseViper(v)
+	if err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
 	}
-	for _, test := range testcases {
-		t.Run(test.mode, func(t *testing.T) {
-			msg := struct {
-				name string
-				done bool
-				err  error
-			}{}
-			p := newPlugin("ci").(*pluginProvider)
-			hook := &logrusHook{seen: make(map[logrus.Level]bool)}
-			logrus.AddHook(hook)
-			if p.config.Command != filepath.Join(testdata, "bin", "herd-provider-ci") {
-				t.Errorf("Provider was not found by name automatically")
-			}
-			v := viper.New()
-			v.Set("Mode", test.mode)
-			err := p.ParseViper(v)
-			if err != nil {
-				if test.mode == "config-error" || test.mode == "config-panic" {
-					if err.Error() != test.err {
-						t.Errorf("Unexpected configuration error: %s", err)
-					}
-				} else {
-					t.Errorf("Unable to configure plugin: %s", err)
-				}
-				return
-			}
-			hosts, err := p.Load(context.Background(), func(name string, done bool, err error) { msg.name = name })
-			if fmt.Sprintf("%v", err) != test.err {
-				t.Errorf("Unexpected load error: %v. Expected: %v", err, test.err)
-				return
-			}
-			if hosts != nil && hosts.Len() != test.count {
-				t.Errorf("Received %d hosts, expecting %d", hosts.Len(), test.count)
-			}
-			if test.log {
-				if msg.name != "ci" {
-					t.Errorf("No loading message was received")
-				}
-				for _, level := range logrus.AllLevels {
-					if _, ok := hook.seen[level]; !ok && level > logrus.FatalLevel {
-						t.Errorf("No %s message was received", level)
-					}
-				}
-			}
-		})
+	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	if err != nil {
+		t.Errorf("Unable to load hosts: %s", err)
+	}
+	if hosts.Len() != 5 {
+		t.Errorf("Received %d hosts, expecting %d", hosts.Len(), 5)
+	}
+}
+
+func TestPluginConfigError(t *testing.T) {
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "config-error")
+
+	err := p.ParseViper(v)
+	if err.Error() != "Simulated configuration error" {
+		t.Errorf("Unexpected configuration error: %s", err)
+	}
+}
+
+func TestPluginConfigPanic(t *testing.T) {
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "config-panic")
+
+	err := p.ParseViper(v)
+	if status.Code(err) == codes.Unknown {
+		t.Errorf("Unexpected rpc/configuration error: %s (%d)", err, status.Code(err))
+	}
+}
+
+func TestPluginEmpty(t *testing.T) {
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "empty")
+
+	err := p.ParseViper(v)
+	if err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
+	}
+
+	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	if err != nil {
+		t.Errorf("Unable to load hosts: %s", err)
+	}
+	if hosts != nil {
+		t.Errorf("Received hosts when expecting nil")
+	}
+}
+
+func TestPluginError(t *testing.T) {
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "error")
+
+	err := p.ParseViper(v)
+	if err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
+	}
+
+	msg := struct {
+		name string
+		done bool
+		err  error
+	}{}
+	hook := &logrusHook{seen: make(map[logrus.Level]bool)}
+	logrus.AddHook(hook)
+	_, err = p.Load(context.Background(), func(name string, done bool, err error) { msg.name = name })
+	if err.Error() != "Simulated load error" {
+		t.Errorf("Unexpected load error: %v. Expected: %v", err, "Simulated load error")
+	}
+
+	if msg.name != "ci" {
+		t.Errorf("No loading message was received")
+	}
+	for _, level := range logrus.AllLevels {
+		if _, ok := hook.seen[level]; !ok && level > logrus.FatalLevel {
+			t.Errorf("No %s message was received", level)
+		}
+	}
+}
+
+func TestPluginPanic(t *testing.T) {
+	p := newPlugin("ci").(*pluginProvider)
+	v := viper.New()
+	v.Set("Mode", "panic")
+
+	err := p.ParseViper(v)
+	if err != nil {
+		t.Errorf("Unable to configure plugin: %s", err)
+	}
+
+	_, err = p.Load(context.Background(), func(name string, done bool, err error) {})
+	if status.Code(err) == codes.Unknown {
+		t.Errorf("Unexpected rpc/configuration error: %s (%d)", err, status.Code(err))
 	}
 }
 

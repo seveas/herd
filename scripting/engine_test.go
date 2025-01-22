@@ -118,11 +118,17 @@ func TestParseCommandLine(t *testing.T) {
 			cmd:  []command{},
 			err:  "only one sampling per hostspec allowed",
 		},
+		{
+			spec: []string{"file:1"},
+			cmd:  []command{addHostsCommand{glob: "file:1", attributes: herd.MatchAttributes{}, sampled: []string{}}},
+			err:  "",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(strings.Join(test.spec, " "), func(t *testing.T) {
-			e := NewScriptEngine(nil, nil, nil, nil)
+			r := herd.NewRegistry("", "")
+			e := NewScriptEngine(nil, nil, r, nil)
 			err := e.ParseCommandLine(test.spec, -1)
 			if (err != nil && err.Error() != test.err) || (err == nil && test.err != "") {
 				t.Errorf("Unexpected error %v, expected %v", err, test.err)
@@ -134,7 +140,7 @@ func TestParseCommandLine(t *testing.T) {
 				return
 			}
 			test.spec = append(test.spec, "id", "seveas")
-			e = NewScriptEngine(nil, nil, nil, nil)
+			e = NewScriptEngine(nil, nil, r, nil)
 			err = e.ParseCommandLine(test.spec, len(test.spec)-2)
 			if (err != nil && err.Error() != test.err) || (err == nil && test.err != "") {
 				t.Errorf("Unexpected error %v, expected %v", err, test.err)

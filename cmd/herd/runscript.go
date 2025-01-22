@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
-	"time"
 
 	"github.com/seveas/herd/ssh"
 
@@ -46,7 +44,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 	cmd.SilenceErrors = true
 	cmd.SilenceUsage = true
 
-	executor, err := ssh.NewExecutor(viper.GetDuration("SshAgentTimeout"), *currentUser.user)
+	executor, err := ssh.NewExecutor(viper.GetInt("SshAgentCount"), viper.GetDuration("SshAgentTimeout"), *currentUser.user, false)
 	if err != nil {
 		bail(err.Error())
 	}
@@ -63,7 +61,7 @@ func runScript(cmd *cobra.Command, args []string) error {
 		logrus.Errorf("Unable to parse script %s: %s", args[0], err)
 		return err
 	}
-	fn := filepath.Join(currentUser.historyDir, time.Now().Format("2006-01-02_150405.json"))
 	engine.Execute()
+	fn := historyFile(currentUser.historyDir)
 	return engine.History.Save(fn)
 }

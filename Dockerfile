@@ -1,6 +1,9 @@
-FROM golang:1.19
+FROM golang:1.23
 
-RUN apt-get update && apt-get -y install consul
+RUN curl https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
+    . /etc/os-release && \
+    echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $VERSION_CODENAME main" > /etc/apt/sources.list.d/hashicorp.list && \
+    apt-get update && apt-get -y install consul
 
 WORKDIR /herd
 COPY . .
