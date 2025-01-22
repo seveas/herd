@@ -2,10 +2,11 @@
 - os: windows
 - os: darwin
   icon: apple
-  title: mac
+  title: mac (apple)
+  arch: arm64
 - os: darwin
   icon: apple
-  title: mac M1
+  title: mac (intel)
 - os: freebsd
 - os: openbsd
   icon: download
