@@ -15,7 +15,7 @@ Once installed, let's confirm that it works:
 
 ```console
 $ herd --version
-herd version 0.10.0
+herd version 0.14.0
 ```
 
 Great, basic functionality confirmed! Now let's check the help output to see what we can do.
@@ -94,7 +94,16 @@ to work, you do need to disable known_hosts hashing in `~/.ssh/config`
 HashKnownHosts no
 ```
 
-Once you disable that, any host you ssh to can be found by herd as well.
+Once you disable that, any host you ssh to can be found by herd as well when you enable known_hosts
+discovery in the herd configuration:
+
+```yaml
+Providers:
+    known_hosts:
+```
+
+This is not enabled by default, because in larger environments `known_hosts` tends to accumulate
+decommissioned hosts, and herd will try to connect to them.
 
 Let's see an example:
 
