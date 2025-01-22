@@ -202,6 +202,7 @@ type SimpleUI struct {
 	hosts           *HostSet
 	colors          ColorConfig
 	output          *os.File
+	altOutput       *os.File
 	lastProgress    string
 	pchan           chan outputMessage
 	formatter       formatter
@@ -210,7 +211,6 @@ type SimpleUI struct {
 	pagerEnabled    bool
 	width           int
 	height          int
-	isTerminal      bool
 	syncCond        *sync.Cond
 	loading         []string
 	loadStart       time.Time
@@ -264,36 +264,37 @@ func NewSimpleUI(colors ColorConfig, hosts *HostSet) *SimpleUI {
 		colors:       colors,
 		hosts:        hosts,
 		output:       os.Stdout,
+		altOutput:    os.Stderr,
 		outputMode:   OutputAll,
 		lastProgress: "",
 		pchan:        make(chan outputMessage, 100),
 		syncCond:     &sync.Cond{L: new(sync.Mutex)},
 		formatter:    f,
-		isTerminal:   isatty.IsTerminal(os.Stdout.Fd()),
 	}
-	if ui.isTerminal {
+	if isatty.IsTerminal(ui.output.Fd()) {
+		ui.altOutput = ui.output
+	}
+	ui.getSize()
+	readline.DefaultOnWidthChanged(func() {
 		ui.getSize()
-		readline.DefaultOnWidthChanged(func() {
-			ui.getSize()
-		})
-	} else {
-		ansi.DisableColors(true)
-		ui.pagerEnabled = false
-		ui.width = 80
-	}
+	})
 	go ui.printer()
 	return ui
 }
 
 func (ui *SimpleUI) getSize() {
 	w, h, err := readline.GetSize(int(ui.output.Fd())) // nolint:gosec // FD's shouldn'tt reach higher than 2^31-1
+	if err != nil {
+		ui.pagerEnabled = false
+		ansi.DisableColors(true)
+		w, h, err = readline.GetSize(int(ui.altOutput.Fd())) // nolint:gosec // FD's shouldn'tt reach higher than 2^31-1
+	}
 	if err == nil {
 		ui.width, ui.height = w, h
 		if w < 40 {
 			ui.width = 40
 		}
 	} else {
-		ui.pagerEnabled = false
 		ui.width = 80
 	}
 }
@@ -318,19 +319,28 @@ func (ui *SimpleUI) printer() {
 			ui.syncCond.L.Unlock()
 			continue
 		}
+
+		out := ui.output
+		if ui.output != ui.altOutput && (msg.messageType == outputMessageLog || msg.messageType == outputMessageProgress) {
+			out = ui.altOutput
+		}
+
 		// If we're getting a normal message in the middle of printing
 		// progress, wipe the progress message and reprint it after this
 		// message
-		if ui.lastProgress != "" && msg.messageType != outputMessageProgress {
-			ui.output.WriteString(clearLine + msg.message + ui.lastProgress)
-		} else {
-			if msg.messageType == outputMessageProgress {
-				ui.output.WriteString(clearLine)
-				ui.lastProgress = msg.message
-			}
-			ui.output.WriteString(msg.message)
+		if ui.lastProgress != "" && msg.messageType != outputMessageProgress && out == ui.altOutput {
+			out.WriteString(clearLine + msg.message + ui.lastProgress)
+			out.Sync()
+			continue
 		}
-		ui.output.Sync()
+
+		if msg.messageType == outputMessageProgress {
+			out.WriteString(clearLine)
+			ui.lastProgress = msg.message
+		}
+
+		out.WriteString(msg.message)
+		out.Sync()
 	}
 }
 
@@ -653,7 +663,7 @@ func f2s(f float64) string {
 }
 
 func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
-	if !logrus.IsLevelEnabled(logrus.InfoLevel) || !ui.isTerminal {
+	if !logrus.IsLevelEnabled(logrus.InfoLevel) {
 		return
 	}
 
