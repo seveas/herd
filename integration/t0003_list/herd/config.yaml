@@ -3,3 +3,6 @@ Providers:
   plain:
     provider: plain
     file: plain.txt
+  json:
+    provider: json
+    file: multi.json

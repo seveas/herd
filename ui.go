@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -193,7 +194,6 @@ type HostListOptions struct {
 	Header        bool
 	Template      string
 	Count         []string
-	CountAll      bool
 	SortByCount   bool
 	Group         string
 }
@@ -443,7 +443,7 @@ func startPager(p *pager, o *io.Writer) {
 
 func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 	hosts := ui.hosts.hosts
-	if opts.CountAll {
+	if len(opts.Count) == 1 && opts.Count[0] == "*" {
 		ui.pchan <- outputMessage{outputMessageHostlist, fmt.Sprintf("%d\n", len(hosts))}
 		return
 	}
@@ -465,7 +465,7 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 	if !ui.pagerEnabled {
 		pgr = nil
 	}
-	if opts.AllAttributes || len(opts.Attributes) > 0 {
+	if len(opts.Attributes) > 0 {
 		if len(hosts) > ui.height {
 			startPager(pgr, &out)
 		}
@@ -476,18 +476,30 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		} else {
 			writer = newPassthrough(out)
 		}
-		if opts.AllAttributes {
-			attrs := make(map[string]bool)
-			for _, host := range hosts {
-				for key := range host.Attributes {
-					attrs[key] = true
+		allAttrs := make(map[string]bool)
+		attrs := make([]string, 0, len(opts.Attributes))
+		for _, attr := range opts.Attributes {
+			if !strings.ContainsRune(attr, '*') {
+				attrs = append(attrs, attr)
+				continue
+			}
+			if len(allAttrs) == 0 {
+				for _, host := range hosts {
+					for key := range host.Attributes {
+						allAttrs[key] = true
+					}
 				}
 			}
-			for attr := range attrs {
-				opts.Attributes = append(opts.Attributes, attr)
+			myattrs := make([]string, 0)
+			for key := range allAttrs {
+				if match, _ := filepath.Match(attr, key); match {
+					myattrs = append(myattrs, key)
+				}
 			}
-			sort.Strings(opts.Attributes)
+			sort.Strings(myattrs)
+			attrs = append(attrs, myattrs...)
 		}
+		opts.Attributes = attrs
 		if opts.Header {
 			attrline := make([]string, len(opts.Attributes)+1)
 			attrline[0] = "name"
