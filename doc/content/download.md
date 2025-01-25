@@ -22,7 +22,7 @@ On MacOS, herd can be installed with the Homebrew package manager from a separat
 
 ```console
 $ brew tap seveas/herd
-$ brew install herd
+$ brew install seveas/herd/herd
 ```
 
 ## Install from source
