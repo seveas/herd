@@ -22,8 +22,8 @@ func init() {
 	f := listCmd.Flags()
 	f.Bool("oneline", false, "List all hosts on one line, separated by commas")
 	f.String("separator", ",", "String separating hostnames in --oneline mode")
-	f.StringSlice("attributes", []string{}, "Show not only the names, but also the specified attributes")
-	f.Bool("all-attributes", false, "List hosts with all their attributes")
+	f.Bool("all-attributes", false, "List hosts with all their attributes (deprecated, use --attributes=* instead)")
+	f.StringSlice("attributes", []string{}, "Show not only the names, but also the specified attributes (supports wildcards)")
 	f.Bool("csv", false, "Output in csv format")
 	f.Bool("header", true, "Print attribute names in a header line before printing host data")
 	f.String("template", "", "Template to use for showing hosts")
@@ -55,20 +55,22 @@ func runList(cmd *cobra.Command, args []string) error {
 		logrus.Error(err.Error())
 		return err
 	}
+	// Backwards compatibility code
+	if viper.GetBool("all-attributes") {
+		viper.Set("attributes", []string{"*"})
+	}
 	engine.Execute()
 	opts := herd.HostListOptions{
-		OneLine:       viper.GetBool("OneLine"),
-		Separator:     viper.GetString("Separator"),
-		Csv:           viper.GetBool("csv"),
-		Attributes:    viper.GetStringSlice("Attributes"),
-		AllAttributes: viper.GetBool("AllAttributes"),
-		Header:        viper.GetBool("Header"),
-		Align:         true,
-		Template:      viper.GetString("Template"),
-		Count:         viper.GetStringSlice("Count"),
-		CountAll:      len(viper.GetStringSlice("Count")) == 1 && viper.GetStringSlice("Count")[0] == "*",
-		SortByCount:   !viper.IsSet("Sort"),
-		Group:         viper.GetString("Group"),
+		OneLine:     viper.GetBool("OneLine"),
+		Separator:   viper.GetString("Separator"),
+		Csv:         viper.GetBool("csv"),
+		Attributes:  viper.GetStringSlice("Attributes"),
+		Header:      viper.GetBool("Header"),
+		Align:       true,
+		Template:    viper.GetString("Template"),
+		Count:       viper.GetStringSlice("Count"),
+		SortByCount: !viper.IsSet("Sort"),
+		Group:       viper.GetString("Group"),
 	}
 	engine.Ui.PrintHostList(opts)
 	return nil
