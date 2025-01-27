@@ -14,13 +14,13 @@ require (
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/hashicorp/consul/api v1.31.0
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/go-plugin v1.6.2
+	github.com/hashicorp/go-plugin v1.6.3
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/kevinburke/ssh_config v1.2.0
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v1.2.0
 	github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351
@@ -32,16 +32,16 @@ require (
 	github.com/transip/gotransip/v6 v6.26.0
 	golang.org/x/crypto v0.32.0
 	golang.org/x/sys v0.29.0
-	google.golang.org/api v0.215.0
-	google.golang.org/grpc v1.69.4
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/api v0.218.0
+	google.golang.org/grpc v1.70.0
+	google.golang.org/protobuf v1.36.4
 	gopkg.in/yaml.v2 v2.4.0
 	tailscale.com v1.78.3
 )
 
 require (
-	cloud.google.com/go/auth v0.13.0 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
+	cloud.google.com/go/auth v0.14.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -68,7 +68,7 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.5.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/s2a-go v0.1.8 // indirect
+	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
