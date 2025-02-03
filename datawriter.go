@@ -27,6 +27,9 @@ func (c *columnizer) Write(r []string) error {
 	if c.lengths == nil {
 		c.lengths = make([]int, len(r))
 	}
+	for i := range r {
+		r[i] = strings.TrimRight(r[i], "\r\n")
+	}
 	c.rows = append(c.rows, r)
 	tl := len(c.lengths) - 1
 	for i, v := range r {
