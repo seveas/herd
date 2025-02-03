@@ -34,8 +34,8 @@ type Host struct {
 	Name       string
 	Address    string
 	Attributes HostAttributes
-	Connection io.Closer
-	LastResult *Result
+	Connection io.Closer `yaml:"-" json:"-"`
+	LastResult *Result   `yaml:",omitempty" json:",omitempty"`
 	publicKeys []ssh.PublicKey
 	csum       uint32
 }
