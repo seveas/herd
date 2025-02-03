@@ -56,8 +56,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	// Backwards compatibility code
-	if viper.GetBool("all-attributes") {
-		viper.Set("attributes", []string{"*"})
+	if viper.GetBool("AllAttributes") {
+		viper.Set("Attributes", []string{"*"})
 	}
 	engine.Execute()
 	opts := herd.HostListOptions{
