@@ -770,6 +770,9 @@ func (ui *SimpleUI) OutputChannel() chan OutputLine {
 }
 
 func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
+	if !logrus.IsLevelEnabled(logrus.InfoLevel) {
+		return nil
+	}
 	pc := make(chan ProgressMessage)
 	go func() {
 		start := time.Now()
