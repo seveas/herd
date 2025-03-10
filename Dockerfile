@@ -1,4 +1,4 @@
-FROM golang:1.23
+FROM golang:1.24
 
 RUN curl https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
     . /etc/os-release && \
