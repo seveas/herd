@@ -1,6 +1,7 @@
 module github.com/seveas/herd
 
-go 1.23.2
+go 1.24.0
+
 toolchain go1.24.1
 
 require (
@@ -57,7 +58,7 @@ require (
 	github.com/alexbrainman/sspi v0.0.0-20231016080023-1a75b4708caa // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/chzyer/test v1.0.0 // indirect
-	github.com/dblohm7/wingoes v0.0.0-20240705145628-15336bf25109 // indirect
+	github.com/dblohm7/wingoes v0.0.0-20240119213807-a09d6be7affa // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -83,10 +84,10 @@ require (
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/jsimonetti/rtnetlink v1.4.2 // indirect
+	github.com/jsimonetti/rtnetlink v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mdlayher/netlink v1.7.3-0.20250113171957-fbb4dce95f42 // indirect
-	github.com/mdlayher/socket v0.5.1 // indirect
+	github.com/mdlayher/socket v0.5.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect

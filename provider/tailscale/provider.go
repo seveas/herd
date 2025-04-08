@@ -7,7 +7,7 @@ import (
 	"github.com/seveas/herd"
 
 	"github.com/spf13/viper"
-	"tailscale.com/client/tailscale"
+	"tailscale.com/client/local"
 )
 
 func init() {
@@ -15,7 +15,7 @@ func init() {
 }
 
 func magicProvider() herd.HostProvider {
-	if status, err := tailscale.Status(context.Background()); err == nil && status.BackendState == "Running" {
+	if status, err := local.Status(context.Background()); err == nil && status.BackendState == "Running" {
 		return &tailscaleProvider{name: "tailscale"}
 	}
 	return nil
@@ -53,7 +53,7 @@ func (p *tailscaleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (h
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 
-	status, err := tailscale.Status(ctx)
+	status, err := local.Status(ctx)
 	if err != nil {
 		return nil, err
 	}
