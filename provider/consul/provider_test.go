@@ -1,7 +1,6 @@
 package consul
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -61,7 +60,7 @@ func TestConsulMock(t *testing.T) {
 		httpmock.NewStringResponder(200, mockHealthchecks("site2", "service2", "failing", 2)))
 
 	p.config.Address = "http://consul.ci:8080"
-	ctx := context.Background()
+	ctx := t.Context()
 	hosts, err := p.Load(ctx, func(string, bool, error) {})
 	if err != nil {
 		t.Errorf("Failed to query mock consul: %s", err)

@@ -46,7 +46,7 @@ func TestNewRegistry(t *testing.T) {
 
 func TestGetHosts(t *testing.T) {
 	r := Registry{providers: []HostProvider{&fakeProvider{}, &fakeProvider{}}}
-	err := r.LoadHosts(context.Background(), func(string, bool, error) {})
+	err := r.LoadHosts(t.Context(), func(string, bool, error) {})
 	if err != nil {
 		t.Errorf("%t %v", err, err)
 		t.Errorf("Could not load hosts: %s", err.Error())
@@ -58,7 +58,7 @@ func TestGetHosts(t *testing.T) {
 
 func TestGetHostsTimeout(t *testing.T) {
 	r := Registry{providers: []HostProvider{&fakeProvider{}, &fakeProvider{}}}
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 1*time.Millisecond)
 	defer cancel()
 	err := r.LoadHosts(ctx, func(string, bool, error) {})
 	if err == nil {

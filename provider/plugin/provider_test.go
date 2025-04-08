@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -47,7 +46,7 @@ func TestPluginConnection(t *testing.T) {
 	if err != nil {
 		t.Errorf("Unable to configure plugin: %s", err)
 	}
-	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	hosts, err := p.Load(t.Context(), func(name string, done bool, err error) {})
 	if err != nil {
 		t.Errorf("Unable to load hosts: %s", err)
 	}
@@ -88,7 +87,7 @@ func TestPluginEmpty(t *testing.T) {
 		t.Errorf("Unable to configure plugin: %s", err)
 	}
 
-	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	hosts, err := p.Load(t.Context(), func(name string, done bool, err error) {})
 	if err != nil {
 		t.Errorf("Unable to load hosts: %s", err)
 	}
@@ -114,7 +113,7 @@ func TestPluginError(t *testing.T) {
 	}{}
 	hook := &logrusHook{seen: make(map[logrus.Level]bool)}
 	logrus.AddHook(hook)
-	_, err = p.Load(context.Background(), func(name string, done bool, err error) { msg.name = name })
+	_, err = p.Load(t.Context(), func(name string, done bool, err error) { msg.name = name })
 	if err.Error() != "Simulated load error" {
 		t.Errorf("Unexpected load error: %v. Expected: %v", err, "Simulated load error")
 	}
@@ -139,7 +138,7 @@ func TestPluginPanic(t *testing.T) {
 		t.Errorf("Unable to configure plugin: %s", err)
 	}
 
-	_, err = p.Load(context.Background(), func(name string, done bool, err error) {})
+	_, err = p.Load(t.Context(), func(name string, done bool, err error) {})
 	if status.Code(err) == codes.Unknown {
 		t.Errorf("Unexpected rpc/configuration error: %s (%d)", err, status.Code(err))
 	}
@@ -171,7 +170,7 @@ func TestDataDirProvider(t *testing.T) {
 		t.Errorf("Unable to set data dir: %s", err)
 		return
 	}
-	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	hosts, err := p.Load(t.Context(), func(name string, done bool, err error) {})
 	if err != nil {
 		t.Errorf("Unable to load hosts: %s", err)
 		return
@@ -193,7 +192,7 @@ func TestCache(t *testing.T) {
 	p.SetCacheDir("testcache")
 	p.Keep()
 	p.Invalidate()
-	hosts, err := p.Load(context.Background(), func(name string, done bool, err error) {})
+	hosts, err := p.Load(t.Context(), func(name string, done bool, err error) {})
 	if err != nil {
 		t.Errorf("Unable to load hosts: %s", err)
 		return

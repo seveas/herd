@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -26,7 +25,7 @@ func TestHttpProvider(t *testing.T) {
 		t.Errorf("ParseViper failed %s", err)
 	}
 	seenLoadingMessage := false
-	hosts, err := p.Load(context.Background(), func(string, bool, error) { seenLoadingMessage = true })
+	hosts, err := p.Load(t.Context(), func(string, bool, error) { seenLoadingMessage = true })
 
 	if err != nil {
 		t.Errorf("HTTP fetch produced an error: %s", err)

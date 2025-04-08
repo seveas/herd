@@ -1,7 +1,6 @@
 package known_hosts
 
 import (
-	"context"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -32,7 +31,7 @@ func TestParser(t *testing.T) {
 			t.Setenv("HOME", filepath.Join(testdata, test.path))
 			p := magicProvider().(*knownHostsProvider)
 			p.config.Files = p.config.Files[1:]
-			hosts, err := p.Load(context.Background(), nil)
+			hosts, err := p.Load(t.Context(), nil)
 			if err != nil {
 				t.Errorf("Error parsing known_hosts: %s", err)
 			}

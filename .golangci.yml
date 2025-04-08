@@ -36,7 +36,7 @@ linters:
     - predeclared
     - staticcheck
     - stylecheck
-    - tenv
+    - usetesting
     - thelper
     - tparallel
     - typecheck

@@ -1,7 +1,6 @@
 package prometheus
 
 import (
-	"context"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
@@ -19,7 +18,7 @@ func TestPrometheus(t *testing.T) {
 		t.Errorf("ParseViper failed: %s", err)
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
 	httpmock.RegisterResponder("GET", "http://prometheus.herd.ci:9100/api/v1/targets",
