@@ -556,7 +556,8 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			total++
 			v := make([]string, len(opts.Count))
 			for i, attr := range opts.Count {
-				v[i] = fmt.Sprintf("%v", host.Attributes[attr])
+				val, _ := host.GetAttribute(attr)
+				v[i] = fmt.Sprintf("%v", val)
 			}
 			vs := strings.Join(v, "\000")
 			if _, ok := counts[vs]; ok {
