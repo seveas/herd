@@ -45,15 +45,11 @@ func (p *fakeProvider) ParseViper(v *viper.Viper) error {
 }
 
 func TestCache(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "herd-test-cache-")
-	if err != nil {
-		t.Fatalf("Unable to create temporary directory: %s", err.Error())
-	}
-	defer os.RemoveAll(tmpdir)
+	tmpdir := t.TempDir()
 	c := NewFromProvider(&fakeProvider{}).(*Cache)
 	c.config.Lifetime = 1 * time.Hour
 	c.SetCacheDir(filepath.Join(tmpdir, "cache"))
-	hosts, err := c.Load(context.Background(), func(string, bool, error) {})
+	hosts, err := c.Load(t.Context(), func(string, bool, error) {})
 	if hosts.Len() != 1 || err != nil {
 		t.Errorf("First cache load did not succeed")
 	}
@@ -63,7 +59,7 @@ func TestCache(t *testing.T) {
 	if c.mustRefresh() {
 		t.Errorf("We must immediately refresh the cache")
 	}
-	hosts, err = c.Load(context.Background(), func(string, bool, error) {})
+	hosts, err = c.Load(t.Context(), func(string, bool, error) {})
 	if hosts.Len() != 1 || err != nil {
 		t.Errorf("Second cache load did not succeed")
 	}
@@ -74,7 +70,7 @@ func TestCache(t *testing.T) {
 	c.source.(*fakeProvider).doError = true
 	c.config.File += "-failed"
 	c.Invalidate()
-	_, err = c.Load(context.Background(), func(string, bool, error) {})
+	_, err = c.Load(t.Context(), func(string, bool, error) {})
 	if err == nil {
 		t.Errorf("Expected an error from the cache")
 	}
@@ -87,11 +83,7 @@ func TestCache(t *testing.T) {
 }
 
 func TestRelativeFiles(t *testing.T) {
-	tmpdir, err := os.MkdirTemp("", "herd-test-cache-")
-	if err != nil {
-		t.Fatalf("Unable to create temporary directory: %s", err.Error())
-	}
-	defer os.RemoveAll(tmpdir)
+	tmpdir := t.TempDir()
 	r := herd.NewRegistry("/foo", filepath.Join(tmpdir, "cache"))
 	p := &fakeProvider{}
 	c := NewFromProvider(p)
@@ -101,7 +93,7 @@ func TestRelativeFiles(t *testing.T) {
 		t.Errorf("Proper cache path not set, found %s", c.(*Cache).config.File)
 	}
 
-	if err := r.LoadHosts(context.Background(), func(string, bool, error) {}); err != nil {
+	if err := r.LoadHosts(t.Context(), func(string, bool, error) {}); err != nil {
 		t.Errorf("Registry load did not succeed")
 	}
 	hosts := r.Search("", nil, nil, 0)
