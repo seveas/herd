@@ -103,7 +103,35 @@ type agentSignRequest struct {
 }
 
 func (a *agent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
-	req := ssh.Marshal(agentSignRequest{Key: key.Marshal(), Data: data, Flags: uint32(0)})
+	return a.SignWithFlags(key, data, 0)
+}
+
+func (a *agent) Add(key sshagent.AddedKey) error {
+	return a.sshAgent.Add(key)
+}
+
+func (a *agent) Remove(key ssh.PublicKey) error {
+	return a.sshAgent.Remove(key)
+}
+
+func (a *agent) RemoveAll() error {
+	return a.sshAgent.RemoveAll()
+}
+
+func (a *agent) Lock(passphrase []byte) error {
+	return a.sshAgent.Lock(passphrase)
+}
+
+func (a *agent) Unlock(passphrase []byte) error {
+	return a.sshAgent.Unlock(passphrase)
+}
+
+func (a *agent) Signers() ([]ssh.Signer, error) {
+	return a.sshAgent.Signers()
+}
+
+func (a *agent) SignWithFlags(key ssh.PublicKey, data []byte, flags sshagent.SignatureFlags) (*ssh.Signature, error) {
+	req := ssh.Marshal(agentSignRequest{Key: key.Marshal(), Data: data, Flags: uint32(flags)})
 	if len(req) > math.MaxUint32 {
 		return nil, errors.New("ssh agent request too large")
 	}
@@ -136,34 +164,6 @@ func (a *agent) Sign(key ssh.PublicKey, data []byte) (*ssh.Signature, error) {
 		return nil, err
 	}
 	return &sig, nil
-}
-
-func (a *agent) Add(key sshagent.AddedKey) error {
-	return a.sshAgent.Add(key)
-}
-
-func (a *agent) Remove(key ssh.PublicKey) error {
-	return a.sshAgent.Remove(key)
-}
-
-func (a *agent) RemoveAll() error {
-	return a.sshAgent.RemoveAll()
-}
-
-func (a *agent) Lock(passphrase []byte) error {
-	return a.sshAgent.Lock(passphrase)
-}
-
-func (a *agent) Unlock(passphrase []byte) error {
-	return a.sshAgent.Unlock(passphrase)
-}
-
-func (a *agent) Signers() ([]ssh.Signer, error) {
-	return a.sshAgent.Signers()
-}
-
-func (a *agent) SignWithFlags(key ssh.PublicKey, data []byte, flags sshagent.SignatureFlags) (*ssh.Signature, error) {
-	return a.sshAgent.SignWithFlags(key, data, flags)
 }
 
 func (a *agent) Extension(extensionType string, contents []byte) ([]byte, error) {
