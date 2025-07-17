@@ -233,7 +233,7 @@ func (r *Runner) End() {
 	for _, h := range r.hosts.hosts {
 		if h.Connection != nil {
 			logrus.Debugf("Disconnecting from %s", h.Name)
-			h.Connection.Close()
+			_ = h.Connection.Close()
 			h.Connection = nil
 		}
 	}
