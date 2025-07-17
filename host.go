@@ -8,6 +8,7 @@ import (
 	"hash/crc32"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -15,19 +16,19 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// Hosts can have attributes of any types, but querying is limited to strings,
+// HostAttributes represent attributes on a host, they can be of any type, but querying is limited to strings,
 // booleans, numbers, nil and slices of these values.
-type HostAttributes map[string]interface{}
+type HostAttributes map[string]any
 
 func (h HostAttributes) prefix(prefix string) HostAttributes {
-	ret := make(map[string]interface{})
+	ret := make(map[string]any)
 	for k, v := range h {
 		ret[prefix+k] = v
 	}
 	return ret
 }
 
-// A host represents a remote host. It can be instantiated manually, but is
+// Host represents a remote host. It can be instantiated manually, but is
 // usually fetched from one or more Providers, which can all contribute to the
 // hosts attributes.
 type Host struct {
@@ -76,8 +77,8 @@ func (h *Host) MarshalJSON() ([]byte, error) {
 	return data, err
 }
 
-// Hosts should be initialized with this function, which also initializes any
-// internal data, without which SSH connections will not be possible.
+// NewHost initializes a host object, which also initializes any internal data,
+// without which SSH connections will not be possible.
 func NewHost(name, address string, attributes HostAttributes) *Host {
 	h := &Host{
 		Name:       name,
@@ -124,13 +125,23 @@ func (h Host) String() string {
 	return fmt.Sprintf("Host{Name: %s, Keys: %d, Attributes: %s}", h.Name, len(h.publicKeys), h.Attributes)
 }
 
-// Adds a public key to a host, it will be used by the SSH client when connecting
+// AddPublicKey adds a public key to a host, it will be used by the SSH client
+// to verify the host's identity.
 func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }
 
-func (h *Host) PublicKeys() []ssh.PublicKey {
-	return h.publicKeys
+func (h *Host) PublicKeys(keyTypes ...string) []ssh.PublicKey {
+	if len(keyTypes) == 0 {
+		return h.publicKeys
+	}
+	keys := make([]ssh.PublicKey, 0, len(h.publicKeys))
+	for _, k := range h.publicKeys {
+		if slices.Contains(keyTypes, k.Type()) {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {

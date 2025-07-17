@@ -54,7 +54,11 @@ func (p *HttpProvider) ParseViper(v *viper.Viper) error {
 }
 
 func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, p.config.Url, nil)
+	return p.FetchUrl(ctx, p.config.Url)
+}
+
+func (p *HttpProvider) FetchUrl(ctx context.Context, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -77,9 +77,13 @@ var rootCmd = &cobra.Command{
 			}
 			cmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
 				pprof.StopCPUProfile()
-				pfd.Close()
+				if err := pfd.Close(); err != nil {
+					logrus.Warnf("Could not close CPU profile file: %s", err)
+				}
 				trace.Stop()
-				tfd.Close()
+				if err := tfd.Close(); err != nil {
+					logrus.Warnf("Could not close trace file: %s", err)
+				}
 			}
 		}
 	},

@@ -23,7 +23,9 @@ func init() {
 	if _, me, _, ok := runtime.Caller(0); ok {
 		testdata = filepath.Join(filepath.Dir(me), "testdata")
 	}
-	os.Setenv("PATH", strings.Join([]string{os.Getenv("PATH"), filepath.Join(testdata, "bin")}, ":"))
+	if err := os.Setenv("PATH", strings.Join([]string{os.Getenv("PATH"), filepath.Join(testdata, "bin")}, ":")); err != nil {
+		panic(err)
+	}
 }
 
 func TestFindingProvider(t *testing.T) {
