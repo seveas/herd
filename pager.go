@@ -21,11 +21,16 @@ func (p *pager) start() error {
 	if !ok {
 		pager = "less"
 	}
-	args := []string{}
-	if strings.HasSuffix(pager, "less") {
-		args = append(args, "-R")
+	var cmd *exec.Cmd
+	if _, err := exec.LookPath(pager); err == nil {
+		args := []string{}
+		if strings.HasSuffix(pager, "less") {
+			args = append(args, "-R")
+		}
+		cmd = exec.Command(pager, args...)
+	} else {
+		cmd = exec.Command("sh", "-c", pager)
 	}
-	cmd := exec.Command(pager, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	fd, err := cmd.StdinPipe()
