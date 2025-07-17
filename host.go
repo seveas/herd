@@ -8,6 +8,7 @@ import (
 	"hash/crc32"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -130,8 +131,17 @@ func (h *Host) AddPublicKey(k ssh.PublicKey) {
 	h.publicKeys = append(h.publicKeys, k)
 }
 
-func (h *Host) PublicKeys() []ssh.PublicKey {
-	return h.publicKeys
+func (h *Host) PublicKeys(keyTypes ...string) []ssh.PublicKey {
+	if len(keyTypes) == 0 {
+		return h.publicKeys
+	}
+	keys := make([]ssh.PublicKey, 0, len(h.publicKeys))
+	for _, k := range h.publicKeys {
+		if slices.Contains(keyTypes, k.Type()) {
+			keys = append(keys, k)
+		}
+	}
+	return keys
 }
 
 func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
