@@ -186,4 +186,47 @@ func (s *signer) Sign(rand io.Reader, data []byte) (*ssh.Signature, error) {
 	return s.agent.Sign(s.key, data)
 }
 
-var _ ssh.Signer = &signer{}
+// These funcstions and the certKeyAlgoNames map are copied from
+// golang.org/x/crypto/ssh/agent/client.go We need to copy them because they
+// are not exported. They are needed to support connection to hosts that allow
+// ssh-rsa-512 signatures but not ssh-rsa, such as hosts with newer openssh
+// versions.
+func (s *signer) SignWithAlgorithm(rand io.Reader, data []byte, algorithm string) (*ssh.Signature, error) {
+	if algorithm == "" || algorithm == underlyingAlgo(s.key.Type()) {
+		return s.Sign(rand, data)
+	}
+
+	var flags sshagent.SignatureFlags
+	switch algorithm {
+	case ssh.KeyAlgoRSASHA256:
+		flags = sshagent.SignatureFlagRsaSha256
+	case ssh.KeyAlgoRSASHA512:
+		flags = sshagent.SignatureFlagRsaSha512
+	default:
+		return nil, fmt.Errorf("agent: unsupported algorithm %q", algorithm)
+	}
+
+	return s.agent.SignWithFlags(s.key, data, flags)
+}
+
+func underlyingAlgo(algo string) string {
+	if a, ok := certKeyAlgoNames[algo]; ok {
+		return a
+	}
+	return algo
+}
+
+var certKeyAlgoNames = map[string]string{
+	ssh.CertAlgoRSAv01:        ssh.KeyAlgoRSA,
+	ssh.CertAlgoRSASHA256v01:  ssh.KeyAlgoRSASHA256,
+	ssh.CertAlgoRSASHA512v01:  ssh.KeyAlgoRSASHA512,
+	ssh.CertAlgoDSAv01:        ssh.KeyAlgoDSA,
+	ssh.CertAlgoECDSA256v01:   ssh.KeyAlgoECDSA256,
+	ssh.CertAlgoECDSA384v01:   ssh.KeyAlgoECDSA384,
+	ssh.CertAlgoECDSA521v01:   ssh.KeyAlgoECDSA521,
+	ssh.CertAlgoSKECDSA256v01: ssh.KeyAlgoSKECDSA256,
+	ssh.CertAlgoED25519v01:    ssh.KeyAlgoED25519,
+	ssh.CertAlgoSKED25519v01:  ssh.KeyAlgoSKED25519,
+}
+
+var _ ssh.AlgorithmSigner = &signer{}

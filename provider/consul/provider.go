@@ -193,6 +193,10 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (*herd.H
 				return nil, err
 			}
 			for _, check := range checks {
+				if _, ok := ret[check.Node]; !ok {
+					logrus.Warnf("Service %s has check for node %s, but no such host exists in the catalog", service, check.Node)
+					continue
+				}
 				if check.Status != "passing" {
 					ret[check.Node].health = "unhealthy"
 				} else if ret[check.Node].health != "unhealthy" {
@@ -210,6 +214,10 @@ func (p *consulProvider) loadDatacenter(ctx context.Context, dc string) (*herd.H
 		for service, nodes := range serviceNode {
 			for host, info := range nodes {
 				h := hm[host]
+				if h == nil {
+					logrus.Warnf("Host %s not found in catalog, but still has a serviceNode for %s", host, service)
+					continue
+				}
 				h.Attributes[fmt.Sprintf("service:%s", service)] = info.tags
 				appendService(h, "service", service)
 				if info.health != "" {
