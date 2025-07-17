@@ -44,7 +44,7 @@ func (r *dnsResolver) resolve(hostname string, qtype uint16) ([]dns.RR, error) {
 
 var sshfpAlgorithms = map[string]uint8{
 	ssh.KeyAlgoRSA:      1,
-	ssh.KeyAlgoDSA:      2,
+	ssh.KeyAlgoDSA:      2, // nolint:staticcheck // DSA is deprecated, but we still want to support sshfp records that use it
 	ssh.KeyAlgoECDSA256: 3,
 	ssh.KeyAlgoECDSA384: 3,
 	ssh.KeyAlgoECDSA521: 3,
