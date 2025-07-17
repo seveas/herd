@@ -58,7 +58,7 @@ func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {
 }
 
 func (p *HttpProvider) FetchUrl(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

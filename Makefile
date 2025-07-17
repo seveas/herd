@@ -53,7 +53,7 @@ tidy:
 provider/plugin/testdata/bin/herd-provider-%: host.go hostset.go go.mod go.sum provider/plugin/testdata/provider/%/*.go provider/plugin/testdata/cmd/herd-provider-%/*.go provider/plugin/common/* provider/plugin/server/* $(protobuf_sources)
 	go build $(GOGCFLAGS) -o "$@" github.com/seveas/herd/provider/plugin/testdata/cmd/herd-provider-$*
 
-test: test-providers test-go lint tidy test-build provider/plugin/testdata/bin/herd-provider-ci
+test: test-providers test-go tidy test-build provider/plugin/testdata/bin/herd-provider-ci
 test-providers: provider/plugin/testdata/bin/herd-provider-ci provider/plugin/testdata/bin/herd-provider-ci_dataloader provider/plugin/testdata/bin/herd-provider-ci_cache
 test-go:
 	go test ./...

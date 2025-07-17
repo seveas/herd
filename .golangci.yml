@@ -1,4 +1,4 @@
-version: 2
+version: "2"
 run:
   tests: true
 
@@ -64,15 +64,11 @@ linters:
         - G204  # User specifies commands to run
         - G301  # We determine our permissions as we want them
         - G304  # We use files specified by the user
-    gofumpt:
-      extra-rules: true
     grouper:
       import-require-single-import: true
     prealloc:
       simple: false
       for-loops: true
-    predeclared:
-      q: true
     staticcheck:
       checks:
         - all
