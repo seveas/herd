@@ -55,6 +55,8 @@ func (p *pager) Wait() error {
 	if p == nil || p.process == nil {
 		return nil
 	}
-	p.stdin.Close()
+	if err := p.stdin.Close(); err != nil {
+		return fmt.Errorf("failed to close stdin: %w", err)
+	}
 	return p.process.Wait()
 }

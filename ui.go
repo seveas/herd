@@ -818,9 +818,10 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 					default:
 						nfail++
 					}
-					if ui.outputMode == OutputPerhost {
+					switch ui.outputMode {
+					case OutputPerhost:
 						ui.pchan <- outputMessage{outputMessageResult, ui.formatter.formatResult(msg.Result, hlen)}
-					} else if ui.outputMode == OutputTail {
+					case OutputTail:
 						status := ui.formatter.formatStatus(msg.Result, hlen)
 						if ui.outputTimestamp {
 							status = msg.Result.EndTime.Format("15:04:05.000 ") + status

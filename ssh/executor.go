@@ -120,7 +120,7 @@ func (e *Executor) Run(ctx context.Context, host *herd.Host, command string, oc 
 		r.ExitStatus = 0
 	}
 	if e.disconnect {
-		connection.Close()
+		_ = connection.Close()
 		host.Connection = nil
 	}
 	r.Stdout = stdout.Bytes()

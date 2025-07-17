@@ -1,3 +1,4 @@
+version: 2
 run:
   tests: true
 
@@ -14,14 +15,9 @@ linters:
     - errcheck
     - errname
     - forbidigo
-    - gci
     - gocritic
-    - gofmt
-    - gofumpt
-    - goimports
     - gomoddirectives
     - gosec
-    - gosimple
     - govet
     - grouper
     - importas
@@ -35,11 +31,9 @@ linters:
     - prealloc
     - predeclared
     - staticcheck
-    - stylecheck
     - usetesting
     - thelper
     - tparallel
-    - typecheck
     - unconvert
     - unparam
     - unused
@@ -50,60 +44,83 @@ linters:
     - nonamedreturns  # Used in some providers, we should restructure the code to not need it
     - revive  # Need to have a good look at its configuration
     - wastedassign  # Does not yet support generics
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^fmt\.Print.*
+        - pattern: ^spew\.Dump
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        # TODO try the other tags
+      disabled-checks:
+        - ifElseChain
+        - hugeParam
+        - equalFold
+        - rangeValCopy
+    gosec:
+      excludes:
+        - G204  # User specifies commands to run
+        - G301  # We determine our permissions as we want them
+        - G304  # We use files specified by the user
+    gofumpt:
+      extra-rules: true
+    grouper:
+      import-require-single-import: true
+    prealloc:
+      simple: false
+      for-loops: true
+    predeclared:
+      q: true
+    staticcheck:
+      checks:
+        - all
+        - -ST1000  # FIXME: We need to add package comments
+        - -ST1003  # FIXME: We have many miscapitalized names
+        - -ST1005  # Our error messages go straight to the user and are full sentences
+  exclusions:
+    warn-unused: true
+    rules:
+      # We ignore all i/o errors, needs a dedicated FIXME
+      - path: ui.go
+        linters:
+          - errcheck
+          - gosec
+      - path: datawriter.go
+        linters:
+          - errcheck  # FIXME the interface used does not allow checking errors, due to needing encoding/csv to being an implementation
+      - source: defer.*Close
+        linters:
+          - errcheck
+
+#  exclude-rules:
+#    # This needs to be disabled until we update the protobuf dependency
+#    - path: provider/plugin/common/grpc.go
+#      linters:
+#        - staticcheck
+#    - path: ui.go
+#      linters:
+#        - errcheck
+
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - prefix(github.com/seveas/herd)
+        - default
+      custom-order: true
+  exclusions:
+    warn-unused: true
+    paths:
+      - cmd/herd/.*_providers\.go
 
 issues:
   max-same-issues: 0
   max-issues-per-linter: 0
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - "scripting/parser/herd_.*\\.go$"
-  exclude-rules:
-    # This needs to be disabled until we update the protobuf dependency
-    - path: provider/plugin/common/grpc.go
-      linters:
-        - staticcheck
-    # We ignore all i/o errors, needs a dedicated fix
-    - path: ui.go
-      linters:
-        - errcheck
-    # This file is deliberately not in alphabetical order. Will be fixed when
-    # ssh key discovery and host key discovery are separated
-    - path: cmd/herd/.*_providers.go
-      linters:
-        - gci
-
-linters-settings:
-  forbidigo:
-    forbid:
-      - ^fmt\.Print.*
-      - ^spew\.Dump
-  gci:
-    sections:
-      - standard
-      - prefix(github.com/seveas/herd)
-      - default
-    custom-order: true
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-      # TODO try the other tags
-    disabled-checks:
-      - ifElseChain
-      - hugeParam
-      - equalFold
-      - rangeValCopy
-  gofumpt:
-    extra-rules: true
-  grouper:
-    import-require-single-import: true
-  prealloc:
-    simple: false
-    for-loops: true
-  predeclared:
-    q: true
-  stylecheck:
-    checks:
-      - all
-      - -ST1003  # FIXME: We have many miscapitalized names
-      - -ST1005  # Our error messages go straight to the user and are full sentences
