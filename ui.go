@@ -531,16 +531,23 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 		if len(hosts) > ui.height {
 			startPager(pgr, &out)
 		}
-		tmpl, err := template.New("host").Funcs(templateFuncs).Parse(opts.Template + "\n")
+		tmpl, err := template.New("host").Funcs(templateFuncs).Parse(opts.Template)
 		if err != nil {
 			logrus.Errorf("Unable to parse template '%s': %s", opts.Template, err)
 			return
 		}
-		for _, host := range hosts {
+		sep := []byte(opts.Separator)
+		for i, host := range hosts {
+			if i > 0 && opts.Separator != "" {
+				out.Write(sep)
+			}
 			err := tmpl.Execute(out, host)
 			if err != nil {
 				logrus.Errorf("Error executing template: %s", err)
 			}
+		}
+		if !strings.HasSuffix(opts.Template, "\n") {
+			out.Write([]byte("\n"))
 		}
 	} else if len(opts.Count) != 0 {
 		// First we generate the counts

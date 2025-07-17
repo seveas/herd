@@ -86,6 +86,6 @@ func runKeyScan(cmd *cobra.Command, args []string) error {
 {{ $host.Name }}{{ if $host.Address }},{{ $host.Address }}{{ end }} {{ sshkey $key }}
 {{ end -}}
 `
-	engine.Ui.PrintHostList(herd.HostListOptions{Template: template})
+	engine.Ui.PrintHostList(herd.HostListOptions{Template: template, Separator: ""})
 	return nil
 }

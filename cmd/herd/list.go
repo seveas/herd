@@ -59,6 +59,9 @@ func runList(cmd *cobra.Command, args []string) error {
 	if viper.GetBool("AllAttributes") {
 		viper.Set("Attributes", []string{"*"})
 	}
+	if viper.GetString("Template") != "" {
+		viper.SetDefault("Separator", "\n")
+	}
 	engine.Execute()
 	opts := herd.HostListOptions{
 		OneLine:     viper.GetBool("OneLine"),
