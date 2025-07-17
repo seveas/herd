@@ -7,9 +7,7 @@ reset:
 	openssl genrsa -out $@
 
 ca.crt: ca.key
-	openssl req -new -subj /CN=ca -key ca.key -out ca.csr -days 3650
-	openssl x509 -in ca.csr -out ca.crt -req -signkey ca.key -days 3650
-	rm ca.csr
+	openssl req -x509 -new -subj /CN=ca -key ca.key -out ca.crt -days 3650 -addext "basicConstraints = CA:TRUE" -addext "keyUsage = keyCertSign, cRLSign"
 
 %.crt: %.key ca.crt
 	openssl req -new -subj /CN=$* -addext "subjectAltName = DNS:$*" -key $*.key -out $*.csr -days 3650
