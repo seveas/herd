@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/hashicorp/go-plugin"
 	"github.com/seveas/scattergather"
@@ -280,7 +281,9 @@ func (r *Registry) Search(hostnameGlob string, attributes MatchAttributes, sampl
 
 	ret = ret.Search(hostnameGlob, attributes)
 	if len(ret.hosts) == 0 && attributes != nil && len(attributes) == 0 {
-		if _, err := net.LookupHost(hostnameGlob); err == nil {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		if _, err := net.DefaultResolver.LookupHost(ctx, hostnameGlob); err == nil {
 			ret = &HostSet{hosts: []*Host{NewHost(hostnameGlob, "", HostAttributes{})}}
 		}
 	}

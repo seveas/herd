@@ -133,7 +133,7 @@ func (p *pluginProvider) connect() error {
 		Managed:          true,
 		HandshakeConfig:  common.Handshake,
 		Plugins:          pluginMap,
-		Cmd:              exec.Command(p.config.Command), // #nosec G204 -- Cmd is user-supplied by design
+		Cmd:              exec.CommandContext(context.Background(), p.config.Command), // #nosec G204 -- Cmd is user-supplied by design
 		Logger:           common.NewLogrusLogger(logrus.StandardLogger(), fmt.Sprintf("plugin-%s", p.name)),
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,

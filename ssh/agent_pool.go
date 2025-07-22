@@ -2,6 +2,7 @@ package ssh
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -161,7 +162,8 @@ func (ap *agentPool) SignersForPath(path string) []ssh.Signer {
 
 func agentConnection() (io.ReadWriter, error) {
 	if sockPath, ok := os.LookupEnv("SSH_AUTH_SOCK"); ok {
-		return net.Dial("unix", sockPath)
+		var d net.Dialer
+		return d.DialContext(context.Background(), "unix", sockPath)
 	} else if sock := findPageant(); sock != nil {
 		return sock, nil
 	}
