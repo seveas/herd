@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
@@ -45,7 +46,9 @@ func newProvider(name string) herd.HostProvider {
 func magicProvider() herd.HostProvider {
 	addr, _ := os.LookupEnv("CONSUL_HTTP_ADDR")
 	if addr == "" {
-		_, err := net.LookupHost("consul.service.consul")
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		_, err := net.DefaultResolver.LookupHost(ctx, "consul.service.consul")
 		if err == nil {
 			addr = "http://consul.service.consul:8500"
 		}

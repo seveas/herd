@@ -17,8 +17,9 @@ type MatchAttribute struct {
 
 func (m MatchAttribute) String() string {
 	c1, c2 := '=', '='
+	f := ""
 	if m.FuzzyTyping {
-		c1, c2 = '≈', '≈'
+		f = " (≈)"
 	}
 	if m.Negate {
 		c1 = '!'
@@ -26,7 +27,7 @@ func (m MatchAttribute) String() string {
 	if m.Regex {
 		c2 = '~'
 	}
-	return fmt.Sprintf("%v %c%c %v", m.Name, c1, c2, m.Value)
+	return fmt.Sprintf("%v %c%c %v%s", m.Name, c1, c2, m.Value, f)
 }
 
 func (m MatchAttribute) Match(value interface{}) (matches bool) {

@@ -1,6 +1,7 @@
 package herd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,7 @@ type pager struct {
 }
 
 func (p *pager) start() error {
+	ctx := context.Background()
 	if p == nil || p.process != nil {
 		return nil
 	}
@@ -27,9 +29,9 @@ func (p *pager) start() error {
 		if strings.HasSuffix(pager, "less") {
 			args = append(args, "-R")
 		}
-		cmd = exec.Command(pager, args...)
+		cmd = exec.CommandContext(ctx, pager, args...)
 	} else {
-		cmd = exec.Command("sh", "-c", pager)
+		cmd = exec.CommandContext(ctx, "sh", "-c", pager)
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
