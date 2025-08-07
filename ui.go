@@ -196,6 +196,7 @@ type HostListOptions struct {
 	Count         []string
 	SortByCount   bool
 	Group         string
+	Stats         bool
 }
 
 type SimpleUI struct {
@@ -578,7 +579,8 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				if _, ok := groupCounts[vs]; !ok {
 					groupCounts[vs] = make(map[any]int)
 				}
-				attr := fmt.Sprintf("%v", host.Attributes[opts.Group])
+				val, _ := host.GetAttribute(opts.Group)
+				attr := fmt.Sprintf("%v", val)
 				groupCounts[vs][attr]++
 				groupValues[attr] = true
 				totals[attr]++
@@ -619,9 +621,15 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			copy(attrline, opts.Count)
 			copy(attrline[len(opts.Count):], groups)
 			if len(groups) == 0 {
-				attrline = append(attrline, "count", "percentage")
+				attrline = append(attrline, "count")
+				if opts.Stats {
+					attrline = append(attrline, "percentage")
+				}
 			} else {
-				attrline = append(attrline, "total", "percentage", "average", "stddev")
+				attrline = append(attrline, "total")
+				if opts.Stats {
+					attrline = append(attrline, "percentage", "average", "stddev")
+				}
 			}
 			writer.Write(attrline)
 		}
@@ -632,9 +640,12 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				v = append(v, fmt.Sprintf("%v", groupCounts[k][group]))
 				stats.Add(float64(groupCounts[k][group]))
 			}
-			v = append(v, fmt.Sprintf("%v", counts[k]), fmt.Sprintf("%v%%", f2s(float64(counts[k])/float64(total)*100)))
-			if stats.NumDataValues() != 0 {
-				v = append(v, f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
+			v = append(v, fmt.Sprintf("%v", counts[k]))
+			if opts.Stats {
+				v = append(v, fmt.Sprintf("%v%%", f2s(float64(counts[k])/float64(total)*100)))
+				if stats.NumDataValues() != 0 {
+					v = append(v, f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
+				}
 			}
 
 			writer.Write(v)
@@ -644,7 +655,7 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 			for range len(opts.Count) - 1 {
 				v = append(v, "")
 			}
-			if opts.Group != "" {
+			if opts.Stats && opts.Group != "" {
 				stats := variance.New()
 				for _, group := range groups {
 					v = append(v, fmt.Sprintf("%v", totals[group]))
@@ -652,7 +663,10 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				}
 				v = append(v, fmt.Sprintf("%v", total), "", f2s(stats.Mean()), f2s(stats.StandardDeviationPopulation()))
 			} else {
-				v = append(v, fmt.Sprintf("%v", total), "")
+				v = append(v, fmt.Sprintf("%v", total))
+				if opts.Stats {
+					v = append(v, "")
+				}
 			}
 			writer.Write(v)
 		}
