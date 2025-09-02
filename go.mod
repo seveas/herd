@@ -3,44 +3,44 @@ module github.com/seveas/herd
 go 1.24.5
 
 require (
-	cloud.google.com/go/compute v1.41.0
+	cloud.google.com/go/compute v1.44.0
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.30
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.13
 	github.com/antlr4-go/antlr/v4 v4.13.1
-	github.com/aws/aws-sdk-go v1.55.7
+	github.com/aws/aws-sdk-go v1.55.8
 	github.com/go-test/deep v1.1.1
 	github.com/google/uuid v1.6.0
-	github.com/googleapis/gax-go/v2 v2.14.2
+	github.com/googleapis/gax-go/v2 v2.15.0
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/go-plugin v1.6.3
-	github.com/jarcoal/httpmock v1.4.0
-	github.com/kevinburke/ssh_config v1.2.0
+	github.com/hashicorp/go-plugin v1.7.0
+	github.com/jarcoal/httpmock v1.4.1
+	github.com/kevinburke/ssh_config v1.4.0
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
-	github.com/miekg/dns v1.1.67
+	github.com/miekg/dns v1.1.68
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
 	github.com/seveas/scattergather v1.2.0
 	github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.9.2
-	github.com/spf13/cobra v1.9.1
-	github.com/spf13/pflag v1.0.7
+	github.com/spf13/cobra v1.10.1
+	github.com/spf13/pflag v1.0.9
 	github.com/spf13/viper v1.20.1
 	github.com/transip/gotransip/v6 v6.26.0
-	golang.org/x/crypto v0.40.0
-	golang.org/x/sys v0.34.0
-	google.golang.org/api v0.239.0
-	google.golang.org/grpc v1.74.0
-	google.golang.org/protobuf v1.36.6
+	golang.org/x/crypto v0.41.0
+	golang.org/x/sys v0.35.0
+	google.golang.org/api v0.246.0
+	google.golang.org/grpc v1.74.2
+	google.golang.org/protobuf v1.36.7
 	gopkg.in/yaml.v2 v2.4.0
-	tailscale.com v1.84.3
+	tailscale.com v1.86.5
 )
 
 require (
-	cloud.google.com/go/auth v0.16.2 // indirect
+	cloud.google.com/go/auth v0.16.3 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
@@ -107,15 +107,15 @@ require (
 	go4.org/mem v0.0.0-20240501181205-ae6ca9944745 // indirect
 	go4.org/netipx v0.0.0-20231129151722-fdeea329fbba // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/text v0.27.0 // indirect
-	golang.org/x/tools v0.34.0 // indirect
+	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/tools v0.35.0 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
-	google.golang.org/genproto v0.0.0-20250505200425-f936aa4a68b2 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250715232539-7130f93afb79 // indirect
+	google.golang.org/genproto v0.0.0-20250603155806-513f23925822 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250804133106-a7a43d27e69b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250728155136-f173205681a0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
