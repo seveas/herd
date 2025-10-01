@@ -578,7 +578,8 @@ func (ui *SimpleUI) PrintHostList(opts HostListOptions) {
 				if _, ok := groupCounts[vs]; !ok {
 					groupCounts[vs] = make(map[any]int)
 				}
-				attr := fmt.Sprintf("%v", host.Attributes[opts.Group])
+				val, _ := host.GetAttribute(opts.Group)
+				attr := fmt.Sprintf("%v", val)
 				groupCounts[vs][attr]++
 				groupValues[attr] = true
 				totals[attr]++
