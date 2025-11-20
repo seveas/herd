@@ -111,7 +111,7 @@ func (r *Registry) LoadMagicProviders() {
 }
 
 func (r *Registry) LoadHostKeys(ctx context.Context, lm LoadingMessage) error {
-	if r.magicLoaded {
+	if !r.magicLoaded {
 		return nil
 	}
 	sg := scattergather.New[map[string][]ssh.PublicKey](int64(len(r.providers)))
