@@ -312,8 +312,8 @@ github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUt
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51 h1:Yhh6DDsv4rtwk/Qvmtbc/I/TNRW10tNTB05jelkqc9A=
 github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51/go.mod h1:0l9mgQHUILMldSjGSCw1HttuM5mNpAt1NW8hUJQAtlA=
-github.com/seveas/scattergather v1.2.0 h1:f4/Cq2vdBeBqvAMYkedbjHX0Q6nrlCmQBHMLCJBM00E=
-github.com/seveas/scattergather v1.2.0/go.mod h1:K9vSFFc2oVcDthdqrGBSCNSQlYi4g1azOTRpcnLzAQE=
+github.com/seveas/scattergather v1.3.0 h1:Rw7dvC7t4yczF5IjX/AlwMByL00yBGoiYBVHzxzl6Zo=
+github.com/seveas/scattergather v1.3.0/go.mod h1:K9vSFFc2oVcDthdqrGBSCNSQlYi4g1azOTRpcnLzAQE=
 github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351 h1:btkfp9YIkrEBN4i4bnZhfSMmicn2BCqKUNmmGCtIOcg=
 github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351/go.mod h1:Kn+LE4pL/Z2K4aWUbA2vONEJ9Pq6BNS+vp8cetrMa6I=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=

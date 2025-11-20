@@ -22,7 +22,7 @@ require (
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 	github.com/miekg/dns v1.1.67
 	github.com/seveas/readline v0.0.0-20191121174238-faa1e4de0d51
-	github.com/seveas/scattergather v1.2.0
+	github.com/seveas/scattergather v1.3.0
 	github.com/seveas/variance v0.0.0-20230212101344-f56a2df94351
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.9.2
