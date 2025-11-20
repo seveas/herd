@@ -115,6 +115,7 @@ func (r *Registry) LoadHostKeys(ctx context.Context, lm LoadingMessage) error {
 		return nil
 	}
 	sg := scattergather.New[map[string][]ssh.PublicKey](int64(len(r.providers)))
+	providerCount := 0
 	for _, fnc := range magicProviders {
 		p := fnc()
 		if hp, ok := p.(HostKeyProvider); ok {
@@ -122,7 +123,12 @@ func (r *Registry) LoadHostKeys(ctx context.Context, lm LoadingMessage) error {
 			sg.Run(context.Background(), func() (map[string][]ssh.PublicKey, error) {
 				return hp.LoadHostKeys(ctx, lm)
 			})
+			providerCount++
 		}
+	}
+	if providerCount == 0 {
+		logrus.Debugf("No magic providers to load host keys from")
+		return nil
 	}
 	allKeys, err := sg.Wait()
 	if err != nil {
