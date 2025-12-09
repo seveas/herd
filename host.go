@@ -170,6 +170,10 @@ func (h *Host) GetAttribute(key string) (interface{}, bool) {
 	if ok {
 		return value, ok
 	}
+	if strings.HasPrefix(key, "has:") {
+		_, ok := h.Attributes[key[4:]]
+		return ok, true
+	}
 	r := h.LastResult
 	if r == nil {
 		r = &Result{ExitStatus: -1}
