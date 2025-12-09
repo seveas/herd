@@ -118,6 +118,23 @@ Providers: %s
 		currentUser.historyDir,
 		currentUser.cacheDir,
 		strings.Join(herd.Providers(), ",")))
+	hf := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		// Find all plugins in the $PATH and add them to the help output
+		path := os.Getenv("PATH")
+		allPlugins := []string{}
+		for _, dir := range filepath.SplitList(path) {
+			plugins, _ := filepath.Glob(filepath.Join(dir, "herd-provider-*"))
+			for _, p := range plugins {
+				allPlugins = append(allPlugins, strings.TrimPrefix(filepath.Base(p), "herd-provider-"))
+			}
+		}
+		if len(allPlugins) != 0 {
+			sort.Strings(allPlugins)
+			rootCmd.SetHelpTemplate(fmt.Sprintf("%sProviders (plugins): %s\n", rootCmd.HelpTemplate(), strings.Join(allPlugins, ",")))
+		}
+		hf(cmd, args)
+	})
 	cobra.OnInitialize(initConfig)
 	f := rootCmd.PersistentFlags()
 	f.Duration("splay", 0, "Wait a random duration up to this argument before and between each host")
