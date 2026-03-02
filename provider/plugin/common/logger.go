@@ -33,30 +33,30 @@ var levelReverseMap = map[logrus.Level]hclog.Level{
 type logrusLogger struct {
 	logger *logrus.Logger
 	name   string
-	args   []interface{}
+	args   []any
 }
 
 func NewLogrusLogger(l *logrus.Logger, name string) *logrusLogger {
 	return &logrusLogger{logger: l, name: name}
 }
 
-func (l *logrusLogger) format(msg string, args ...interface{}) string {
+func (l *logrusLogger) format(msg string, args ...any) string {
 	return fmt.Sprintf("%s: %s %v", l.name, msg, args)
 }
 
-func (l *logrusLogger) Log(level hclog.Level, msg string, args ...interface{}) {
+func (l *logrusLogger) Log(level hclog.Level, msg string, args ...any) {
 	l.logger.Log(levelMap[level], l.format(msg, args...))
 }
 
-func (l *logrusLogger) Trace(msg string, args ...interface{}) {
+func (l *logrusLogger) Trace(msg string, args ...any) {
 	l.logger.Trace(l.format(msg, args...))
 }
 
-func (l *logrusLogger) Debug(msg string, args ...interface{}) {
+func (l *logrusLogger) Debug(msg string, args ...any) {
 	l.logger.Debug(l.format(msg, args...))
 }
 
-func (l *logrusLogger) Info(msg string, args ...interface{}) {
+func (l *logrusLogger) Info(msg string, args ...any) {
 	// Downgrade the severity of this message, unlike what
 	// https://github.com/hashicorp/go-plugin/pull/195/files says, these
 	// messages are not valuable to us.
@@ -67,11 +67,11 @@ func (l *logrusLogger) Info(msg string, args ...interface{}) {
 	l.logger.Info(l.format(msg, args...))
 }
 
-func (l *logrusLogger) Warn(msg string, args ...interface{}) {
+func (l *logrusLogger) Warn(msg string, args ...any) {
 	l.logger.Warn(l.format(msg, args...))
 }
 
-func (l *logrusLogger) Error(msg string, args ...interface{}) {
+func (l *logrusLogger) Error(msg string, args ...any) {
 	l.logger.Error(l.format(msg, args...))
 }
 
@@ -95,11 +95,11 @@ func (l *logrusLogger) IsError() bool {
 	return l.logger.IsLevelEnabled(logrus.ErrorLevel)
 }
 
-func (l *logrusLogger) ImpliedArgs() []interface{} {
+func (l *logrusLogger) ImpliedArgs() []any {
 	return l.args
 }
 
-func (l *logrusLogger) With(args ...interface{}) hclog.Logger {
+func (l *logrusLogger) With(args ...any) hclog.Logger {
 	return &logrusLogger{logger: l.logger, name: l.name, args: args}
 }
 

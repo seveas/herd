@@ -175,7 +175,7 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 	return true
 }
 
-func (h *Host) GetAttribute(key string) (interface{}, bool) {
+func (h *Host) GetAttribute(key string) (any, bool) {
 	value, ok := h.Attributes[key]
 	if ok {
 		return value, ok

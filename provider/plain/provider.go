@@ -64,7 +64,7 @@ func (p *plainTextProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*
 	if err != nil {
 		return nil, err
 	}
-	for _, line := range strings.Split(string(data), "\n") {
+	for line := range strings.SplitSeq(string(data), "\n") {
 		line := strings.TrimSpace(line)
 		if len(line) == 0 {
 			continue

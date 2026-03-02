@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func convertValue(c parser.IValueContext) (interface{}, error) {
+func convertValue(c parser.IValueContext) (any, error) {
 	vc := c.(*parser.ValueContext)
 	if a := vc.Array(); a != nil {
 		return convertArray(a)
@@ -28,7 +28,7 @@ func convertValue(c parser.IValueContext) (interface{}, error) {
 	return nil, fmt.Errorf("I don't know what to do with this value: %s", c.GetText())
 }
 
-func convertScalar(c parser.IScalarContext) (interface{}, error) {
+func convertScalar(c parser.IScalarContext) (any, error) {
 	sc := c.(*parser.ScalarContext)
 	if n := sc.NUMBER(); n != nil {
 		return strconv.ParseInt(n.GetText(), 0, 64)
@@ -54,9 +54,9 @@ func convertScalar(c parser.IScalarContext) (interface{}, error) {
 	return nil, fmt.Errorf("I don't know what to do with this scalar: %s", c.GetText())
 }
 
-func convertArray(c parser.IArrayContext) ([]interface{}, error) {
+func convertArray(c parser.IArrayContext) ([]any, error) {
 	values := c.(*parser.ArrayContext).AllValue()
-	ret := make([]interface{}, len(values))
+	ret := make([]any, len(values))
 	for i, v := range values {
 		gv, err := convertValue(v)
 		if err != nil {
@@ -67,8 +67,8 @@ func convertArray(c parser.IArrayContext) ([]interface{}, error) {
 	return ret, nil
 }
 
-func convertHash(c parser.IHashContext) (map[string]interface{}, error) {
-	ret := make(map[string]interface{})
+func convertHash(c parser.IHashContext) (map[string]any, error) {
+	ret := make(map[string]any)
 	hc := c.(*parser.HashContext)
 	identifiers := hc.AllIDENTIFIER()
 	values := hc.AllValue()
@@ -276,7 +276,7 @@ func (l *herdListener) ExitList(c *parser.ListContext) {
 			}
 		}
 		if v, ok := optmap["Attributes"]; ok {
-			if ss, ok := v.([]interface{}); ok {
+			if ss, ok := v.([]any); ok {
 				opts.Attributes = make([]string, 0)
 				for _, e := range ss {
 					if s, ok := e.(string); ok {
@@ -334,7 +334,7 @@ type herdErrorListener struct {
 	errors *herd.MultiError
 }
 
-func (l *herdErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol interface{}, line, column int, msg string, e antlr.RecognitionException) {
+func (l *herdErrorListener) SyntaxError(recognizer antlr.Recognizer, offendingSymbol any, line, column int, msg string, e antlr.RecognitionException) {
 	msg = strings.ReplaceAll(msg, "'\n'", "<NEWLINE>")
 	l.errors.Add(fmt.Errorf("line %d:%d %s", line, column, msg))
 }

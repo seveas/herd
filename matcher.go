@@ -12,7 +12,7 @@ type MatchAttribute struct {
 	FuzzyTyping bool
 	Negate      bool
 	Regex       bool
-	Value       interface{}
+	Value       any
 	Reference   bool
 	Attribute   string
 }
@@ -32,7 +32,7 @@ func (m MatchAttribute) String() string {
 	return fmt.Sprintf("%v %c%c %v%s", m.Name, c1, c2, m.Value, f)
 }
 
-func (m MatchAttribute) Match(value interface{}) (matches bool) {
+func (m MatchAttribute) Match(value any) (matches bool) {
 	defer func() {
 		if m.Negate {
 			matches = !matches

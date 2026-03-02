@@ -50,7 +50,7 @@ func TestHttpProvider(t *testing.T) {
 func mockData() (*herd.HostSet, string) {
 	nhosts := 10
 	hosts := new(herd.HostSet)
-	for i := 0; i < nhosts; i++ {
+	for i := range nhosts {
 		h := herd.NewHost(fmt.Sprintf("host-%d.example.com", i), "", herd.HostAttributes{"number": int64(i)})
 		hosts.AddHost(h)
 	}

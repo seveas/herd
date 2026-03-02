@@ -21,7 +21,7 @@ type GRPCClient struct {
 	ctx    context.Context
 }
 
-func (c *GRPCClient) Configure(settings map[string]interface{}) error {
+func (c *GRPCClient) Configure(settings map[string]any) error {
 	data, err := json.Marshal(settings)
 	if err != nil {
 		return err
@@ -123,7 +123,7 @@ func (s *GRPCServer) SetLogger(ctx context.Context, req *SetLoggerRequest) (*Set
 }
 
 func (s *GRPCServer) Configure(ctx context.Context, req *ConfigureRequest) (*ConfigureResponse, error) {
-	var data map[string]interface{}
+	var data map[string]any
 	if err := json.Unmarshal(req.Data, &data); err != nil {
 		return nil, err
 	}

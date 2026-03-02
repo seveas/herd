@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
@@ -203,10 +204,5 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.Host
 }
 
 func stringInList(haystack []string, needle string) bool {
-	for _, twig := range haystack {
-		if twig == needle {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(haystack, needle)
 }

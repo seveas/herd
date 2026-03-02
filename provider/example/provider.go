@@ -44,7 +44,7 @@ func (p *exampleProvider) ParseViper(v *viper.Viper) error {
 func (p *exampleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	nhosts := 5
 	hosts := new(herd.HostSet)
-	for i := 0; i < nhosts; i++ {
+	for i := range nhosts {
 		attrs := herd.HostAttributes{
 			"static_attribute":  "static_value",
 			"dynamic_attribute": fmt.Sprintf("dynamic_value_%d", i),

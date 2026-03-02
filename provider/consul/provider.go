@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -78,12 +79,7 @@ func (p *consulProvider) ParseViper(v *viper.Viper) error {
 }
 
 func stringInList(haystack []string, needle string) bool {
-	for _, twig := range haystack {
-		if twig == needle {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(haystack, needle)
 }
 
 func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {

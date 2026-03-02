@@ -335,12 +335,12 @@ func fileFilter(fn string, hs *HostSet) (*HostSet, error) {
 	return hs, nil
 }
 
-func (r *Registry) Settings() (string, map[string]interface{}) {
+func (r *Registry) Settings() (string, map[string]any) {
 	providers := make([]string, len(r.providers))
 	for i, p := range r.providers {
 		providers[i] = p.Name()
 	}
-	return "Registry", map[string]interface{}{
+	return "Registry", map[string]any{
 		"Providers": providers,
 	}
 }

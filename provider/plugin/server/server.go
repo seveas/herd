@@ -23,7 +23,7 @@ func (p *pluginImpl) SetLogger(l common.Logger) error {
 	return nil
 }
 
-func (p *pluginImpl) Configure(values map[string]interface{}) error {
+func (p *pluginImpl) Configure(values map[string]any) error {
 	v := viper.New()
 	for k, s := range values {
 		v.Set(k, s)
