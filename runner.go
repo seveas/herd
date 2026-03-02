@@ -31,15 +31,16 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	hosts          *HostSet
-	parallel       int
-	splay          time.Duration
-	timeout        time.Duration
-	hostTimeout    time.Duration
-	executor       Executor
-	current        *scattergather.ScatterGather[*Result]
-	cancel         context.CancelFunc
-	signalHandlers map[os.Signal]func()
+	hosts            *HostSet
+	parallel         int
+	splay            time.Duration
+	timeout          time.Duration
+	hostTimeout      time.Duration
+	executor         Executor
+	current          *scattergather.ScatterGather[*Result]
+	cancel           context.CancelFunc
+	signalHandlers   map[os.Signal]func()
+	successExitCodes []int
 }
 
 type ProgressState int
@@ -106,12 +107,29 @@ func (r *Runner) SetConnectTimeout(t time.Duration) {
 	}
 }
 
+func (r *Runner) SetSuccessExitCodes(codes []int) {
+	r.successExitCodes = codes
+}
+
+func (r *Runner) isSuccessExitCode(exitStatus int) bool {
+	if len(r.successExitCodes) == 0 {
+		return exitStatus == 0
+	}
+	for _, code := range r.successExitCodes {
+		if code == exitStatus {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Runner) Settings() (string, map[string]interface{}) {
 	return "Runner", map[string]interface{}{
-		"Parallel":    r.parallel,
-		"Splay":       r.splay,
-		"Timeout":     r.timeout,
-		"HostTimeout": r.hostTimeout,
+		"Parallel":         r.parallel,
+		"Splay":            r.splay,
+		"Timeout":          r.timeout,
+		"HostTimeout":      r.hostTimeout,
+		"SuccessExitCodes": r.successExitCodes,
 	}
 }
 
@@ -186,12 +204,11 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	cancel()
 	for _, result := range results {
 		hi.Results[result.index] = result
-		switch result.ExitStatus {
-		case -1:
+		if result.ExitStatus == -1 {
 			hi.Summary.Err++
-		case 0:
+		} else if r.isSuccessExitCode(result.ExitStatus) {
 			hi.Summary.Ok++
-		default:
+		} else {
 			hi.Summary.Fail++
 		}
 	}

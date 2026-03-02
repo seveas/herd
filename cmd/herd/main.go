@@ -146,6 +146,7 @@ Providers: %s
 	f.Int("ssh-agent-count", 50, "Number of parallel connections to the ssh agent")
 	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	f.IntSlice("success-exit-codes", []int{0}, "Exit codes to consider as successful")
 	f.Bool("no-pager", false, "Disable the use of the pager")
 	f.Bool("no-color", false, "Disable the use of the colors in the output")
 	f.StringP("loglevel", "l", "INFO", "Log level")
@@ -298,6 +299,7 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 		runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
 	}
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
+	runner.SetSuccessExitCodes(viper.GetIntSlice("SuccessExitCodes"))
 	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
 }
 
