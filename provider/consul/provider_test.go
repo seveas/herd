@@ -147,7 +147,7 @@ func mockHosts(site string) string {
 }
 
 func mockServices(site, service string, skip int) string {
-	services := make([]map[string]interface{}, 0)
+	services := make([]map[string]interface{}, 0, 10/skip+1)
 	for i := 0; i < 10; i += skip {
 		svc := map[string]interface{}{
 			"ID":         uuid.New().String(),
@@ -200,7 +200,7 @@ func mockServices(site, service string, skip int) string {
 }
 
 func mockHealthchecks(site, service, status string, skip int) string {
-	checks := make([]map[string]interface{}, 0)
+	checks := make([]map[string]interface{}, 0, 10/skip+1)
 	for i := 0; i < 10; i += skip {
 		check := map[string]interface{}{
 			"Node":        fmt.Sprintf("node-%d.%s.consul.ci", i, site),

@@ -121,7 +121,7 @@ func (s *HostSet) Uniq() {
 }
 
 func (s *HostSet) Sample(attributes []string, count int) {
-	newHosts := make([]*Host, 0)
+	newHosts := make([]*Host, 0, len(s.hosts))
 	buckets := make(map[string][]*Host)
 host:
 	for _, host := range s.hosts {

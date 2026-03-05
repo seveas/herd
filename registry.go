@@ -26,7 +26,7 @@ var availableProviders = make(map[string]func(string) HostProvider)
 var magicProviders = make(map[string]func() HostProvider)
 
 func Providers() []string {
-	ret := []string{}
+	ret := make([]string, 0, len(availableProviders))
 	for k := range availableProviders {
 		ret = append(ret, k)
 	}
