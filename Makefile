@@ -43,9 +43,11 @@ provider-plugins: $(patsubst %,herd-provider-%,$(provider_plugins))
 $(antlr_sources): scripting/Herd.g4
 	(cd scripting; antlr -Dlanguage=Go -o parser Herd.g4)
 
+lint-fix:
+	go tool golangci-lint run ./... --fix
 # Tests and related targets
 lint:
-	golangci-lint run ./...
+	go tool golangci-lint run ./...
 
 tidy:
 	go mod tidy
