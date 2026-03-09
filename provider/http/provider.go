@@ -24,7 +24,7 @@ type HttpProvider struct {
 		Prefix   string
 		Url      string
 		Username string
-		Password string
+		Password string // #nosec G117 -- Credential field required for HTTP basic auth
 		Headers  map[string]string
 	}
 }
@@ -74,7 +74,7 @@ func (p *HttpProvider) FetchUrl(ctx context.Context, url string) ([]byte, error)
 	if req.Header.Get("User-Agent") == "" {
 		req.Header.Set("User-Agent", fmt.Sprintf("herd/%s", herd.Version()))
 	}
-	resp, err := p.client.Do(req)
+	resp, err := p.client.Do(req) // #nosec G704 -- URL is from configuration, not user input
 	if err != nil {
 		return nil, err
 	}

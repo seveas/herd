@@ -28,13 +28,13 @@ type azureProvider struct {
 		TenantId     string
 		ClientId     string
 		// Client credentials
-		ClientSecret string
+		ClientSecret string // #nosec G117 -- Credential field required for Azure API auth
 		// Certificate auth
 		CertificatePath     string
 		CertificatePassword string
 		// User/password auth
 		Username string
-		Password string
+		Password string // #nosec G117 -- Credential field required for Azure API auth
 	}
 }
 

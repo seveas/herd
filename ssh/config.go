@@ -63,8 +63,9 @@ func configForHost(host *herd.Host, user *user.User) (*config, error) {
 	}
 	readPuttyConfig(c, host.Name)
 	// Use only algorithms we have keys for, if we have keys
-	algos := []string{}
-	for _, k := range host.PublicKeys() {
+	pubKeys := host.PublicKeys()
+	algos := make([]string, 0, len(pubKeys))
+	for _, k := range pubKeys {
 		algos = append(algos, k.Type())
 	}
 	if len(algos) != 0 {
