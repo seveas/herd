@@ -199,7 +199,7 @@ func (l *herdListener) ExitRemove(c *parser.RemoveContext) {
 }
 
 func (l *herdListener) parseFilters(filters []parser.IFilterContext) herd.MatchAttributes {
-	attrs := make(herd.MatchAttributes, 0)
+	attrs := make(herd.MatchAttributes, 0, len(filters))
 	for _, filter := range filters {
 		// If there already are lexer/parser errors, don't bother anymore
 		for _, child := range filter.GetChildren() {
