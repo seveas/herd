@@ -831,10 +831,10 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 					running--
 					todo--
 					done++
-					switch msg.Result.ExitStatus {
-					case -1:
+					switch {
+					case msg.Result.ExitStatus == -1:
 						nerr++
-					case 0:
+					case msg.Result.ExitSuccess:
 						nok++
 					default:
 						nfail++

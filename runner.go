@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"slices"
 	"sort"
 	"time"
 
@@ -40,7 +41,7 @@ type Runner struct {
 	current          *scattergather.ScatterGather[*Result]
 	cancel           context.CancelFunc
 	signalHandlers   map[os.Signal]func()
-	successExitCodes []int
+	expectExitStatus []int
 }
 
 type ProgressState int
@@ -54,9 +55,10 @@ const (
 
 func NewRunner(hosts *HostSet, executor Executor) *Runner {
 	return &Runner{
-		hosts:          hosts,
-		executor:       executor,
-		signalHandlers: make(map[os.Signal]func()),
+		hosts:            hosts,
+		executor:         executor,
+		signalHandlers:   make(map[os.Signal]func()),
+		expectExitStatus: []int{0},
 	}
 }
 
@@ -107,20 +109,8 @@ func (r *Runner) SetConnectTimeout(t time.Duration) {
 	}
 }
 
-func (r *Runner) SetSuccessExitCodes(codes []int) {
-	r.successExitCodes = codes
-}
-
-func (r *Runner) isSuccessExitCode(exitStatus int) bool {
-	if len(r.successExitCodes) == 0 {
-		return exitStatus == 0
-	}
-	for _, code := range r.successExitCodes {
-		if code == exitStatus {
-			return true
-		}
-	}
-	return false
+func (r *Runner) SetExpectExitStatus(codes []int) {
+	r.expectExitStatus = codes
 }
 
 func (r *Runner) Settings() (string, map[string]interface{}) {
@@ -129,7 +119,7 @@ func (r *Runner) Settings() (string, map[string]interface{}) {
 		"Splay":            r.splay,
 		"Timeout":          r.timeout,
 		"HostTimeout":      r.hostTimeout,
-		"SuccessExitCodes": r.successExitCodes,
+		"ExpectExitStatus": r.expectExitStatus,
 	}
 }
 
@@ -168,6 +158,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			ctx, cancel := context.WithTimeout(ctx, r.GetHostTimeout())
 			defer cancel()
 			result := r.executor.Run(ctx, host, command, oc)
+			result.ExitSuccess = slices.Contains(r.expectExitStatus, result.ExitStatus)
 			result.index = index
 			host.LastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
@@ -204,11 +195,12 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	cancel()
 	for _, result := range results {
 		hi.Results[result.index] = result
-		if result.ExitStatus == -1 {
+		switch {
+		case result.ExitStatus == -1:
 			hi.Summary.Err++
-		} else if r.isSuccessExitCode(result.ExitStatus) {
+		case result.ExitSuccess:
 			hi.Summary.Ok++
-		} else {
+		default:
 			hi.Summary.Fail++
 		}
 	}

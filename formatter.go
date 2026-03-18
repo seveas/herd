@@ -85,8 +85,12 @@ func (f prettyFormatter) formatOutput(r *Result, l int) string {
 }
 
 func (f prettyFormatter) formatStatus(r *Result, l int) string {
-	if r.Err == nil {
-		return ansi.Color(fmt.Sprintf("%-*s  completed successfully after %s", l, r.Host, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), f.colors.HostOK) + "\n"
+	if r.ExitSuccess {
+		if r.ExitStatus == 0 {
+			return ansi.Color(fmt.Sprintf("%-*s  completed successfully after %s", l, r.Host, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), f.colors.HostOK) + "\n"
+		} else {
+			return ansi.Color(fmt.Sprintf("%-*s  completed successfully with status %d after %s", l, r.Host, r.ExitStatus, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), f.colors.HostOK) + "\n"
+		}
 	} else if r.ExitStatus != -1 {
 		return ansi.Color(fmt.Sprintf("%-*s  exited with status %d after %s", l, r.Host, r.ExitStatus, r.EndTime.Sub(r.StartTime).Truncate(time.Second)), f.colors.HostFail) + "\n"
 	} else if r.Err.Error() == context.Canceled.Error() {
