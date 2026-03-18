@@ -273,6 +273,7 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("LoadTimeout"))
 	defer cancel()
+	ui.StartLoading(viper.GetDuration("LoadTimeout"))
 	if err := registry.LoadHosts(ctx, ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
 		if viper.GetBool("StrictLoading") {
