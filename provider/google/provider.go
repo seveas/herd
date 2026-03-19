@@ -86,7 +86,7 @@ func (p *googleProvider) Load(ctx context.Context, lm herd.LoadingMessage) (host
 }
 
 func (p *googleProvider) setZones(ctx context.Context) error {
-	client, err := compute.NewZonesRESTClient(ctx, option.WithCredentialsFile(p.config.Key))
+	client, err := compute.NewZonesRESTClient(ctx, option.WithAuthCredentialsFile(option.ServiceAccount, p.config.Key))
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func iv(i *uint64) uint64 {
 
 func (p *googleProvider) loadZone(ctx context.Context, zone string) (*herd.HostSet, error) {
 	region := p.zones[zone].Region
-	client, err := compute.NewInstancesRESTClient(ctx, option.WithCredentialsFile(p.config.Key))
+	client, err := compute.NewInstancesRESTClient(ctx, option.WithAuthCredentialsFile(option.ServiceAccount, p.config.Key))
 	if err != nil {
 		return nil, err
 	}
