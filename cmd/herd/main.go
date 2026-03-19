@@ -146,6 +146,7 @@ Providers: %s
 	f.Int("ssh-agent-count", 50, "Number of parallel connections to the ssh agent")
 	f.IntP("parallel", "p", 0, "Maximum number of hosts to run on in parallel")
 	f.StringP("output", "o", "all", "When to print command output (all at once, per host or per line)")
+	f.IntSlice("expect-exit-status", []int{0}, "Exit status(es) to consider as successful")
 	f.Bool("no-pager", false, "Disable the use of the pager")
 	f.Bool("no-color", false, "Disable the use of the colors in the output")
 	f.StringP("loglevel", "l", "INFO", "Log level")
@@ -272,6 +273,7 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), viper.GetDuration("LoadTimeout"))
 	defer cancel()
+	ui.StartLoading(viper.GetDuration("LoadTimeout"))
 	if err := registry.LoadHosts(ctx, ui.LoadingMessage); err != nil {
 		// Do not log this error, registry.LoadHosts() does its own error logging
 		if viper.GetBool("StrictLoading") {
@@ -298,6 +300,7 @@ func setupScriptEngine(executor herd.Executor) (*scripting.ScriptEngine, error) 
 		runner.SetHostTimeout(viper.GetDuration("HostTimeout"))
 	}
 	runner.SetConnectTimeout(viper.GetDuration("ConnectTimeout"))
+	runner.SetExpectExitStatus(viper.GetIntSlice("ExpectExitStatus"))
 	return scripting.NewScriptEngine(hosts, ui, registry, runner), nil
 }
 
