@@ -177,6 +177,7 @@ type UI interface {
 	SetPagerEnabled(bool)
 	Sync()
 	End()
+	StartLoading(timeout time.Duration)
 	LoadingMessage(what string, done bool, err error)
 	OutputChannel() chan OutputLine
 	ProgressChannel(deadline time.Time) chan ProgressMessage
@@ -218,6 +219,7 @@ type SimpleUI struct {
 	loadOnce        sync.Once
 	loadLock        sync.Mutex
 	loadTicker      *time.Ticker
+	loadTimeout     time.Duration
 }
 
 type outputMessageType int
@@ -696,6 +698,10 @@ func f2s(f float64) string {
 	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", f), "0"), ".")
 }
 
+func (ui *SimpleUI) StartLoading(timeout time.Duration) {
+	ui.loadTimeout = timeout
+}
+
 func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	if !logrus.IsLevelEnabled(logrus.InfoLevel) {
 		return
@@ -744,7 +750,7 @@ func (ui *SimpleUI) LoadingMessage(what string, done bool, err error) {
 	if len(cs) > ui.width-25 {
 		cs = cs[:ui.width-30] + "..."
 	}
-	ui.pchan <- outputMessage{outputMessageProgress, fmt.Sprintf("%s Loading data %s", since, ansi.Color(cs, ui.colors.Provider))}
+	ui.pchan <- outputMessage{outputMessageProgress, fmt.Sprintf("%s/%s Loading data %s", since, ui.loadTimeout, ansi.Color(cs, ui.colors.Provider))}
 }
 
 func (ui *SimpleUI) OutputChannel() chan OutputLine {
@@ -831,10 +837,10 @@ func (ui *SimpleUI) ProgressChannel(deadline time.Time) chan ProgressMessage {
 					running--
 					todo--
 					done++
-					switch msg.Result.ExitStatus {
-					case -1:
+					switch {
+					case msg.Result.ExitStatus == -1:
 						nerr++
-					case 0:
+					case msg.Result.ExitSuccess:
 						nok++
 					default:
 						nfail++
