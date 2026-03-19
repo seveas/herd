@@ -9,11 +9,10 @@ import (
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/seveas/scattergather"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -82,21 +81,21 @@ func (p *awsProvider) ParseViper(v *viper.Viper) error {
 	return v.Unmarshal(&p.config)
 }
 
-func (p *awsProvider) setRegions() error {
-	resolver := endpoints.DefaultResolver().(endpoints.EnumPartitions)
-	var partition endpoints.Partition
-	for _, partition = range resolver.Partitions() {
-		if partition.ID() == p.config.Partition {
-			break
-		}
+func (p *awsProvider) setRegions(ctx context.Context) error {
+	creds := credentials.NewStaticCredentialsProvider(p.config.AccessKeyId, p.config.SecretAccessKey, "")
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithCredentialsProvider(creds))
+	if err != nil {
+		return err
 	}
-	if partition.ID() != p.config.Partition {
-		return fmt.Errorf("No such partition: %s", p.config.Partition)
+
+	svc := ec2.NewFromConfig(cfg)
+	regions, err := svc.DescribeRegions(ctx, &ec2.DescribeRegionsInput{})
+	if err != nil {
+		return err
 	}
-	svc := partition.Services()["ec2"]
 	p.config.Regions = make([]string, 0)
-	for region := range svc.Regions() {
-		p.config.Regions = append(p.config.Regions, region)
+	for _, region := range regions.Regions {
+		p.config.Regions = append(p.config.Regions, *region.RegionName)
 	}
 	return nil
 }
@@ -105,7 +104,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *
 	lm(p.name, false, nil)
 	defer func() { lm(p.name, true, err) }()
 	if len(p.config.Regions) == 0 {
-		if err := p.setRegions(); err != nil {
+		if err := p.setRegions(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -129,20 +128,19 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *
 }
 
 func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.HostSet, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(p.config.AccessKeyId, p.config.SecretAccessKey, ""),
-		Region:      aws.String(region),
-	})
+	creds := credentials.NewStaticCredentialsProvider(p.config.AccessKeyId, p.config.SecretAccessKey, "")
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region), config.WithCredentialsProvider(creds))
 	if err != nil {
 		return nil, err
 	}
-	svc := ec2.New(sess)
+
+	svc := ec2.NewFromConfig(cfg)
 	ret := new(herd.HostSet)
 	var token *string = nil
-	sv := aws.StringValue
-	iv := aws.Int64Value
+	sv := aws.ToString
+	iv := aws.ToInt32
 	for {
-		out, err := svc.DescribeInstancesWithContext(ctx, &ec2.DescribeInstancesInput{NextToken: token, MaxResults: aws.Int64(1000)})
+		out, err := svc.DescribeInstances(ctx, &ec2.DescribeInstancesInput{NextToken: token, MaxResults: aws.Int32(1000)})
 		if err != nil {
 			return nil, err
 		}
@@ -153,26 +151,26 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.Host
 					name = *instance.InstanceId
 				}
 				attrs := herd.HostAttributes{
-					"architecture":            sv(instance.Architecture),
-					"hypervisor":              sv(instance.Hypervisor),
+					"architecture":            string(instance.Architecture),
+					"hypervisor":              string(instance.Hypervisor),
 					"image_id":                sv(instance.ImageId),
 					"instance_id":             sv(instance.InstanceId),
-					"instance_type":           sv(instance.InstanceType),
+					"instance_type":           string(instance.InstanceType),
 					"launch_time":             *instance.LaunchTime,
 					"availability_zone":       sv(instance.Placement.AvailabilityZone),
 					"placement_group":         sv(instance.Placement.GroupName),
-					"tenancy":                 sv(instance.Placement.Tenancy),
+					"tenancy":                 string(instance.Placement.Tenancy),
 					"private_dns_name":        sv(instance.PrivateDnsName),
 					"private_ip":              sv(instance.PrivateIpAddress),
 					"public_dns_name":         sv(instance.PublicDnsName),
 					"public_ip":               sv(instance.PublicIpAddress),
 					"root_device_name":        sv(instance.RootDeviceName),
-					"root_device_type":        sv(instance.RootDeviceType),
-					"state":                   sv(instance.State.Name),
+					"root_device_type":        string(instance.RootDeviceType),
+					"state":                   string(instance.State.Name),
 					"state_code":              iv(instance.State.Code),
 					"state_transition_reason": sv(instance.StateTransitionReason),
 					"subnet_id":               sv(instance.SubnetId),
-					"virtualization_type":     sv(instance.VirtualizationType),
+					"virtualization_type":     string(instance.VirtualizationType),
 					"vpc_id":                  sv(instance.VpcId),
 					"owner_id":                sv(reservation.OwnerId),
 					"reservation_id":          sv(reservation.ReservationId),
