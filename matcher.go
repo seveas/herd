@@ -13,6 +13,8 @@ type MatchAttribute struct {
 	Negate      bool
 	Regex       bool
 	Value       interface{}
+	Reference   bool
+	Attribute   string
 }
 
 func (m MatchAttribute) String() string {

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/signal"
+	"slices"
 	"sort"
 	"time"
 
@@ -31,15 +32,16 @@ type ProgressMessage struct {
 }
 
 type Runner struct {
-	hosts          *HostSet
-	parallel       int
-	splay          time.Duration
-	timeout        time.Duration
-	hostTimeout    time.Duration
-	executor       Executor
-	current        *scattergather.ScatterGather[*Result]
-	cancel         context.CancelFunc
-	signalHandlers map[os.Signal]func()
+	hosts            *HostSet
+	parallel         int
+	splay            time.Duration
+	timeout          time.Duration
+	hostTimeout      time.Duration
+	executor         Executor
+	current          *scattergather.ScatterGather[*Result]
+	cancel           context.CancelFunc
+	signalHandlers   map[os.Signal]func()
+	expectExitStatus []int
 }
 
 type ProgressState int
@@ -53,9 +55,10 @@ const (
 
 func NewRunner(hosts *HostSet, executor Executor) *Runner {
 	return &Runner{
-		hosts:          hosts,
-		executor:       executor,
-		signalHandlers: make(map[os.Signal]func()),
+		hosts:            hosts,
+		executor:         executor,
+		signalHandlers:   make(map[os.Signal]func()),
+		expectExitStatus: []int{0},
 	}
 }
 
@@ -106,12 +109,17 @@ func (r *Runner) SetConnectTimeout(t time.Duration) {
 	}
 }
 
+func (r *Runner) SetExpectExitStatus(codes []int) {
+	r.expectExitStatus = codes
+}
+
 func (r *Runner) Settings() (string, map[string]interface{}) {
 	return "Runner", map[string]interface{}{
-		"Parallel":    r.parallel,
-		"Splay":       r.splay,
-		"Timeout":     r.timeout,
-		"HostTimeout": r.hostTimeout,
+		"Parallel":         r.parallel,
+		"Splay":            r.splay,
+		"Timeout":          r.timeout,
+		"HostTimeout":      r.hostTimeout,
+		"ExpectExitStatus": r.expectExitStatus,
 	}
 }
 
@@ -150,6 +158,7 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 			ctx, cancel := context.WithTimeout(ctx, r.GetHostTimeout())
 			defer cancel()
 			result := r.executor.Run(ctx, host, command, oc)
+			result.ExitSuccess = slices.Contains(r.expectExitStatus, result.ExitStatus)
 			result.index = index
 			host.LastResult = result
 			pc <- ProgressMessage{Host: host, State: Finished, Result: result}
@@ -186,10 +195,10 @@ func (r *Runner) Run(command string, pc chan ProgressMessage, oc chan OutputLine
 	cancel()
 	for _, result := range results {
 		hi.Results[result.index] = result
-		switch result.ExitStatus {
-		case -1:
+		switch {
+		case result.ExitStatus == -1:
 			hi.Summary.Err++
-		case 0:
+		case result.ExitSuccess:
 			hi.Summary.Ok++
 		default:
 			hi.Summary.Fail++

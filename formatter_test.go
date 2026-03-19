@@ -31,6 +31,7 @@ func init() {
 		},
 		{
 			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
+			ExitSuccess: true,
 			Stdout:      []byte("May the forks be with you\nAnd you\n"),
 			Stderr:      []byte{},
 			StartTime:   start,
@@ -39,6 +40,7 @@ func init() {
 		},
 		{
 			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
+			ExitSuccess: true,
 			Stdout:      []byte("Newline is added automatically"),
 			Stderr:      []byte{},
 			StartTime:   start,
@@ -67,8 +69,28 @@ func init() {
 		},
 		{
 			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
+			ExitSuccess: true,
 			Stdout:      []byte("Text on stdout without newline"),
 			Stderr:      []byte("Text on stderr\nMore text\n"),
+			StartTime:   start,
+			EndTime:     start.Add(12 * time.Second),
+			ElapsedTime: 12,
+		},
+		{
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
+			ExitSuccess: false,
+			Stdout:      []byte("exit 0, but no success"),
+			Stderr:      []byte{},
+			StartTime:   start,
+			EndTime:     start.Add(12 * time.Second),
+			ElapsedTime: 12,
+		},
+		{
+			Host:        fmt.Sprintf("test-host-%03d.example.com", count()),
+			ExitSuccess: true,
+			ExitStatus:  1,
+			Stdout:      []byte("exit 1, but success"),
+			Stderr:      []byte{},
 			StartTime:   start,
 			EndTime:     start.Add(12 * time.Second),
 			ElapsedTime: 12,
@@ -90,6 +112,8 @@ func TestPrettyFormatterFormatStatus(t *testing.T) {
 		"\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n",
 		"\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n",
 		"\033[0;32mtest-host-006.example.com  completed successfully after 12s\033[0m\n",
+		"\033[0;33mtest-host-007.example.com  exited with status 0 after 12s\033[0m\n",
+		"\033[0;32mtest-host-008.example.com  completed successfully with status 1 after 12s\033[0m\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatStatus(r, 0); s != expected[i] {
@@ -106,6 +130,8 @@ func TestPrettyFormatterFormatOutput(t *testing.T) {
 		"\033[0;33mtest-host-004.example.com  \033[0mText on stderr\n  More text\n\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n",
 		"\033[0;33mtest-host-005.example.com  \033[0mText on stdout\n\033[0;33mtest-host-005.example.com  \033[0mText on stderr\n  More text\n\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n",
 		"\033[0;32mtest-host-006.example.com  \033[0mText on stdout without newline\n\x1b[0;33mtest-host-006.example.com  \x1b[0mText on stderr\n  More text\n",
+		"\x1b[0;32mtest-host-007.example.com  \x1b[0mexit 0, but no success\n",
+		"\x1b[0;32mtest-host-008.example.com  \x1b[0mexit 1, but success\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatOutput(r, 0); s != expected[i] {
@@ -122,6 +148,8 @@ func TestPrettyFormatterFormatResult(t *testing.T) {
 		"\033[0;33mtest-host-004.example.com  exited with status 1 after 12s\033[0m\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
 		"\033[0;33mtest-host-005.example.com  exited with status 1 after 12s\033[0m\n    Text on stdout\n\033[0;90m----\033[0m\n    Text on stderr\n    More text\n",
 		"\033[0;32mtest-host-006.example.com  completed successfully after 12s\x1b[0m\n    Text on stdout without newline\n\x1b[0;90m----\x1b[0m\n    Text on stderr\n    More text\n",
+		"\x1b[0;33mtest-host-007.example.com  exited with status 0 after 12s\x1b[0m\n    exit 0, but no success\n",
+		"\x1b[0;32mtest-host-008.example.com  completed successfully with status 1 after 12s\x1b[0m\n    exit 1, but success\n",
 	}
 	for i, r := range results {
 		if s := testformatter.formatResult(r, 0); s != expected[i] {

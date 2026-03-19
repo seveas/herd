@@ -125,6 +125,10 @@ hostspecLoop:
 						attr.FuzzyTyping = false
 					}
 				}
+				if !attr.Regex && strings.HasPrefix(val, "$") {
+					attr.Reference = true
+					attr.Attribute = attr.Value.(string)[1:]
+				}
 				attrs = append(attrs, attr)
 			}
 		}

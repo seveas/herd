@@ -29,6 +29,7 @@ type HistoryItem struct {
 type Result struct {
 	Host        string
 	ExitStatus  int
+	ExitSuccess bool
 	Stdout      []byte
 	Stderr      []byte
 	Err         error

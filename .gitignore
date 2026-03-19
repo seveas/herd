@@ -12,3 +12,4 @@ test-results
 extra_providers.go
 vendor
 trash*
+integration/*/
