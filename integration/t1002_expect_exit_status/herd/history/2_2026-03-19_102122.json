@@ -1,1 +1,0 @@
-[{"Command":"exit 2","ElapsedTime":0.023426052,"EndTime":"2026-03-19T10:21:22.942069115Z","Results":[{"Host":"ssh.example.com","ExitStatus":2,"Stdout":"","Stderr":"","Err":{},"ErrString":"Process exited with status 2","StartTime":"2026-03-19T10:21:22.918672104Z","EndTime":"2026-03-19T10:21:22.942046406Z","ElapsedTime":0.023374302}],"StartTime":"2026-03-19T10:21:22.918643063Z"}]

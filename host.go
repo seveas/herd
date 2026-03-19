@@ -155,8 +155,18 @@ func (h *Host) Match(hostnameGlob string, attributes MatchAttributes) bool {
 	for _, attribute := range attributes {
 		name := attribute.Name
 		value, ok := h.GetAttribute(name)
-		if !ok && !attribute.Negate {
+		if !ok && !attribute.Negate && !attribute.Reference {
 			return false
+		}
+		if attribute.Reference {
+			refValue, refOk := h.GetAttribute(attribute.Attribute)
+			if ok != refOk && !attribute.Negate {
+				return false
+			}
+			if !ok && !refOk {
+				return false
+			}
+			attribute.Value = refValue
 		}
 		if ok && !attribute.Match(value) {
 			return false
