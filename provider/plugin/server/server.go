@@ -26,7 +26,7 @@ func (p *pluginImpl) SetLogger(l common.Logger) error {
 func (p *pluginImpl) Configure(values map[string]interface{}) error {
 	v := viper.New()
 	for k, s := range values {
-		v.SetDefault(k, s)
+		v.Set(k, s)
 	}
 	return p.provider.ParseViper(v)
 }
