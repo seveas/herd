@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"slices"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
@@ -111,7 +112,7 @@ func (p *awsProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *
 	logrus.Debugf("AWS regions: %v", p.config.Regions)
 	sg := scattergather.New[*herd.HostSet](int64(len(p.config.Regions)))
 	for _, region := range p.config.Regions {
-		if len(p.config.ExcludeRegions) != 0 && stringInList(p.config.ExcludeRegions, region) {
+		if len(p.config.ExcludeRegions) != 0 && slices.Contains(p.config.ExcludeRegions, region) {
 			continue
 		}
 		sg.Run(ctx, func() (*herd.HostSet, error) {
@@ -200,13 +201,4 @@ func (p *awsProvider) loadRegion(ctx context.Context, region string) (*herd.Host
 	}
 
 	return ret, nil
-}
-
-func stringInList(haystack []string, needle string) bool {
-	for _, twig := range haystack {
-		if twig == needle {
-			return true
-		}
-	}
-	return false
 }

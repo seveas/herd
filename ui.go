@@ -166,7 +166,7 @@ var defaultColorConfigDark = ColorConfig{
 	HostCancel: "black+h",
 }
 
-type SettingsFunc func() (string, map[string]interface{})
+type SettingsFunc func() (string, map[string]any)
 
 type UI interface {
 	PrintHistoryItem(hi *HistoryItem)
@@ -182,7 +182,7 @@ type UI interface {
 	OutputChannel() chan OutputLine
 	ProgressChannel(deadline time.Time) chan ProgressMessage
 	BindLogrus()
-	Settings() (string, map[string]interface{})
+	Settings() (string, map[string]any)
 }
 
 type HostListOptions struct {
@@ -239,11 +239,11 @@ type outputMessage struct {
 }
 
 var templateFuncs = template.FuncMap{
-	"yaml": func(data interface{}) (string, error) {
+	"yaml": func(data any) (string, error) {
 		b, err := yaml.Marshal(data)
 		return "---\n" + string(b), err
 	},
-	"sshkey": func(data interface{}) (string, error) {
+	"sshkey": func(data any) (string, error) {
 		key, ok := data.(ssh.PublicKey)
 		if !ok {
 			return "", fmt.Errorf("sshkey only knows how to show ssh keys")
@@ -897,8 +897,8 @@ func (ui *SimpleUI) PrintSettings(funcs ...SettingsFunc) {
 	}
 }
 
-func (ui *SimpleUI) Settings() (string, map[string]interface{}) {
-	return "User Interface", map[string]interface{}{
+func (ui *SimpleUI) Settings() (string, map[string]any) {
+	return "User Interface", map[string]any{
 		"Type":      "Simple",
 		"Output":    outputModeString[ui.outputMode],
 		"Timestamp": ui.outputTimestamp,

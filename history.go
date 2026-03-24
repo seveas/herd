@@ -60,7 +60,7 @@ func newHistoryItem(command string, nhosts int) *HistoryItem {
 }
 
 func (h *HistoryItem) MarshalJSON() ([]byte, error) {
-	r := map[string]interface{}{
+	r := map[string]any{
 		"Command":     h.Command,
 		"Results":     h.Results,
 		"StartTime":   h.StartTime,

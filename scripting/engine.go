@@ -88,7 +88,7 @@ hostspecLoop:
 					return fmt.Errorf("only one sampling per hostspec allowed")
 				}
 				add := false
-				for _, s := range strings.Split(sampledAndCount[1], ":") {
+				for s := range strings.SplitSeq(sampledAndCount[1], ":") {
 					if s == "" {
 						if add {
 							sampled[len(sampled)-1] += ":"

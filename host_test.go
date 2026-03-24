@@ -6,9 +6,9 @@ import (
 )
 
 func TestHostDeserialization(t *testing.T) {
-	data := map[string]interface{}{
+	data := map[string]any{
 		"Name": "test-host.herd.ci",
-		"Attributes": map[string]interface{}{
+		"Attributes": map[string]any{
 			"color":  "puce",
 			"number": 32,
 			"float":  1.1,

@@ -17,7 +17,7 @@ type command interface {
 
 type setCommand struct {
 	variable string
-	value    interface{}
+	value    any
 }
 
 func (c setCommand) execute(e *ScriptEngine) {

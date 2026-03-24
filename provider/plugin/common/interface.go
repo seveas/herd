@@ -17,7 +17,7 @@ type Logger interface {
 
 type ProviderPluginImpl interface {
 	SetLogger(Logger) error
-	Configure(map[string]interface{}) error
+	Configure(map[string]any) error
 	Load(ctx context.Context) (*herd.HostSet, error)
 	SetDataDir(string) error
 	SetCacheDir(string)
@@ -44,7 +44,7 @@ func (p *ProviderPlugin) GRPCServer(b *plugin.GRPCBroker, s *grpc.Server) error 
 	return nil
 }
 
-func (p *ProviderPlugin) GRPCClient(ctx context.Context, b *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
+func (p *ProviderPlugin) GRPCClient(ctx context.Context, b *plugin.GRPCBroker, c *grpc.ClientConn) (any, error) {
 	return &GRPCClient{
 		client: NewProviderPluginClient(c),
 		broker: b,

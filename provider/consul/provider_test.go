@@ -119,9 +119,9 @@ func TestConsulMock(t *testing.T) {
 }
 
 func mockHosts(site string) string {
-	nodes := make([]map[string]interface{}, 10)
-	for i := 0; i < 10; i++ {
-		nodes[i] = map[string]interface{}{
+	nodes := make([]map[string]any, 10)
+	for i := range 10 {
+		nodes[i] = map[string]any{
 			"ID":         uuid.New().String(),
 			"Node":       fmt.Sprintf("node-%d.%s.consul.ci", i, site),
 			"Address":    "127.0.0.1",
@@ -147,9 +147,9 @@ func mockHosts(site string) string {
 }
 
 func mockServices(site, service string, skip int) string {
-	services := make([]map[string]interface{}, 0, 10/skip+1)
+	services := make([]map[string]any, 0, 10/skip+1)
 	for i := 0; i < 10; i += skip {
-		svc := map[string]interface{}{
+		svc := map[string]any{
 			"ID":         uuid.New().String(),
 			"Node":       fmt.Sprintf("node-%d.%s.consul.ci", i, site),
 			"Address":    "127.0.0.1",
@@ -168,7 +168,7 @@ func mockServices(site, service string, skip int) string {
 			"ServiceName":    service,
 			"ServiceTags":    []string{service, service + "X"},
 			"ServiceAddress": "127.0.0.2",
-			"ServiceTaggedAddresses": map[string]map[string]interface{}{
+			"ServiceTaggedAddresses": map[string]map[string]any{
 				"lan_ipv4": {
 					"Address": "127.0.0.2",
 					"Port":    12345,
@@ -200,9 +200,9 @@ func mockServices(site, service string, skip int) string {
 }
 
 func mockHealthchecks(site, service, status string, skip int) string {
-	checks := make([]map[string]interface{}, 0, 10/skip+1)
+	checks := make([]map[string]any, 0, 10/skip+1)
 	for i := 0; i < 10; i += skip {
-		check := map[string]interface{}{
+		check := map[string]any{
 			"Node":        fmt.Sprintf("node-%d.%s.consul.ci", i, site),
 			"CheckID":     fmt.Sprintf("service:%s:1", service),
 			"Name":        "Service check 1",
@@ -213,12 +213,12 @@ func mockHealthchecks(site, service, status string, skip int) string {
 			"ServiceName": service,
 			"ServiceTags": []string{},
 			"Type":        "script",
-			"Definition":  map[string]interface{}{},
+			"Definition":  map[string]any{},
 			"CreateIndex": 1807514456,
 			"ModifyIndex": 1807514456,
 		}
 		checks = append(checks, check)
-		check = map[string]interface{}{
+		check = map[string]any{
 			"Node":        fmt.Sprintf("node-%d.%s.consul.ci", i, site),
 			"CheckID":     fmt.Sprintf("service:%s:2", service),
 			"Name":        "Service check 2",
@@ -229,7 +229,7 @@ func mockHealthchecks(site, service, status string, skip int) string {
 			"ServiceName": service,
 			"ServiceTags": []string{},
 			"Type":        "script",
-			"Definition":  map[string]interface{}{},
+			"Definition":  map[string]any{},
 			"CreateIndex": 1807514456,
 			"ModifyIndex": 1807514456,
 		}

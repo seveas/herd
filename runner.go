@@ -113,8 +113,8 @@ func (r *Runner) SetExpectExitStatus(codes []int) {
 	r.expectExitStatus = codes
 }
 
-func (r *Runner) Settings() (string, map[string]interface{}) {
-	return "Runner", map[string]interface{}{
+func (r *Runner) Settings() (string, map[string]any) {
+	return "Runner", map[string]any{
 		"Parallel":         r.parallel,
 		"Splay":            r.splay,
 		"Timeout":          r.timeout,

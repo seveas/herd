@@ -110,7 +110,7 @@ func addFact(host *herd.Host, name string, value any, prefix string) {
 	switch v := value.(type) {
 	case string:
 		host.Attributes[prefix+name] = v
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range v {
 			addFact(host, k, v, prefix+name+":")
 		}

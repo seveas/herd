@@ -218,7 +218,7 @@ func initConfig() {
 	viper.Set("Output", om)
 }
 
-func bail(format string, args ...interface{}) {
+func bail(format string, args ...any) {
 	fmt.Fprintf(os.Stderr, format+"\n", args...)
 	os.Exit(1)
 }
