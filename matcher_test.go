@@ -7,7 +7,7 @@ import (
 
 type testcase struct {
 	a MatchAttribute
-	v interface{}
+	v any
 	m bool
 }
 

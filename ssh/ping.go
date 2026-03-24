@@ -40,7 +40,7 @@ func (e *PingExecutor) Run(ctx context.Context, host *herd.Host, command string,
 	}
 	defer connection.Close()
 	r.ExitStatus = 0
-	pong := []byte(fmt.Sprintf("connection successful in %s\n", time.Since(now).Truncate(time.Millisecond)))
+	pong := fmt.Appendf(nil, "connection successful in %s\n", time.Since(now).Truncate(time.Millisecond))
 	if oc != nil {
 		oc <- herd.OutputLine{Host: host, Data: pong}
 	}
