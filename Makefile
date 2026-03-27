@@ -10,13 +10,12 @@ endif
 # Let's not rebuild the protobuf code if we don't have protobuf available
 ifeq ("", "$(strip $(shell which protoc))")
 	protobuf_sources :=
-else ifeq ("", "$(strip $(shell which protoc-gen-go))")
-	protobuf_sources :=
-else ifeq ("", "$(strip $(shell which protoc-gen-go-grpc))")
-	protobuf_sources :=
 else
 	protobuf_sources = provider/plugin/common/plugin.pb.go provider/plugin/common/plugin_grpc.pb.go
 endif
+
+# Add our go tools to the path
+export PATH := tools/golangci-lint:tools/protoc:$(PATH)
 
 # The main program
 herd: go.mod go.sum *.go cmd/herd/*.go ssh/*.go scripting/*.go provider/*/*.go provider/plugin/common/*.go $(protobuf_sources) $(antlr_sources)
