@@ -1,0 +1,5 @@
+#!/bin/sh
+
+modfile="$(dirname "$0")/go.mod"
+tool="$(basename "$0")"
+exec go tool -modfile "$modfile" "$tool" "$@"
