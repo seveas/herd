@@ -78,8 +78,12 @@ func (p *pluginProvider) ParseViper(v *viper.Viper) error {
 	return p.plugin.Configure(v.AllSettings())
 }
 
+// Equivalent is only called by the registry to determine if a magic provider
+// is equivalent to an explicitly configured one. But plugin providers are
+// never magically loaded, so this should never be called and we can just return false.
 func (p *pluginProvider) Equivalent(o herd.HostProvider) bool {
-	return p.config.Command == o.(*pluginProvider).config.Command
+	logrus.Warnf("Equivalent called on plugin provider %s (%s), which should never happen", p.name, p.config.Command)
+	return false
 }
 
 func (p *pluginProvider) SetDataDir(dir string) error {

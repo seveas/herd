@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/hashicorp/go-plugin"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/plugin/common"
 
+	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
