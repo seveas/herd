@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/hashicorp/go-plugin"
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/plugin/common"
 
-	"github.com/hashicorp/go-plugin"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -67,8 +67,8 @@ func (p *pluginImpl) Load(ctx context.Context) (*herd.HostSet, error) {
 	return p.provider.Load(ctx, p.logger.LoadingMessage)
 }
 
-func ProviderPluginServer(name string) error {
-	provider, err := herd.NewProvider(name, name)
+func ProviderPluginServer(pname, name string) error {
+	provider, err := herd.NewProvider(pname, name)
 	if err != nil {
 		return err
 	}

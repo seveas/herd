@@ -119,7 +119,7 @@ func (p *pluginProvider) Source() herd.HostProvider {
 
 func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	if p.plugin == nil {
-		return nil, errors.New("SetDataDir called before plugin was connected")
+		return nil, errors.New("Load called before plugin was connected")
 	}
 	p.logger.lm = lm
 	return p.plugin.Load(ctx)
@@ -133,7 +133,7 @@ func (p *pluginProvider) connect() error {
 		Managed:          true,
 		HandshakeConfig:  common.Handshake,
 		Plugins:          pluginMap,
-		Cmd:              exec.CommandContext(context.Background(), p.config.Command), // #nosec G204 -- Cmd is user-supplied by design
+		Cmd:              exec.CommandContext(context.Background(), p.config.Command, p.name), // #nosec G204 -- Cmd is user-supplied by design
 		Logger:           common.NewLogrusLogger(logrus.StandardLogger(), fmt.Sprintf("plugin-%s", p.name)),
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,

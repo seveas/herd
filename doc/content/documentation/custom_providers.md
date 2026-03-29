@@ -172,6 +172,8 @@ the difference, except that your provider is shipped as a separate binary.
 package main
 
 import (
+	"os"
+
 	// Import your provider
 	_ "github.com/your-github-account/herd-provider-dibbler/provider/dibbler"
 
@@ -180,7 +182,7 @@ import (
 )
 
 func main() {
-	if err := server.ProviderPluginServer("dibbler"); err != nil {
+	if err := server.ProviderPluginServer("dibbler", os.Args[1]); err != nil {
 		panic(err)
 	}
 }
@@ -206,7 +208,7 @@ options:
 # Configuring herd for your plugin provider
 
 You configure herd the same as how you would for any other provider. Here is an example
-configuration with some custom paramenters and caching.
+configuration with some custom parameters and caching.
 
 ```yaml
 Providers:
