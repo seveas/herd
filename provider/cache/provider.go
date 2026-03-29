@@ -62,10 +62,12 @@ func (c *Cache) Source() herd.HostProvider {
 }
 
 func (c *Cache) Invalidate() {
+	logrus.Debugf("Invalidating cache for %s", c.source.Name())
 	c.config.Lifetime = -1
 }
 
 func (c *Cache) Keep() {
+	logrus.Debugf("Keeping cache for %s", c.source.Name())
 	c.config.Lifetime = time.Duration(math.MaxInt64)
 }
 
