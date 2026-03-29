@@ -93,7 +93,7 @@ func NewProvider(pname, name string) (HostProvider, error) {
 		// Try finding a plugin by this name, if we have the provider plugin loaded
 		if c, ok := availableProviders["plugin"]; ok {
 			if _, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", pname)); err == nil {
-				return c(pname), nil
+				return c(pname + "|" + name), nil
 			}
 		}
 		return nil, fmt.Errorf("No such provider: %s", pname)

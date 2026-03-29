@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/plugin/common"
@@ -35,11 +36,18 @@ type pluginProvider struct {
 }
 
 func newPlugin(name string) herd.HostProvider {
+	pname := name
+	// If the name contains a |, the first part is the binary and the second the configured name
+	if strings.Contains(name, "|") {
+		parts := strings.SplitN(name, "|", 2)
+		pname = parts[0]
+		name = parts[1]
+	}
 	p := &pluginProvider{name: name, logger: &logForwarder{}}
-	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", name)); err == nil {
+	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s", pname)); err == nil {
 		p.config.Command = path
 	}
-	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s.exe", name)); err == nil {
+	if path, err := exec.LookPath(fmt.Sprintf("herd-provider-%s.exe", pname)); err == nil {
 		p.config.Command = path
 	}
 	return p
