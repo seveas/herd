@@ -2,14 +2,16 @@ package azure
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/seveas/herd"
 	"github.com/seveas/herd/provider/cache"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/2020-09-01/compute/mgmt/compute"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v7"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -19,11 +21,9 @@ func init() {
 
 type azureProvider struct {
 	name       string
-	authorizer autorest.Authorizer
+	credential azcore.TokenCredential
 	config     struct {
 		Prefix       string
-		Environment  string
-		AdResource   string
 		Subscription string
 		TenantId     string
 		ClientId     string
@@ -32,9 +32,6 @@ type azureProvider struct {
 		// Certificate auth
 		CertificatePath     string
 		CertificatePassword string
-		// User/password auth
-		Username string
-		Password string // #nosec G117 -- Credential field required for Azure API auth
 	}
 }
 
@@ -48,13 +45,13 @@ func magicProvider() herd.HostProvider {
 	if !ok {
 		return nil
 	}
-	authorizer, err := auth.NewAuthorizerFromEnvironment()
+	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
 		return nil
 	}
 	p := newProvider("azure").(*azureProvider)
-	p.authorizer = authorizer
 	p.config.Subscription = sub
+	p.credential = cred
 	return cache.NewFromProvider(p)
 }
 
@@ -72,65 +69,74 @@ func (p *azureProvider) Equivalent(o herd.HostProvider) bool {
 }
 
 func (p *azureProvider) ParseViper(v *viper.Viper) error {
+	viper.SetDefault("TenantId", "")
 	if err := v.Unmarshal(&p.config); err != nil {
 		return err
 	}
-	var ac auth.AuthorizerConfig
-	// Let's see if we have authentication data
-	if p.config.TenantId != "" && p.config.ClientId != "" {
-		if p.config.ClientSecret != "" {
-			ac = auth.NewClientCredentialsConfig(p.config.ClientId, p.config.ClientSecret, p.config.TenantId)
-		} else if p.config.CertificatePath != "" && p.config.CertificatePassword != "" {
-			ac = auth.NewClientCertificateConfig(p.config.CertificatePath, p.config.CertificatePassword, p.config.ClientId, p.config.TenantId)
-		} else if p.config.Username != "" && p.config.Password != "" {
-			ac = auth.NewUsernamePasswordConfig(p.config.Username, p.config.Password, p.config.ClientId, p.config.TenantId)
+	if p.credential == nil {
+		// Let's see if we have authentication data
+		if p.config.TenantId != "" && p.config.ClientId != "" {
+			if p.config.ClientSecret != "" {
+				cred, err := azidentity.NewClientSecretCredential(p.config.TenantId, p.config.ClientId, p.config.ClientSecret, nil)
+				if err != nil {
+					return err
+				}
+				p.credential = cred
+			} else if p.config.CertificatePath != "" && p.config.CertificatePassword != "" {
+				certData, err := os.ReadFile(p.config.CertificatePath)
+				if err != nil {
+					return err
+				}
+				certs, key, err := azidentity.ParseCertificates(certData, []byte(p.config.CertificatePassword))
+				if err != nil {
+					return err
+				}
+				cred, err := azidentity.NewClientCertificateCredential(p.config.TenantId, p.config.ClientId, certs, key, nil)
+				if err != nil {
+					return err
+				}
+				p.credential = cred
+			}
 		}
 	}
-	if ac != nil {
-		authorizer, err := ac.Authorizer()
+	// If credential is still nil, try a default credential
+	if p.credential == nil {
+		cred, err := azidentity.NewDefaultAzureCredential(nil)
 		if err != nil {
 			return err
 		}
-		p.authorizer = authorizer
-	} else {
-		// Last resort: let's try to authorize from environment data
-		authorizer, err := auth.NewAuthorizerFromEnvironment()
-		if err != nil {
-			return err
-		}
-		p.authorizer = authorizer
+		p.credential = cred
 	}
 	return nil
 }
 
-func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (hosts *herd.HostSet, err error) {
+func (p *azureProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	lm(p.name, false, nil)
-	defer func() { lm(p.name, true, err) }()
-	c := compute.NewVirtualMachinesClient(p.config.Subscription)
-	c.Authorizer = p.authorizer
-	res, err := c.ListAll(ctx, "")
-	vms := res.Values()
+
+	hosts := herd.NewHostSet()
+	factory, err := armcompute.NewClientFactory(p.config.Subscription, p.credential, nil)
 	if err != nil {
 		return nil, err
 	}
-	for res.NotDone() {
-		err := res.NextWithContext(ctx)
+	client := factory.NewVirtualMachinesClient()
+	pager := client.NewListAllPager(nil)
+	for pager.More() {
+		page, err := pager.NextPage(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Failed to get next page of virtual machines: %v", err)
 		}
-		vms = append(vms, res.Values()...)
-	}
-	hosts = herd.NewHostSet()
-	for _, vm := range vms {
-		attrs := make(herd.HostAttributes)
-		for k, v := range vm.Tags {
-			attrs[k] = *v
+		logrus.Debugf("Got %d virtual machines", len(page.Value))
+		for _, vm := range page.Value {
+			attrs := make(herd.HostAttributes)
+			for k, v := range vm.Tags {
+				attrs[k] = *v
+			}
+			attrs["VMSize"] = string(*vm.Properties.HardwareProfile.VMSize)
+			attrs["ProvisioningState"] = *vm.Properties.ProvisioningState
+			attrs["ID"] = *vm.ID
+			attrs["Location"] = *vm.Location
+			hosts.AddHost(herd.NewHost(*vm.Name, "", attrs))
 		}
-		attrs["VMSize"] = string(vm.HardwareProfile.VMSize)
-		attrs["ProvisioningState"] = *vm.ProvisioningState
-		attrs["VMID"] = *vm.VMID
-		attrs["Location"] = *vm.Location
-		hosts.AddHost(herd.NewHost(*vm.Name, "", attrs))
 	}
 
 	return hosts, nil
