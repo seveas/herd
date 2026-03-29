@@ -67,8 +67,8 @@ func (p *pluginImpl) Load(ctx context.Context) (*herd.HostSet, error) {
 	return p.provider.Load(ctx, p.logger.LoadingMessage)
 }
 
-func ProviderPluginServer(name string) error {
-	provider, err := herd.NewProvider(name, name)
+func ProviderPluginServer(pname, name string) error {
+	provider, err := herd.NewProvider(pname, name)
 	if err != nil {
 		return err
 	}

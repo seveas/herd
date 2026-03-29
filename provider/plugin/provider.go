@@ -78,8 +78,12 @@ func (p *pluginProvider) ParseViper(v *viper.Viper) error {
 	return p.plugin.Configure(v.AllSettings())
 }
 
+// Equivalent is only called by the registry to determine if a magic provider
+// is equivalent to an explicitly configured one. But plugin providers are
+// never magically loaded, so this should never be called and we can just return false.
 func (p *pluginProvider) Equivalent(o herd.HostProvider) bool {
-	return p.config.Command == o.(*pluginProvider).config.Command
+	logrus.Warnf("Equivalent called on plugin provider %s (%s), which should never happen", p.name, p.config.Command)
+	return false
 }
 
 func (p *pluginProvider) SetDataDir(dir string) error {
@@ -119,7 +123,7 @@ func (p *pluginProvider) Source() herd.HostProvider {
 
 func (p *pluginProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
 	if p.plugin == nil {
-		return nil, errors.New("SetDataDir called before plugin was connected")
+		return nil, errors.New("Load called before plugin was connected")
 	}
 	p.logger.lm = lm
 	return p.plugin.Load(ctx)
@@ -133,7 +137,7 @@ func (p *pluginProvider) connect() error {
 		Managed:          true,
 		HandshakeConfig:  common.Handshake,
 		Plugins:          pluginMap,
-		Cmd:              exec.CommandContext(context.Background(), p.config.Command), // #nosec G204 -- Cmd is user-supplied by design
+		Cmd:              exec.CommandContext(context.Background(), p.config.Command, p.name), // #nosec G204 -- Cmd is user-supplied by design
 		Logger:           common.NewLogrusLogger(logrus.StandardLogger(), fmt.Sprintf("plugin-%s", p.name)),
 		SyncStdout:       os.Stdout,
 		SyncStderr:       os.Stderr,
