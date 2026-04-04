@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
 
 	"github.com/seveas/herd"
@@ -18,19 +19,22 @@ func init() {
 }
 
 type HttpProvider struct {
-	name   string
-	client *http.Client
-	config struct {
+	name     string
+	client   *http.Client
+	proxyUrl *url.URL
+	config   struct {
 		Prefix   string
 		Url      string
 		Username string
 		Password string // #nosec G117 -- Credential field required for HTTP basic auth
 		Headers  map[string]string
+		Proxy    string
 	}
 }
 
 func NewProvider(name string) herd.HostProvider {
-	return &HttpProvider{name: name, client: http.DefaultClient}
+	p := &HttpProvider{name: name, client: &http.Client{}}
+	return p
 }
 
 func (p *HttpProvider) Name() string {
@@ -50,7 +54,27 @@ func (p *HttpProvider) Equivalent(o herd.HostProvider) bool {
 }
 
 func (p *HttpProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(&p.config)
+	if err := v.Unmarshal(&p.config); err != nil {
+		return err
+	}
+	if p.config.Proxy != "" {
+		proxyUrl, err := url.Parse(p.config.Proxy)
+		if err != nil {
+			return fmt.Errorf("invalid proxy URL: %w", err)
+		}
+		p.proxyUrl = proxyUrl
+		p.client.Transport = &http.Transport{
+			Proxy: p.proxy,
+		}
+	}
+	return nil
+}
+
+func (p *HttpProvider) proxy(req *http.Request) (*url.URL, error) {
+	if p.proxyUrl == nil {
+		return http.ProxyFromEnvironment(req)
+	}
+	return p.proxyUrl, nil
 }
 
 func (p *HttpProvider) Fetch(ctx context.Context) ([]byte, error) {

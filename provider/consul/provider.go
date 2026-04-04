@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
+	"net/url"
 	"os"
 	"slices"
 	"sort"
@@ -30,6 +32,7 @@ type consulProvider struct {
 	consulConfig *consul.Config
 	config       struct {
 		Address                      string
+		Proxy                        string
 		Prefix                       string
 		Datacenters                  []string
 		ExcludeDatacenters           []string
@@ -75,7 +78,19 @@ func (p *consulProvider) Equivalent(o herd.HostProvider) bool {
 }
 
 func (p *consulProvider) ParseViper(v *viper.Viper) error {
-	return v.Unmarshal(&p.config)
+	if err := v.Unmarshal(&p.config); err != nil {
+		return err
+	}
+	if p.config.Proxy != "" {
+		proxyUrl, err := url.Parse(p.config.Proxy)
+		if err != nil {
+			return fmt.Errorf("invalid proxy URL: %w", err)
+		}
+		p.consulConfig.Transport.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyUrl, nil
+		}
+	}
+	return nil
 }
 
 func (p *consulProvider) Load(ctx context.Context, lm herd.LoadingMessage) (*herd.HostSet, error) {
